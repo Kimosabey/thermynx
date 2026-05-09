@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Badge } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
@@ -8,8 +8,8 @@ import GlassCard from "../../shared/ui/GlassCard";
 import StatusPulse from "../../shared/ui/StatusPulse";
 import { SkeletonKpiCard } from "../../shared/ui/SkeletonCard";
 
-const MotionBox  = motion(Box);
-const MotionGrid = motion(Grid);
+const MotionBox  = motion.create(Box);
+const MotionGrid = motion.create(Grid);
 const stagger    = { animate: { transition: { staggerChildren: 0.08 } } };
 const fadeUp     = {
   initial: { opacity: 0, y: 16 },
@@ -95,7 +95,7 @@ function EfficiencyCard({ result }) {
             fontSize="3xl"
             fontWeight={800}
             color={meta.color}
-            fontVariantNumeric="tabular-nums"
+            sx={{ fontVariantNumeric: "tabular-nums" }}
             letterSpacing="-0.03em"
           >
             {result.kw_per_tr_avg != null ? result.kw_per_tr_avg.toFixed(3) : "—"}
@@ -134,7 +134,7 @@ function EfficiencyCard({ result }) {
               <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>
                 {s.label}
               </Text>
-              <Text fontSize="sm" fontWeight={600} color="text.primary" fontVariantNumeric="tabular-nums">
+              <Text fontSize="sm" fontWeight={600} color="text.primary" sx={{ fontVariantNumeric: "tabular-nums" }}>
                 {s.value ?? "—"}
               </Text>
             </Box>

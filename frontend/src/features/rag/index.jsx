@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Badge, Textarea, Button } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
@@ -6,7 +6,7 @@ import PageHeader from "../../shared/ui/PageHeader";
 import GlassCard from "../../shared/ui/GlassCard";
 import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 const fadeUp = { initial:{opacity:0,y:12}, animate:{opacity:1,y:0,transition:{duration:0.25}} };
 
 function StatusBadge({ ready }) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   Box,
   VStack,
@@ -26,7 +26,7 @@ import {
   Wind,
 } from "lucide-react";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const ICON = { size: 18, strokeWidth: 1.65 };
 

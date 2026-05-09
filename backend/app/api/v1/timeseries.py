@@ -40,7 +40,6 @@ async def get_timeseries(
             {"since": since, "limit": limit},
         )
     else:
-        bucket_secs = res_min * 60
         extra = (
             "AVG(tr) AS tr, AVG(kw_per_tr) AS kw_per_tr, AVG(chw_delta_t) AS chw_delta_t, "
             "AVG(chiller_load) AS chiller_load, AVG(evap_leaving_temp) AS evap_leaving_temp, "
@@ -48,8 +47,9 @@ async def get_timeseries(
             if eq["type"] == "chiller"
             else "AVG(kwh) AS kwh, AVG(run_hours) AS run_hours"
         )
+        bucket_secs_int = int(res_min * 60)
         bucket_expr = (
-            f"FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(slot_time)/{bucket_secs})*{bucket_secs})"
+            f"FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(slot_time)/{bucket_secs_int})*{bucket_secs_int})"
         )
         result = await db.execute(
             text(
@@ -57,7 +57,7 @@ async def get_timeseries(
                 f" AVG(kw) AS kw, {extra}, MAX(is_running) AS is_running"
                 f" FROM {table} WHERE slot_time >= :since"
                 f" GROUP BY {bucket_expr}"
-                f" ORDER BY slot_time ASC LIMIT :limit"
+                f" ORDER BY {bucket_expr} ASC LIMIT :limit"  # explicit expr avoids alias ambiguity
             ),
             {"since": since, "limit": limit},
         )

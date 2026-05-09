@@ -1,4 +1,4 @@
-import {
+﻿import {
   ResponsiveContainer, ComposedChart, Area, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
 } from "recharts";
@@ -6,7 +6,7 @@ import { Box, Text, Flex, Badge } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import GlassCard from "../../shared/ui/GlassCard";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 const BAND_GOOD = 0.65;
 const BAND_POOR = 0.85;
 

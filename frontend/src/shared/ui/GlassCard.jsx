@@ -1,7 +1,7 @@
-import { Box } from "@chakra-ui/react";
+﻿import { Box } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 export default function GlassCard({ children, hover = true, glow = false, p = 5, ...props }) {
   return (

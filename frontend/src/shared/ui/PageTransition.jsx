@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { Box } from "@chakra-ui/react";
 
 const variants = {
@@ -7,7 +7,7 @@ const variants = {
   exit:    { opacity: 0, y: -6, transition: { duration: 0.15 } },
 };
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 export default function PageTransition({ children }) {
   return (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Box, Flex, Text, Grid, Textarea, Select, Button,
   Badge, HStack, Tabs, TabList, Tab, TabPanels, TabPanel,
@@ -10,7 +10,7 @@ import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import AgentRunner, { useAgentStream } from "./AgentRunner";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const MODES = [
   {

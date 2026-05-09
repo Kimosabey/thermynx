@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Badge } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
@@ -8,8 +8,8 @@ import GlassCard from "../../shared/ui/GlassCard";
 import StatusPulse from "../../shared/ui/StatusPulse";
 import { SkeletonKpiCard } from "../../shared/ui/SkeletonCard";
 
-const MotionBox = motion(Box);
-const MotionGrid = motion(Grid);
+const MotionBox = motion.create(Box);
+const MotionGrid = motion.create(Grid);
 const stagger = { animate: { transition: { staggerChildren: 0.08 } } };
 const fadeUp = {
   initial: { opacity: 0, y: 16 },
@@ -40,7 +40,7 @@ function HealthCard({ asset }) {
         </Flex>
 
         <Flex align="baseline" gap={2} mb={2}>
-          <Text fontSize="4xl" fontWeight={800} color={color} fontVariantNumeric="tabular-nums">
+          <Text fontSize="4xl" fontWeight={800} color={color} sx={{ fontVariantNumeric: "tabular-nums" }}>
             {asset.health_score ?? "—"}
           </Text>
           <Text fontSize="sm" color="text.muted">health</Text>

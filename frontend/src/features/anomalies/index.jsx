@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Badge, Button } from "@chakra-ui/react";
 import { CheckCircleIcon } from "@chakra-ui/icons";
 import { motion } from "framer-motion";
@@ -8,8 +8,8 @@ import PeriodSelect, { HOURS_OPTIONS_ANOMALY } from "../../shared/ui/PeriodSelec
 import GlassCard from "../../shared/ui/GlassCard";
 import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 
-const MotionBox = motion(Box);
-const MotionGrid = motion(Grid);
+const MotionBox = motion.create(Box);
+const MotionGrid = motion.create(Grid);
 const stagger   = { animate: { transition: { staggerChildren: 0.05 } } };
 const fadeUp    = {
   initial: { opacity: 0, y: 12 },
@@ -30,7 +30,7 @@ function ZScorePill({ z }) {
       bg={`${color}18`} border="1px solid" borderColor={`${color}40`}
       borderRadius="full" px={2} py="2px"
     >
-      <Text fontSize="10px" fontWeight={700} color={color} fontVariantNumeric="tabular-nums">
+      <Text fontSize="10px" fontWeight={700} color={color} sx={{ fontVariantNumeric: "tabular-nums" }}>
         {z > 0 ? "+" : ""}{z.toFixed(1)}σ
       </Text>
     </Box>
@@ -70,19 +70,19 @@ function AnomalyCard({ anomaly }) {
         <Flex gap={4} mb={3}>
           <Box>
             <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>Value</Text>
-            <Text fontSize="lg" fontWeight={700} color={meta.color} fontVariantNumeric="tabular-nums">
+            <Text fontSize="lg" fontWeight={700} color={meta.color} sx={{ fontVariantNumeric: "tabular-nums" }}>
               {anomaly.value?.toFixed(3) ?? "—"}
             </Text>
           </Box>
           <Box>
             <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>Baseline</Text>
-            <Text fontSize="lg" fontWeight={700} color="text.primary" fontVariantNumeric="tabular-nums">
+            <Text fontSize="lg" fontWeight={700} color="text.primary" sx={{ fontVariantNumeric: "tabular-nums" }}>
               {anomaly.baseline_mean?.toFixed(3) ?? "—"}
             </Text>
           </Box>
           <Box>
             <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>Std Dev</Text>
-            <Text fontSize="lg" fontWeight={700} color="text.muted" fontVariantNumeric="tabular-nums">
+            <Text fontSize="lg" fontWeight={700} color="text.muted" sx={{ fontVariantNumeric: "tabular-nums" }}>
               ±{anomaly.baseline_std?.toFixed(3) ?? "—"}
             </Text>
           </Box>
@@ -170,7 +170,7 @@ export default function AnomaliesPage() {
             bg={s.bg} border="1px solid" borderColor={s.border}
             borderRadius="10px" px={3} py={2}
           >
-            <Text fontSize="xs" color={s.color} fontWeight={700} fontVariantNumeric="tabular-nums">
+            <Text fontSize="xs" color={s.color} fontWeight={700} sx={{ fontVariantNumeric: "tabular-nums" }}>
               {s.count}
             </Text>
             <Text fontSize="xs" color="text.muted">{s.label}</Text>

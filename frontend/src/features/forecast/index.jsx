@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Select, Grid, Badge } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
@@ -11,8 +11,8 @@ import {
 import GlassCard from "../../shared/ui/GlassCard";
 import { SkeletonKpiCard } from "../../shared/ui/SkeletonCard";
 
-const MotionBox  = motion(Box);
-const MotionGrid = motion(Grid);
+const MotionBox  = motion.create(Box);
+const MotionGrid = motion.create(Grid);
 const fadeUp     = { initial:{opacity:0,y:12}, animate:{opacity:1,y:0,transition:{duration:0.3}} };
 const stagger    = { animate:{transition:{staggerChildren:0.07}} };
 
@@ -169,7 +169,7 @@ export default function ForecastPage() {
               <GlassCard p={4}>
                 <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.1em" mb={2}>{s.l}</Text>
                 <Flex align="baseline" gap={1}>
-                  <Text fontSize="xl" fontWeight={700} color="accent.cyan" fontVariantNumeric="tabular-nums">{s.v ?? "—"}</Text>
+                  <Text fontSize="xl" fontWeight={700} color="accent.cyan" sx={{ fontVariantNumeric: "tabular-nums" }}>{s.v ?? "—"}</Text>
                   {s.u && <Text fontSize="xs" color="text.muted">{s.u}</Text>}
                 </Flex>
               </GlassCard>

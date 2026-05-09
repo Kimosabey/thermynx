@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import {
   Box, Flex, Text, Textarea, Button,
   HStack, Badge, Spinner, Select, Grid, useToast,
@@ -12,7 +12,7 @@ import PeriodSelect, { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import TimeseriesChart from "./TimeseriesChart";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const QUICK_PROMPTS = [
   "Analyze chiller efficiency and identify performance issues",
@@ -447,7 +447,7 @@ export default function AIAnalyzer() {
                         minW={0}
                       >
                         <Text fontSize="9px" color="text.muted" textTransform="uppercase" fontWeight={700} letterSpacing="0.1em">{item.l}</Text>
-                        <Text fontSize="lg" fontWeight={700} fontVariantNumeric="tabular-nums"
+                        <Text fontSize="lg" fontWeight={700} sx={{ fontVariantNumeric: "tabular-nums" }}
                           color={item.isEff && item.eff ? (item.eff < 0.65 ? "green.400" : item.eff < 0.85 ? "yellow.400" : "red.400") : "text.primary"}>
                           {item.v ?? "—"}
                         </Text>

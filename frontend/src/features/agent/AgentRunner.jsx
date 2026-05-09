@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AgentRunner — shared streaming component for all agent modes.
  * Left: live reasoning trace (thought → tool_call → tool_result)
  * Right: streaming final answer in markdown
@@ -10,7 +10,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import GlassCard from "../../shared/ui/GlassCard";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const TOOL_LABELS = {
   get_equipment_list:     { label: "Equipment List",    icon: "📋" },

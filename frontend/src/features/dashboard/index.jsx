@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Box, Flex, Grid, Text, Badge } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import {
@@ -19,8 +19,8 @@ import KpiCard from "../../shared/ui/KpiCard";
 import StatusPulse from "../../shared/ui/StatusPulse";
 import { SkeletonKpiCard, SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 
-const MotionBox  = motion(Box);
-const MotionGrid = motion(Grid);
+const MotionBox  = motion.create(Box);
+const MotionGrid = motion.create(Grid);
 
 const stagger = {
   initial: {},
@@ -99,13 +99,13 @@ function EquipCard({ name, data, type }) {
         <Grid templateColumns="repeat(2, minmax(0, 1fr))" gap={3}>
           <Box>
             <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>Avg kW</Text>
-            <Text fontSize="lg" fontWeight={700} color="text.primary" fontVariantNumeric="tabular-nums">
+            <Text fontSize="lg" fontWeight={700} color="text.primary" sx={{ fontVariantNumeric: "tabular-nums" }}>
               {data?.avg_kw != null ? Number(data.avg_kw).toFixed(1) : "—"}
             </Text>
           </Box>
           <Box>
             <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>Run %</Text>
-            <Text fontSize="lg" fontWeight={700} color="text.primary" fontVariantNumeric="tabular-nums">
+            <Text fontSize="lg" fontWeight={700} color="text.primary" sx={{ fontVariantNumeric: "tabular-nums" }}>
               {running != null ? `${running}%` : "—"}
             </Text>
           </Box>
@@ -113,13 +113,13 @@ function EquipCard({ name, data, type }) {
             <>
               <Box>
                 <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>kW/TR</Text>
-                <Text fontSize="lg" fontWeight={700} color={bandColor} fontVariantNumeric="tabular-nums">
+                <Text fontSize="lg" fontWeight={700} color={bandColor} sx={{ fontVariantNumeric: "tabular-nums" }}>
                   {kwPerTr != null ? kwPerTr.toFixed(3) : "—"}
                 </Text>
               </Box>
               <Box>
                 <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>Load</Text>
-                <Text fontSize="lg" fontWeight={700} color="text.primary" fontVariantNumeric="tabular-nums">
+                <Text fontSize="lg" fontWeight={700} color="text.primary" sx={{ fontVariantNumeric: "tabular-nums" }}>
                   {data?.avg_chiller_load != null ? `${Number(data.avg_chiller_load).toFixed(1)}%` : "—"}
                 </Text>
               </Box>

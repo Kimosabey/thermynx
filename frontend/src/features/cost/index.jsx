@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Table, Thead, Tbody, Tr, Th, Td } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
@@ -6,7 +6,7 @@ import PageHeader from "../../shared/ui/PageHeader";
 import PeriodSelect from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 export default function CostPage() {
   const [hours, setHours] = useState(24);
@@ -40,7 +40,7 @@ export default function CostPage() {
           <MotionBox key={k.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <GlassCard>
               <Text fontSize="10px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={2}>{k.label}</Text>
-              <Text fontSize="2xl" fontWeight={800} color={k.accent} fontVariantNumeric="tabular-nums">{loading ? "…" : k.value}</Text>
+              <Text fontSize="2xl" fontWeight={800} color={k.accent} sx={{ fontVariantNumeric: "tabular-nums" }}>{loading ? "…" : k.value}</Text>
             </GlassCard>
           </MotionBox>
         ))}
@@ -68,8 +68,8 @@ export default function CostPage() {
                 <Tr key={row.equipment_id}>
                   <Td fontWeight={600}>{row.name}</Td>
                   <Td>{row.type}</Td>
-                  <Td isNumeric fontVariantNumeric="tabular-nums">{row.kwh?.toFixed(3)}</Td>
-                  <Td isNumeric fontVariantNumeric="tabular-nums">₹ {row.cost_inr?.toFixed(2)}</Td>
+                  <Td isNumeric sx={{ fontVariantNumeric: "tabular-nums" }}>{row.kwh?.toFixed(3)}</Td>
+                  <Td isNumeric sx={{ fontVariantNumeric: "tabular-nums" }}>₹ {row.cost_inr?.toFixed(2)}</Td>
                   <Td isNumeric>{row.run_hours?.toFixed(2) ?? "—"}</Td>
                   <Td isNumeric>{row.inr_per_tr_hr?.toFixed(4) ?? "—"}</Td>
                 </Tr>

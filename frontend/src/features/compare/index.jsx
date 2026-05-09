@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Select, Grid } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
@@ -12,7 +12,7 @@ import GlassCard from "../../shared/ui/GlassCard";
 import StatusPulse from "../../shared/ui/StatusPulse";
 import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 const fadeUp    = { initial:{opacity:0,y:12}, animate:{opacity:1,y:0,transition:{duration:0.28}} };
 
 const COLORS = { a:"#00c4f4", b:"#7c3aed" };
@@ -50,8 +50,8 @@ function StatRow({ label, valA, valB, isEff }) {
   return (
     <Grid templateColumns={{ base: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)" }} gap={2} py={2} borderBottom="1px solid" borderColor="border.subtle" minW={0}>
       <Text fontSize="xs" color="text.muted" textTransform="uppercase" letterSpacing="0.08em" fontWeight={700}>{label}</Text>
-      <Text fontSize="sm" fontWeight={700} color={better==="a" ? "green.400" : (isEff ? bandColor(valA) : "text.primary")} fontVariantNumeric="tabular-nums" textAlign="center">{a}</Text>
-      <Text fontSize="sm" fontWeight={700} color={better==="b" ? "green.400" : (isEff ? bandColor(valB) : "text.primary")} fontVariantNumeric="tabular-nums" textAlign="center">{b}</Text>
+      <Text fontSize="sm" fontWeight={700} color={better==="a" ? "green.400" : (isEff ? bandColor(valA) : "text.primary")} sx={{ fontVariantNumeric: "tabular-nums" }} textAlign="center">{a}</Text>
+      <Text fontSize="sm" fontWeight={700} color={better==="b" ? "green.400" : (isEff ? bandColor(valB) : "text.primary")} sx={{ fontVariantNumeric: "tabular-nums" }} textAlign="center">{b}</Text>
     </Grid>
   );
 }
