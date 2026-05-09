@@ -1,18 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="THERMYNX AI Operations Intelligence Platform — Unicharm Facility HVAC Analytics" />
+    <meta name="theme-color" content="#0511F2" />
     <title>THERMYNX — AI Operations Intelligence</title>
+
+    <!-- Inter + Plus Jakarta Sans from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+
     <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'Inter', sans-serif; }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --brand-primary:   #0511F2;
+        --brand-secondary: #0433BF;
+        --brand-dark:      #032CA6;
+        --brand-cobalt:    #0455BF;
+        --brand-black:     #0D0D0D;
+        color-scheme: light;
+      }
+
+      html { scroll-behavior: smooth; }
+
+      body {
+        font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: #F4F7FF;
+        color: #0D0D0D;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "tnum" 1, "kern" 1;
+      }
+
+      /* WCAG 2.2 — visible focus rings */
+      :focus-visible {
+        outline: 2px solid #0511F2;
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(5,17,242,0.2);
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(5,17,242,0.4);
+      }
+
+      /* Selection */
+      ::selection {
+        background: rgba(5,17,242,0.15);
+        color: #032CA6;
+      }
+
+      #root { min-height: 100vh; }
     </style>
   </head>
   <body>

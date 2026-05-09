@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AgentRunner — shared streaming component for all agent modes.
  * Left: live reasoning trace (thought → tool_call → tool_result)
  * Right: streaming final answer in markdown
@@ -6,19 +6,26 @@
 import { useRef, useState } from "react";
 import { Box, Flex, Text, Badge, Grid, Spinner, HStack } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  List, Zap, ScanSearch, BarChart2, Columns2,
+  History, Wrench, CheckCircle2,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import GlassCard from "../../shared/ui/GlassCard";
 
 const MotionBox = motion.create(Box);
 
+const ICON_SIZE = 13;
+
 const TOOL_LABELS = {
-  get_equipment_list:     { label: "Equipment List",    icon: "📋" },
-  compute_efficiency:     { label: "Efficiency Calc",   icon: "⚡" },
-  detect_anomalies:       { label: "Anomaly Scan",      icon: "🔍" },
-  get_timeseries_summary: { label: "Timeseries Stats",  icon: "📊" },
-  compare_equipment:      { label: "Compare",           icon: "⚖️" },
-  get_anomaly_history:    { label: "History",           icon: "📜" },
+  get_equipment_list:     { label: "Equipment List",   Icon: List },
+  compute_efficiency:     { label: "Efficiency Calc",  Icon: Zap },
+  detect_anomalies:       { label: "Anomaly Scan",     Icon: ScanSearch },
+  get_timeseries_summary: { label: "Timeseries Stats", Icon: BarChart2 },
+  compare_equipment:      { label: "Compare",          Icon: Columns2 },
+  get_anomaly_history:    { label: "History",          Icon: History },
+  retrieve_manual:        { label: "Manual Lookup",    Icon: List },
 };
 
 function ThinkingDots() {
@@ -39,7 +46,8 @@ function TraceStep({ frame, index }) {
   const [expanded, setExpanded] = useState(false);
 
   if (frame.type === "tool_call") {
-    const meta = TOOL_LABELS[frame.tool] ?? { label: frame.tool, icon: "🔧" };
+    const meta = TOOL_LABELS[frame.tool] ?? { label: frame.tool, Icon: Wrench };
+    const MetaIcon = meta.Icon;
     return (
       <MotionBox
         initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
@@ -47,21 +55,18 @@ function TraceStep({ frame, index }) {
         mb={2}
       >
         <Box
-          as="button"
-          w="full"
-          textAlign="left"
+          as="button" w="full" textAlign="left"
           onClick={() => setExpanded(!expanded)}
-          bg="rgba(0,196,244,0.06)"
-          border="1px solid rgba(0,196,244,0.2)"
-          borderRadius="10px"
-          px={3} py={2}
-          _hover={{ bg: "rgba(0,196,244,0.1)" }}
+          bg="rgba(5,17,242,0.05)"
+          border="1px solid rgba(5,17,242,0.15)"
+          borderRadius="10px" px={3} py={2}
+          _hover={{ bg: "rgba(5,17,242,0.09)", borderColor: "rgba(5,17,242,0.25)" }}
           transition="all 0.15s"
         >
           <Flex align="center" gap={2}>
-            <Text fontSize="sm">{meta.icon}</Text>
-            <Text fontSize="xs" fontWeight={600} color="brand.400">{meta.label}</Text>
-            <Badge fontSize="9px" bg="rgba(0,196,244,0.12)" color="brand.500" borderRadius="4px" px={1}>
+            <Box color="accent.primary" flexShrink={0}><MetaIcon size={ICON_SIZE} strokeWidth={2} /></Box>
+            <Text fontSize="xs" fontWeight={600} color="accent.primary">{meta.label}</Text>
+            <Badge fontSize="9px" bg="rgba(5,17,242,0.1)" color="accent.primary" borderRadius="4px" px={1}>
               step {frame.step}
             </Badge>
             <Text ml="auto" fontSize="10px" color="text.muted">{expanded ? "▲" : "▼"}</Text>
@@ -76,7 +81,7 @@ function TraceStep({ frame, index }) {
                 overflow="hidden"
               >
                 <Box
-                  mt={2} p={2} bg="rgba(0,0,0,0.3)" borderRadius="8px"
+                  mt={2} p={2} bg="#F4F7FF" borderRadius="8px"
                   fontSize="10px" fontFamily="mono" color="text.muted"
                 >
                   {JSON.stringify(frame.args, null, 2)}
@@ -90,7 +95,7 @@ function TraceStep({ frame, index }) {
   }
 
   if (frame.type === "tool_result") {
-    const meta = TOOL_LABELS[frame.tool] ?? { label: frame.tool, icon: "✓" };
+    const meta = TOOL_LABELS[frame.tool] ?? { label: frame.tool, Icon: CheckCircle2 };
     return (
       <MotionBox
         initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
@@ -100,15 +105,15 @@ function TraceStep({ frame, index }) {
         <Box
           as="button" w="full" textAlign="left"
           onClick={() => setExpanded(!expanded)}
-          bg="rgba(16,185,129,0.05)"
-          border="1px solid rgba(16,185,129,0.15)"
+          bg="rgba(5,150,105,0.05)"
+          border="1px solid rgba(5,150,105,0.15)"
           borderRadius="10px" px={3} py={2}
-          _hover={{ bg: "rgba(16,185,129,0.08)" }}
+          _hover={{ bg: "rgba(5,150,105,0.09)" }}
           transition="all 0.15s"
         >
           <Flex align="center" gap={2}>
-            <Text fontSize="sm">✓</Text>
-            <Text fontSize="xs" fontWeight={500} color="green.400">{meta.label} result</Text>
+            <Box color="status.good" flexShrink={0}><CheckCircle2 size={ICON_SIZE} strokeWidth={2} /></Box>
+            <Text fontSize="xs" fontWeight={500} color="status.good">{meta.label} result</Text>
             <Text ml="auto" fontSize="10px" color="text.muted">{expanded ? "▲" : "▼"}</Text>
           </Flex>
           <AnimatePresence>
@@ -121,7 +126,7 @@ function TraceStep({ frame, index }) {
                 overflow="hidden"
               >
                 <Box
-                  mt={2} p={2} bg="rgba(0,0,0,0.3)" borderRadius="8px"
+                  mt={2} p={2} bg="#F4F7FF" borderRadius="8px"
                   fontSize="10px" fontFamily="mono" color="text.muted"
                   maxH="120px" overflowY="auto"
                 >
@@ -143,13 +148,13 @@ function MarkdownOutput({ content }) {
     <Box sx={{
       "h2,h3":  { fontWeight: 700, mt: 4, mb: 2, color: "text.primary" },
       h2:       { fontSize: "md", borderBottom: "1px solid", borderColor: "border.subtle", pb: 2 },
-      h3:       { fontSize: "sm", color: "accent.cyan" },
+      h3:       { fontSize: "sm", color: "accent.primary" },
       p:        { mb: 3, lineHeight: 1.8, color: "text.primary", fontSize: "sm" },
       "ul,ol":  { pl: 5, mb: 3 },
       li:       { mb: 1, color: "text.primary", fontSize: "sm" },
-      strong:   { color: "white", fontWeight: 600 },
-      code:     { bg: "rgba(0,196,244,0.08)", px: "5px", py: "2px", borderRadius: "5px", fontSize: "0.82em", color: "brand.300", fontFamily: "mono" },
-      pre:      { bg: "rgba(0,0,0,0.4)", border: "1px solid", borderColor: "border.subtle", p: 4, borderRadius: "10px", overflowX: "auto", mb: 3, fontSize: "xs" },
+      strong:   { color: "text.primary", fontWeight: 700 },
+      code:     { bg: "rgba(5,17,242,0.06)", px: "5px", py: "2px", borderRadius: "5px", fontSize: "0.82em", color: "accent.primary", fontFamily: "mono" },
+      pre:      { bg: "#F4F7FF", border: "1px solid", borderColor: "border.subtle", p: 4, borderRadius: "10px", overflowX: "auto", mb: 3, fontSize: "xs" },
       table:    { width: "100%", borderCollapse: "collapse", mb: 3, fontSize: "sm" },
       "th,td":  { border: "1px solid", borderColor: "border.subtle", px: 3, py: "6px" },
       th:       { bg: "bg.elevated", fontWeight: 600, fontSize: "xs", color: "text.muted" },

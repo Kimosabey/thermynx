@@ -8,10 +8,10 @@ export const surfaceSelectProps = {
   borderColor: "border.subtle",
   borderRadius: "10px",
   color: "text.primary",
-  _hover: { borderColor: "accent.cyan" },
+  _hover: { borderColor: "border.strong" },
   _focusVisible: {
-    borderColor: "brand.500",
-    boxShadow: "0 0 0 1px var(--chakra-colors-brand-500)",
+    borderColor: "accent.primary",
+    boxShadow: "0 0 0 3px rgba(5,17,242,0.12)",
   },
 };
 

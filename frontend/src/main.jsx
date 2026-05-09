@@ -7,7 +7,7 @@ import theme from "./app/theme";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+    <ColorModeScript initialColorMode="light" />
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ChakraProvider theme={theme}>
         <App />

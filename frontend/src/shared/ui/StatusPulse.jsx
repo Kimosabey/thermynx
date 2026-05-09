@@ -8,7 +8,7 @@ const pulse = keyframes`
 `;
 
 export default function StatusPulse({ active = true, size = "8px" }) {
-  const color = active ? "#10b981" : "#334155";
+  const color = active ? "#059669" : "#CBD5E1";
   return (
     <Box position="relative" w={size} h={size} flexShrink={0}>
       {active && (

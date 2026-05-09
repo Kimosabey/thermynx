@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Select, Grid } from "@chakra-ui/react";
+import { Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
@@ -149,7 +150,7 @@ export default function ComparePage() {
         <MotionBox variants={fadeUp} initial="initial" animate="animate" mb={5}>
           <GlassCard p={4} glow>
             <Flex align="center" gap={3}>
-              <Text fontSize="lg">🏆</Text>
+              <Box color="status.good"><Trophy size={18} strokeWidth={2} /></Box>
               <Text fontSize="sm" color="text.primary">
                 <Text as="span" fontWeight={700} color="green.400">{better}</Text>
                 {" "}is performing better (kW/TR: {ea.kw_per_tr_avg?.toFixed(3)} vs {eb.kw_per_tr_avg?.toFixed(3)} — delta {Math.abs((ea.kw_per_tr_avg||0)-(eb.kw_per_tr_avg||0)).toFixed(3)} kW/TR)

@@ -12,7 +12,7 @@ function ShimmerBox({ h = "12px", w = "100%", borderRadius = "6px", mb = 0 }) {
       h={h} w={w} mb={mb}
       borderRadius={borderRadius}
       sx={{
-        background: "linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%)",
+        background: "linear-gradient(90deg, #EEF2FF 25%, #E0E7FF 50%, #EEF2FF 75%)",
         backgroundSize: "800px 100%",
         animation: `${shimmer} 1.5s infinite linear`,
       }}

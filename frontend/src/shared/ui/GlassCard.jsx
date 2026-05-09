@@ -1,9 +1,9 @@
-﻿import { Box } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 
 const MotionBox = motion.create(Box);
 
-export default function GlassCard({ children, hover = true, glow = false, p = 5, ...props }) {
+export default function GlassCard({ children, hover = true, accent = false, glow = false, p = 5, ...props }) {
   return (
     <MotionBox
       position="relative"
@@ -15,22 +15,19 @@ export default function GlassCard({ children, hover = true, glow = false, p = 5,
       overflow="hidden"
       minW={0}
       maxW="100%"
-      whileHover={hover ? { y: -2, borderColor: "rgba(0,196,244,0.25)" } : undefined}
-      transition={{ duration: 0.15 }}
-      _before={glow ? {
-        content: '""',
-        position: "absolute",
-        top: 0, left: 0, right: 0,
-        height: "1px",
-        bgGradient: "linear(to-r, transparent, accent.cyan, transparent)",
-        opacity: 0.6,
-      } : undefined}
-      sx={{
-        backdropFilter: "blur(12px)",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)",
-      }}
+      boxShadow="card"
+      whileHover={hover ? { y: -2, boxShadow: "0 8px 32px rgba(5,17,242,0.1)", borderColor: "rgba(5,17,242,0.25)" } : undefined}
+      transition={{ duration: 0.18 }}
       {...props}
     >
+      {glow && (
+        <Box position="absolute" top={0} left={0} right={0} h="2px"
+          bgGradient="linear(to-r, transparent, brand.500, transparent)" opacity={0.5} zIndex={1} />
+      )}
+      {accent && (
+        <Box position="absolute" top={0} bottom={0} left={0} w="3px"
+          bg="accent.primary" borderRadius="16px 0 0 16px" />
+      )}
       {children}
     </MotionBox>
   );

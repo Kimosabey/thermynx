@@ -87,10 +87,10 @@ function EquipCard({ name, data, type }) {
             fontWeight={700}
             px={2} py="2px"
             borderRadius="6px"
-            bg={isOn ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)"}
-            color={isOn ? "green.400" : "text.muted"}
+            bg={isOn ? "rgba(5,150,105,0.1)" : "bg.elevated"}
+            color={isOn ? "status.good" : "text.muted"}
             border="1px solid"
-            borderColor={isOn ? "rgba(16,185,129,0.3)" : "border.subtle"}
+            borderColor={isOn ? "rgba(5,150,105,0.25)" : "border.subtle"}
           >
             {isOn ? "RUNNING" : "STANDBY"}
           </Badge>

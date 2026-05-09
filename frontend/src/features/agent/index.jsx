@@ -1,9 +1,10 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Box, Flex, Text, Grid, Textarea, Select, Button,
-  Badge, HStack, Tabs, TabList, Tab, TabPanels, TabPanel,
+  Badge, HStack,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ScanSearch, Zap, CalendarCheck, Microscope, Wrench, Bot } from "lucide-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
@@ -16,10 +17,10 @@ const MODES = [
   {
     id:       "investigator",
     label:    "Investigator",
-    icon:     "🔍",
-    color:    "#00c4f4",
-    bg:       "rgba(0,196,244,0.08)",
-    border:   "rgba(0,196,244,0.2)",
+    Icon: ScanSearch,
+    color: "#0511F2",
+    bg: "rgba(5,17,242,0.07)",
+    border: "rgba(5,17,242,0.2)",
     tagline:  "Deep-dive into any equipment issue autonomously",
     placeholder: "e.g. Something feels off with Chiller 1. Investigate recent performance.",
     presets: [
@@ -33,7 +34,7 @@ const MODES = [
   {
     id:       "optimizer",
     label:    "Optimizer",
-    icon:     "⚡",
+    Icon: Zap,
     color:    "#10b981",
     bg:       "rgba(16,185,129,0.08)",
     border:   "rgba(16,185,129,0.2)",
@@ -50,7 +51,7 @@ const MODES = [
   {
     id:       "brief",
     label:    "Daily Brief",
-    icon:     "📋",
+    Icon: CalendarCheck,
     color:    "#7c3aed",
     bg:       "rgba(124,58,237,0.08)",
     border:   "rgba(124,58,237,0.2)",
@@ -66,7 +67,7 @@ const MODES = [
   {
     id:       "root_cause",
     label:    "Root Cause",
-    icon:     "🧬",
+    Icon: Microscope,
     color:    "#f59e0b",
     bg:       "rgba(245,158,11,0.08)",
     border:   "rgba(245,158,11,0.2)",
@@ -83,7 +84,7 @@ const MODES = [
   {
     id:       "maintenance",
     label:    "Maintenance",
-    icon:     "🔧",
+    Icon: Wrench,
     color:    "#f97316",
     bg:       "rgba(249,115,22,0.08)",
     border:   "rgba(249,115,22,0.2)",
@@ -98,6 +99,12 @@ const MODES = [
     hasEquipment: true,
   },
 ];
+
+function ModeIcon({ mode, size = 18 }) {
+  const Icon = mode?.Icon;
+  if (!Icon) return null;
+  return <Icon size={size} strokeWidth={1.85} />;
+}
 
 function ModeCard({ mode, selected, onClick }) {
   return (
@@ -124,7 +131,7 @@ function ModeCard({ mode, selected, onClick }) {
           />
         )}
         <Flex align="center" gap={3} mb={2}>
-          <Text fontSize="xl">{mode.icon}</Text>
+          <Box><ModeIcon mode={mode} /></Box>
           <Text fontWeight={700} fontSize="sm" color={selected ? mode.color : "text.primary"}>
             {mode.label}
           </Text>
@@ -173,17 +180,18 @@ export default function AgentHub() {
         subtitle={
           <>
             Autonomous HVAC intelligence — 5 specialist agents powered by{" "}
-            <Text as="span" color="accent.cyan">qwen2.5:14b</Text>
+            <Text as="span" color="accent.primary" fontWeight={600}>qwen2.5:14b</Text>
           </>
         }
         icon={
           <Box
             w="40px" h="40px" borderRadius="12px" flexShrink={0}
-            bg="linear-gradient(135deg, #00c4f4, #7c3aed)"
+            bgGradient="linear(135deg, brand.500, brand.700)"
             display="flex" alignItems="center" justifyContent="center"
-            boxShadow="0 0 24px rgba(124,58,237,0.3)"
+            boxShadow="0 4px 20px rgba(5,17,242,0.3)"
+            color="white"
           >
-            <Text fontSize="xl">🤖</Text>
+            <Bot size={20} strokeWidth={1.85} />
           </Box>
         }
         mb={6}
