@@ -7,9 +7,11 @@ Flow:
   3. When model returns plain text → stream it back via /api/chat (streaming)
   4. Each step emits SSE frames: thought | tool_call | tool_result | token | done | error
 """
+import decimal
 import json
 import time
 import uuid
+from datetime import datetime, date
 from typing import AsyncIterator, Any
 
 from app.llm.ollama import chat, stream_chat_text
@@ -55,8 +57,17 @@ Structure: ## Maintenance Plan / ## Priority 1 (this week) / ## Priority 2 (this
 }
 
 
+def _json_default(obj: Any) -> Any:
+    """Handle types that standard json.dumps can't serialize."""
+    if isinstance(obj, decimal.Decimal):
+        return float(obj)
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
 def _sse(data: dict) -> str:
-    return f"data: {json.dumps(data)}\n\n"
+    return f"data: {json.dumps(data, default=_json_default)}\n\n"
 
 
 async def run_agent(

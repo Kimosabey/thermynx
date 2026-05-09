@@ -2,10 +2,26 @@
 Agent tool registry — schemas (for Ollama) + async executors.
 All executors return JSON-serializable dicts, kept small for LLM context.
 """
+import decimal
 from dataclasses import asdict
+from datetime import datetime, date
+from typing import Any
 
 from app.domain.equipment import EQUIPMENT_CATALOG, get_by_id
 from app.log import get_logger
+
+
+def _sanitize(obj: Any) -> Any:
+    """Recursively convert non-JSON-serializable types returned by MySQL/Postgres."""
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize(i) for i in obj]
+    if isinstance(obj, decimal.Decimal):
+        return float(obj)
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    return obj
 
 log = get_logger("domain.tools")
 
@@ -305,7 +321,9 @@ async def execute_tool(name: str, args: dict) -> dict:
     try:
         out = await fn(**args)
         log.debug("tool_ok name=%s", name)
-        return out
+        # Sanitize before returning — MySQL returns Decimal for AVG/MAX, which
+        # json.dumps in _sse() cannot handle.
+        return _sanitize(out)
     except Exception as e:
         log.exception("tool_failed name=%s", name)
         return {"error": str(e)}
