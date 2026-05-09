@@ -1,0 +1,41 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '15px'}}}%%
+flowchart TB
+    Browser["🌐 Browser<br/>localhost:5173"]
+
+    subgraph Laptop["💻 Developer Laptop (POC host)"]
+        direction TB
+        Vite["Vite Dev Server :5173<br/>HMR · TanStack Query · Chakra UI"]
+
+        subgraph Compose["docker compose stack"]
+            direction LR
+            API["api<br/>uvicorn :8000<br/>--reload"]
+            PG[("postgres<br/>thermynx_app<br/>:5432")]
+            Redis[("redis<br/>:6379")]
+        end
+
+        Vite -->|/api proxy| API
+        API <--> PG
+        API <--> Redis
+    end
+
+    subgraph TS["🔒 Tailscale network"]
+        direction TB
+        OllamaSrv["🖥️ Ollama Server<br/>Dell Pro Max Tower<br/>Intel Ultra 9 285K · 32 GB RAM<br/>NVIDIA RTX 4000 Ada · 20 GB VRAM<br/>Win 11 Pro<br/>Models: qwen2.5:14b (default)<br/>· phi · nemotron · gpt-oss<br/>:11434"]
+            MySQL[("🗄️ MySQL unicharm:3307<br/>READ-ONLY user<br/>HVAC telemetry source")]
+    end
+
+    Browser --> Vite
+    API -->|aiomysql, RO| MySQL
+    API <-->|httpx · stream + tools| OllamaSrv
+
+    classDef laptop fill:#1e3a5f,stroke:#3b82f6,color:#fff
+    classDef ts fill:#1f2937,stroke:#6b7280,color:#fff
+    classDef compose fill:#0f1f3a,stroke:#60a5fa,color:#fff
+    classDef llm fill:#3730a3,stroke:#818cf8,color:#fff
+    classDef mysql fill:#3b1e1e,stroke:#ef4444,color:#fff
+
+    class Laptop laptop
+    class TS ts
+    class Compose compose
+    class OllamaSrv llm
+    class MySQL mysql

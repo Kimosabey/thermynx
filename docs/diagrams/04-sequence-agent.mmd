@@ -1,0 +1,50 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '14px'}}}%%
+sequenceDiagram
+    autonumber
+    actor User
+    participant SPA as React SPA<br/>(AI Agent page)
+    participant API as FastAPI<br/>AgentService
+    participant Tools as Tool Registry<br/>(get_timeseries,<br/>compute_efficiency,<br/>detect_anomalies, ...)
+    participant Ollama as Ollama<br/>qwen2.5:14b<br/>(tool-calling)
+    participant PG as Postgres<br/>agent_runs
+
+    User->>SPA: "investigate chiller_1's<br/>recent performance"
+    SPA->>API: POST /api/v1/agent/investigate<br/>{goal, max_steps:8}
+    API->>PG: INSERT agent_runs<br/>(status=running, goal)
+
+    rect rgb(55, 48, 163)
+        Note over API,Ollama: ReAct loop — step 1
+        API->>Ollama: chat(messages, tools=[schemas])
+        Ollama-->>API: {tool_call: compute_efficiency,<br/>args:{eq:chiller_1, range:24h}}
+        API-->>SPA: SSE thought + tool_call
+        API->>Tools: execute(compute_efficiency, args)
+        Tools-->>API: {band:poor, kW/TR:0.82, drivers:[...]}
+        API-->>SPA: SSE tool_result
+        API->>API: append result to messages
+    end
+
+    rect rgb(13, 79, 60)
+        Note over API,Ollama: ReAct loop — step 2
+        API->>Ollama: chat(messages, tools)
+        Ollama-->>API: {tool_call: detect_anomalies, args}
+        API-->>SPA: SSE tool_call
+        API->>Tools: execute(detect_anomalies, args)
+        Tools-->>API: [anomaly: ΔT collapsed at 14:32]
+        API-->>SPA: SSE tool_result
+    end
+
+    rect rgb(124, 45, 18)
+        Note over API,Ollama: ReAct loop — step 3
+        API->>Ollama: chat(messages, tools)
+        Ollama-->>API: {tool_call: compare_equipment,<br/>args:{a:chiller_1, b:chiller_2}}
+        API->>Tools: execute(compare_equipment)
+        Tools-->>API: {chiller_2 is 0.18 kW/TR better}
+        API-->>SPA: SSE tool_result
+    end
+
+    Note over API,Ollama: LLM decides it has enough info
+
+    Ollama-->>API: {final: "# Investigation: chiller_1<br/>**Findings:** poor efficiency band,<br/>ΔT collapse at 14:32, ..."}
+    API->>PG: UPDATE agent_runs<br/>(status=ok, steps:3, final_output)
+    API-->>SPA: SSE final
+    SPA-->>User: rendered investigation report<br/>+ tool-call trace timeline

@@ -1,0 +1,32 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '14px'}}}%%
+sequenceDiagram
+    autonumber
+    participant Sched as APScheduler<br/>(every 5 min)
+    participant Worker as anomaly_scan job
+    participant MySQL as MySQL<br/>unicharm
+    participant PG as Postgres<br/>thermynx_app
+    participant Ollama as Ollama<br/>phi:latest
+    participant Redis
+
+    Sched->>Worker: fire job @ T+0
+    Worker->>PG: SELECT equipment_id<br/>FROM equipment_catalog
+    PG-->>Worker: [chiller_1, chiller_2, ...]
+
+    loop for each equipment_id
+        Worker->>MySQL: SELECT last 60 min<br/>FROM {eq}_normalized
+        MySQL-->>Worker: points
+        Worker->>PG: SELECT mean, stddev<br/>FROM baselines<br/>WHERE eq=? AND hour_of_day=?
+        PG-->>Worker: baseline
+        Worker->>Worker: AnomalyDomain.detect<br/>(points, baseline)
+
+        alt z_score > 3
+            Worker->>PG: INSERT anomalies<br/>(eq, metric, started_at, z, severity)
+            Worker->>Ollama: phi: narrate(anomaly)
+            Note over Ollama: small, fast — sub-second
+            Ollama-->>Worker: short summary
+            Worker->>PG: UPDATE anomalies<br/>SET narrative
+            Worker->>Redis: PUBLISH "anomalies.new"<br/>(SPA ws subscribes — post-POC)
+        end
+    end
+
+    Note over Sched,Redis: hourly: baseline_refresh job<br/>recomputes hour-of-day means per equipment<br/>UPSERTs into baselines table

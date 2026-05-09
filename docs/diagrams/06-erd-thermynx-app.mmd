@@ -1,0 +1,131 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '13px'}}}%%
+erDiagram
+    USERS ||--o{ REFRESH_TOKENS : "has"
+    USERS ||--o{ THREADS : "owns"
+    USERS ||--o{ ANALYSIS_AUDIT : "performs"
+    USERS ||--o{ FEEDBACK : "gives"
+    USERS ||--o{ AGENT_RUNS : "runs"
+    THREADS ||--o{ MESSAGES : "contains"
+    THREADS ||--o{ ANALYSIS_AUDIT : "groups"
+    PROMPT_VERSIONS ||--o{ ANALYSIS_AUDIT : "used_by"
+    ANALYSIS_AUDIT ||--o{ FEEDBACK : "rated_by"
+
+    USERS {
+        ulid id PK
+        string username UK
+        string email UK
+        string password_hash
+        string role
+        timestamp created_at
+    }
+
+    REFRESH_TOKENS {
+        ulid id PK
+        ulid user_id FK
+        string token_hash UK
+        timestamp expires_at
+        timestamp revoked_at
+    }
+
+    THREADS {
+        ulid id PK
+        ulid user_id FK
+        string title
+        timestamp created_at
+        timestamp archived_at
+    }
+
+    MESSAGES {
+        ulid id PK
+        ulid thread_id FK
+        string role
+        text content
+        int tokens_in
+        int tokens_out
+        timestamp created_at
+    }
+
+    ANALYSIS_AUDIT {
+        ulid id PK
+        ulid user_id FK
+        ulid thread_id FK
+        ulid prompt_version_id FK
+        string equipment_id
+        string prompt_hash
+        string response_hash
+        string model
+        int total_ms
+        string status
+        string request_id
+        timestamp created_at
+    }
+
+    PROMPT_VERSIONS {
+        int id PK
+        string name
+        int version
+        text template
+        boolean active
+    }
+
+    FEEDBACK {
+        ulid id PK
+        ulid audit_id FK
+        ulid user_id FK
+        int rating
+        boolean actioned
+        timestamp created_at
+    }
+
+    HOURLY_KPI {
+        string equipment_id PK
+        timestamp hour_bucket PK
+        float kw_avg
+        float kw_per_tr_avg
+        int run_minutes
+    }
+
+    DAILY_KPI {
+        string equipment_id PK
+        date day_bucket PK
+        float kw_avg
+        float kw_per_tr_avg
+        float run_hours
+    }
+
+    ANOMALIES {
+        ulid id PK
+        string equipment_id
+        string metric
+        timestamp started_at
+        float z_score
+        string severity
+        text narrative
+    }
+
+    BASELINES {
+        string equipment_id PK
+        string metric PK
+        int hour_of_day PK
+        float mean
+        float stddev
+    }
+
+    AGENT_RUNS {
+        ulid id PK
+        ulid user_id FK
+        string goal
+        int steps_taken
+        string status
+        text final_output
+        timestamp created_at
+    }
+
+    EMBEDDINGS {
+        ulid id PK
+        string source_type
+        string source_id
+        int chunk_idx
+        text content
+        vector embedding
+    }

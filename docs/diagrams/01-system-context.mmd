@@ -1,0 +1,43 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '16px'}}}%%
+flowchart TB
+    subgraph Users["👤 Users"]
+        Op["Plant Operator"]
+        Eng["Energy Engineer"]
+        Mgr["Facility Manager"]
+        Maint["Maintenance Lead"]
+    end
+
+    subgraph Thermynx["🟦 THERMYNX Platform"]
+        SPA["React + TypeScript SPA<br/>Vite · Chakra UI · TanStack Query"]
+        API["FastAPI Backend<br/>asyncio · /api/v1/*<br/>SSE streaming · Agentic loop"]
+        PG[("PostgreSQL<br/>thermynx_app<br/>users · threads · audit<br/>rollups · pgvector · agent_runs")]
+        Redis[("Redis<br/>cache · prompt cache<br/>arq queue (post-POC)")]
+    end
+
+    subgraph External["🔒 External (Tailscale)"]
+        MySQL[("MySQL unicharm:3307<br/>READ-ONLY<br/>HVAC telemetry source")]
+        Ollama["🧠 Ollama Server<br/>RTX 4000 Ada · 20 GB VRAM<br/>qwen2.5:14b · phi · nemotron"]
+    end
+
+    Op & Eng & Mgr & Maint -->|HTTPS| SPA
+    SPA <-->|fetch / SSE| API
+    API <--> PG
+    API <--> Redis
+    API -->|read-only SQL| MySQL
+    API <-->|stream + tool-calling| Ollama
+
+    classDef platform fill:#1e3a5f,stroke:#3b82f6,color:#fff
+    classDef external fill:#1f2937,stroke:#6b7280,color:#fff
+    classDef users fill:#374151,stroke:#9ca3af,color:#fff
+    classDef pg fill:#0d4f3c,stroke:#22c55e,color:#fff
+    classDef cache fill:#7c2d12,stroke:#f97316,color:#fff
+    classDef mysql fill:#3b1e1e,stroke:#ef4444,color:#fff
+    classDef llm fill:#3730a3,stroke:#818cf8,color:#fff
+
+    class Thermynx platform
+    class External external
+    class Users users
+    class PG pg
+    class Redis cache
+    class MySQL mysql
+    class Ollama llm

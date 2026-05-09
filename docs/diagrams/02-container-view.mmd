@@ -1,0 +1,39 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '15px'}}}%%
+flowchart TB
+    Client["React + TypeScript SPA<br/>Chakra UI · TanStack Query · Zustand"]
+
+    subgraph Backend["🟦 FastAPI Backend (single process, asyncio)"]
+        direction TB
+        Transport["📡 Transport Layer<br/>/api/v1/* routers · Pydantic v2 models<br/>OpenAPI auto-spec · SSE for /analyze and /agent/investigate"]
+
+        Middleware["🛡️ Middleware Chain<br/>request_id → CORS → security headers<br/>→ auth (post-POC) → rate-limit (post-POC)<br/>→ structlog binder → OTel span (post-POC)"]
+
+        Services["⚙️ Service Layer<br/>EquipmentSvc · TimeseriesSvc · AnalysisSvc<br/>EfficiencySvc · AnomalySvc · ForecastSvc<br/>AgentSvc · MaintenanceSvc · CostSvc · ReportSvc · AuditSvc"]
+
+        Domain["💎 Domain Layer (pure, no I/O)<br/>kW/TR calc · efficiency bands · z-score detector<br/>PromptBuilder · ReAct tool-loop · TimeRange invariants"]
+
+        Infra["🔌 Infrastructure / Repos<br/>TelemetryRepo (aiomysql) · AppRepo (asyncpg)<br/>LLMClient (httpx → Ollama) · CacheClient (redis-py)<br/>EmbeddingClient (Phase 4) · JobScheduler (APScheduler)"]
+
+        Transport --> Middleware --> Services
+        Services --> Domain
+        Services --> Infra
+    end
+
+    Client <-->|HTTPS · SSE| Transport
+
+    Infra -->|read-only| MySQL[("MySQL unicharm")]
+    Infra <-->|read/write| Postgres[("Postgres thermynx_app<br/>+ pgvector (Phase 4)")]
+    Infra <--> Redis[("Redis<br/>cache + prompt cache")]
+    Infra <-->|stream + tools| Ollama["Ollama LLM"]
+
+    classDef domain fill:#0d4f3c,stroke:#22c55e,color:#fff,font-weight:bold
+    classDef service fill:#1e3a5f,stroke:#3b82f6,color:#fff
+    classDef transport fill:#3730a3,stroke:#818cf8,color:#fff
+    classDef middleware fill:#7c2d12,stroke:#f97316,color:#fff
+    classDef infra fill:#374151,stroke:#9ca3af,color:#fff
+
+    class Domain domain
+    class Services service
+    class Transport transport
+    class Middleware middleware
+    class Infra infra

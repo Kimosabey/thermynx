@@ -1,0 +1,43 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '14px'}}}%%
+flowchart LR
+    BMS["🏭 Unicharm BMS / PLCs<br/>(upstream — not ours)"]
+    Raw["MySQL raw tables<br/>*_metric · *_om_p"]
+    Norm["MySQL normalized<br/>*_normalized<br/>slot_time bucketed"]
+
+    BMS -->|"telemetry ingest"| Raw
+    Raw -->|"normalization<br/>Graylinx ingestion"| Norm
+
+    Norm -->|"GET /timeseries<br/>direct read · cached 60s"| API
+    Norm -->|"hourly arq job"| Rollup["Postgres<br/>hourly_kpi · daily_kpi"]
+    Norm -->|"every 5 min APScheduler"| AnomDet["Anomaly Detector<br/>z-score vs baselines"]
+    AnomDet --> Anom["Postgres<br/>anomalies"]
+
+    API["FastAPI<br/>Service Layer"] -->|stats + context| PromptBuild["Prompt Builder<br/>(domain, pure)"]
+    PromptBuild -->|chat / tool-calling| Ollama["Ollama<br/>qwen2.5:14b"]
+    Ollama -->|SSE chunks| API
+    API -->|audit + cache| PG[("Postgres<br/>analysis_audit<br/>prompt_cache · agent_runs")]
+    API -->|streamed markdown| SPA["React SPA"]
+
+    Rollup -.->|"snappy dashboards"| API
+    Anom -.->|"alerts feed"| API
+
+    Manuals["📄 Equipment manuals<br/>ASHRAE guides<br/>(Phase 4)"] -->|"ingest · chunk · embed<br/>nomic-embed-text"| Embed[("Postgres<br/>embeddings (pgvector)")]
+    Embed -.->|"retrieve top-k chunks"| PromptBuild
+
+    classDef bms fill:#3b1e1e,stroke:#ef4444,color:#fff
+    classDef raw fill:#3b1e1e,stroke:#ef4444,color:#fff
+    classDef norm fill:#0d4f3c,stroke:#22c55e,color:#fff
+    classDef rollup fill:#0d4f3c,stroke:#22c55e,color:#fff
+    classDef anom fill:#7c2d12,stroke:#f97316,color:#fff
+    classDef ollama fill:#3730a3,stroke:#818cf8,color:#fff
+    classDef pg fill:#1e3a5f,stroke:#3b82f6,color:#fff
+
+    class BMS bms
+    class Raw raw
+    class Norm norm
+    class Rollup rollup
+    class Anom anom
+    class AnomDet anom
+    class Ollama ollama
+    class PG pg
+    class Embed pg

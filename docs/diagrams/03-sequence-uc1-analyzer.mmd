@@ -1,0 +1,57 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '14px'}}}%%
+sequenceDiagram
+    autonumber
+    actor User
+    participant SPA as React SPA
+    participant API as FastAPI
+    participant Cache as Redis
+    participant MySQL as MySQL<br/>unicharm
+    participant PG as Postgres<br/>thermynx_app
+    participant Ollama as Ollama<br/>qwen2.5:14b
+
+    User->>SPA: pick chiller_1, range=24h<br/>ask "explain efficiency"
+
+    rect rgb(30, 58, 95)
+        Note over SPA,API: Equipment catalog
+        SPA->>API: GET /api/v1/equipment
+        API->>Cache: L2 lookup
+        Cache-->>API: MISS
+        API->>MySQL: SELECT FROM information_schema
+        MySQL-->>API: equipment list
+        API->>Cache: SET (5m TTL)
+        API-->>SPA: 200 [equipment]
+    end
+
+    rect rgb(13, 79, 60)
+        Note over SPA,MySQL: Timeseries fetch
+        SPA->>API: GET /timeseries?range=24h&res=5m
+        API->>Cache: L3 Redis lookup
+        Cache-->>API: MISS
+        API->>MySQL: SELECT * FROM chiller_1_normalized<br/>WHERE slot_time BETWEEN ...
+        MySQL-->>API: ~288 points
+        API->>Cache: SET (60s TTL)
+        API-->>SPA: 200 [points]
+        SPA->>SPA: render Recharts
+    end
+
+    rect rgb(55, 48, 163)
+        Note over SPA,Ollama: AI Analysis (streaming)
+        SPA->>API: POST /api/v1/analyze {eq, range, q}
+        API->>PG: INSERT analysis_audit<br/>(status=streaming)
+        API->>API: PromptBuilder.build(eq, stats, q)
+        API->>Cache: L4 prompt cache check
+        Cache-->>API: MISS
+        API->>Ollama: POST /api/generate (stream=true)
+
+        loop for each token chunk
+            Ollama-->>API: chunk (line-delimited JSON)
+            API-->>SPA: SSE data: {type:token, content}
+            SPA->>SPA: append + re-render markdown
+        end
+
+        Ollama-->>API: done=true
+        API->>Cache: SET prompt cache (1h)
+        API->>PG: UPDATE audit (status=ok,<br/>response_hash, tokens, total_ms)
+        API-->>SPA: SSE data: {type:done}
+        SPA-->>User: rendered investigation
+    end
