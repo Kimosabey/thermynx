@@ -52,7 +52,7 @@ const fonts = {
 
 const styles = {
   global: (props) => ({
-    "@import": `url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap')`,
+    /* Inter loads via index.html <link>; do not use @import here — injection order violates CSS rules. */
     "html, body": {
       bg: props.colorMode === "dark" ? "#060d1f" : "#f8fafc",
       color: props.colorMode === "dark" ? "#e2e8f0" : "#0f172a",
@@ -106,6 +106,21 @@ const components = {
           bg: props.colorMode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.07)",
           transform: "translateY(-1px)",
           borderColor: props.colorMode === "dark" ? "rgba(0,196,244,0.3)" : "rgba(2,132,199,0.3)",
+        },
+      }),
+      outline: (props) => ({
+        border: "1px solid",
+        borderColor: props.colorMode === "dark" ? "whiteAlpha.400" : "gray.300",
+        color: "text.primary",
+        bg: "transparent",
+        fontWeight: 600,
+        _hover: {
+          bg: props.colorMode === "dark" ? "whiteAlpha.100" : "blackAlpha.50",
+          borderColor: "brand.500",
+          color: "text.primary",
+        },
+        _active: {
+          bg: props.colorMode === "dark" ? "whiteAlpha.150" : "blackAlpha.100",
         },
       }),
     },

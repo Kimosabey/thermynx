@@ -2,7 +2,7 @@ from dataclasses import asdict
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
-from app.db.telemetry import fetch_chiller_data, fetch_all_hvac_context
+from app.db.telemetry import fetch_chiller_data
 from app.domain.equipment import get_by_id, EQUIPMENT_CATALOG
 from app.analytics.efficiency import analyze_chiller_efficiency
 
@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/efficiency/{equipment_id}")
 async def get_efficiency(
     equipment_id: str,
-    hours: int = Query(default=24, ge=1, le=168),
+    hours: int = Query(default=24, ge=1, le=8760),
     db: AsyncSession = Depends(get_db),
 ):
     eq = get_by_id(equipment_id)
@@ -28,7 +28,7 @@ async def get_efficiency(
 
 @router.get("/efficiency")
 async def get_all_efficiency(
-    hours: int = Query(default=24, ge=1, le=168),
+    hours: int = Query(default=24, ge=1, le=8760),
     db: AsyncSession = Depends(get_db),
 ):
     """Efficiency summary for all chillers — used by the Efficiency page."""

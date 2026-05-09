@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Box, Text, Flex } from "@chakra-ui/react";
-import { motion, useSpring, useMotionValue, animate } from "framer-motion";
+import { motion, animate } from "framer-motion";
 import GlassCard from "./GlassCard";
-
-const MotionText = motion(Text);
 
 function AnimatedNumber({ value, decimals = 0 }) {
   const [display, setDisplay] = useState("—");
@@ -40,15 +38,18 @@ export default function KpiCard({
   const trendIcon  = trend === "up" ? "↑" : trend === "down" ? "↓" : "";
 
   return (
-    <GlassCard glow>
+    <GlassCard glow minW={0}>
       <Flex justify="space-between" align="flex-start">
         <Text
           fontSize="10px"
           fontWeight={700}
           color="text.muted"
           textTransform="uppercase"
-          letterSpacing="0.1em"
+          letterSpacing="0.08em"
           mb={3}
+          lineHeight="1.25"
+          wordBreak="break-word"
+          noOfLines={3}
         >
           {label}
         </Text>
@@ -56,17 +57,21 @@ export default function KpiCard({
       </Flex>
 
       <Flex align="baseline" gap={1}>
-        <MotionText
-          fontSize="2xl"
-          fontWeight={700}
-          color={accent}
-          fontVariantNumeric="tabular-nums"
+        <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
+          style={{ display: "inline-block" }}
         >
-          <AnimatedNumber value={value} decimals={decimals} />
-        </MotionText>
+          <Text
+            fontSize={{ base: "xl", sm: "2xl" }}
+            fontWeight={700}
+            color={accent}
+            sx={{ fontVariantNumeric: "tabular-nums" }}
+          >
+            <AnimatedNumber value={value} decimals={decimals} />
+          </Text>
+        </motion.div>
         {unit && (
           <Text fontSize="sm" fontWeight={400} color="text.muted">{unit}</Text>
         )}

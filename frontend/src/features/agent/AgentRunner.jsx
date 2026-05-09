@@ -244,7 +244,7 @@ export default function AgentRunner({ trace, output, running, done, meta, error,
       transition={{ duration: 0.25 }}
       mt={5}
     >
-      <Grid templateColumns={{ base: "1fr", lg: "300px 1fr" }} gap={4} alignItems="flex-start">
+      <Grid templateColumns={{ base: "minmax(0, 1fr)", lg: "minmax(0, 280px) minmax(0, 1fr)" }} gap={4} alignItems="flex-start" w="100%" minW={0}>
 
         {/* Left: trace */}
         <Box>

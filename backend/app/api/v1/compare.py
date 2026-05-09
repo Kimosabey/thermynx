@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
-from app.db.telemetry import fetch_chiller_data, fetch_equipment_data, COOLING_TOWER_COLS, PUMP_COLS, compute_summary
+from app.db.telemetry import (
+    fetch_chiller_data,
+    fetch_equipment_data,
+    COOLING_TOWER_COLS,
+    PUMP_COLS,
+    compute_summary,
+)
 from app.domain.equipment import get_by_id
 from app.analytics.efficiency import analyze_chiller_efficiency
 
@@ -12,7 +18,7 @@ router = APIRouter()
 async def compare_equipment(
     a: str = Query(..., description="First equipment ID"),
     b: str = Query(..., description="Second equipment ID"),
-    hours: int = Query(default=24, ge=1, le=168),
+    hours: int = Query(default=24, ge=1, le=8760),
     db: AsyncSession = Depends(get_db),
 ):
     eq_a = get_by_id(a)

@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
-import { Box, Flex, Heading, Text, Grid, Select, Badge } from "@chakra-ui/react";
+import { Box, Flex, Text, Grid, Badge } from "@chakra-ui/react";
 import { motion } from "framer-motion";
+import PageShell from "../../shared/ui/PageShell";
+import PageHeader from "../../shared/ui/PageHeader";
+import PeriodSelect from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import StatusPulse from "../../shared/ui/StatusPulse";
 import { SkeletonKpiCard } from "../../shared/ui/SkeletonCard";
 
 const MotionBox  = motion(Box);
+const MotionGrid = motion(Grid);
 const stagger    = { animate: { transition: { staggerChildren: 0.08 } } };
 const fadeUp     = {
   initial: { opacity: 0, y: 16 },
@@ -117,7 +121,7 @@ function EfficiencyCard({ result }) {
         </Box>
 
         {/* Stats row */}
-        <Grid templateColumns="repeat(3, 1fr)" gap={3} mb={4}>
+        <Grid templateColumns={{ base: "repeat(2, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))" }} gap={3} mb={4}>
           {[
             { label: "Best",    value: result.kw_per_tr_best?.toFixed(3),  unit: "kW/TR" },
             { label: "Worst",   value: result.kw_per_tr_worst?.toFixed(3), unit: "kW/TR" },
@@ -185,30 +189,12 @@ export default function EfficiencyPage() {
   }, [hours]);
 
   return (
-    <Box p={{ base: 4, md: 8 }} maxW="1200px">
-      <Flex justify="space-between" align="flex-start" mb={8} flexWrap="wrap" gap={4}>
-        <Box>
-          <Heading size="md" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
-            Efficiency Benchmarker
-          </Heading>
-          <Text color="text.muted" mt={1} fontSize="xs">
-            kW/TR analysis vs design + industry benchmarks · loss driver attribution
-          </Text>
-        </Box>
-        <Select
-          size="sm" value={hours}
-          onChange={(e) => setHours(Number(e.target.value))}
-          w="150px" bg="bg.surface" border="1px solid" borderColor="border.subtle"
-          borderRadius="10px" color="text.primary"
-          _hover={{ borderColor: "accent.cyan" }}
-        >
-          <option value={6}>Last 6 hours</option>
-          <option value={12}>Last 12 hours</option>
-          <option value={24}>Last 24 hours</option>
-          <option value={48}>Last 48 hours</option>
-          <option value={168}>Last 7 days</option>
-        </Select>
-      </Flex>
+    <PageShell>
+      <PageHeader
+        title="Efficiency Benchmarker"
+        subtitle="kW/TR analysis vs design + industry benchmarks · loss driver attribution"
+        actions={<PeriodSelect value={hours} onChange={setHours} />}
+      />
 
       {/* Benchmark legend */}
       <GlassCard mb={6} p={4}>
@@ -226,7 +212,7 @@ export default function EfficiencyPage() {
             <Flex key={b.label} align="center" gap={2}>
               <Box w={3} h={3} borderRadius="3px" bg={b.color} />
               <Text fontSize="xs" color="text.muted">
-                <Text as="span" color="white" fontWeight={600}>{b.label}</Text>
+                <Text as="span" color="text.primary" fontWeight={600}>{b.label}</Text>
                 {" "}{b.range}
               </Text>
             </Flex>
@@ -234,16 +220,14 @@ export default function EfficiencyPage() {
         </Flex>
       </GlassCard>
 
-      <motion.div variants={stagger} initial="initial" animate="animate">
-        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={5}>
-          {loading
-            ? Array.from({ length: 2 }).map((_, i) => (
-                <MotionBox key={i} variants={fadeUp}><SkeletonKpiCard /></MotionBox>
-              ))
-            : results.map((r) => <EfficiencyCard key={r.equipment_id} result={r} />)
-          }
-        </Grid>
-      </motion.div>
-    </Box>
+      <MotionGrid variants={stagger} initial="initial" animate="animate" templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={5}>
+        {loading
+          ? Array.from({ length: 2 }).map((_, i) => (
+              <MotionBox key={i} variants={fadeUp}><SkeletonKpiCard /></MotionBox>
+            ))
+          : results.map((r) => <EfficiencyCard key={r.equipment_id} result={r} />)
+        }
+      </MotionGrid>
+    </PageShell>
   );
 }

@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Box, Flex, Heading, Text, Textarea, Button,
+  Box, Flex, Text, Textarea, Button,
   HStack, Badge, Spinner, Select, Grid, useToast,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import PageShell from "../../shared/ui/PageShell";
+import PageHeader from "../../shared/ui/PageHeader";
+import PeriodSelect, { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import TimeseriesChart from "./TimeseriesChart";
 
@@ -30,7 +33,7 @@ function MarkdownRenderer({ content }) {
         p:         { mb: 3, lineHeight: 1.8, color: "text.primary", fontSize: "sm" },
         "ul,ol":   { pl: 5, mb: 3 },
         li:        { mb: 1, color: "text.primary", fontSize: "sm" },
-        strong:    { color: "white", fontWeight: 600 },
+        strong:    { color: "text.primary", fontWeight: 600 },
         code:      { bg: "rgba(0,196,244,0.08)", px: "5px", py: "2px", borderRadius: "5px", fontSize: "0.82em", color: "brand.300", fontFamily: "mono" },
         pre:       { bg: "rgba(0,0,0,0.4)", border: "1px solid", borderColor: "border.subtle", p: 4, borderRadius: "10px", overflowX: "auto", mb: 3, fontSize: "xs" },
         table:     { width: "100%", borderCollapse: "collapse", mb: 3, fontSize: "sm" },
@@ -75,9 +78,54 @@ export default function AIAnalyzer() {
   const [streamMeta,   setStreamMeta]   = useState(null);
   const [error,        setError]        = useState(null);
 
+  const [threads, setThreads] = useState([]);
+  const [activeThreadId, setActiveThreadId] = useState("");
+  const [threadMessages, setThreadMessages] = useState([]);
+
   const abortRef   = useRef(null);
   const bottomRef  = useRef(null);
+  const threadRef  = useRef("");
   const toast      = useToast();
+
+  useEffect(() => { threadRef.current = activeThreadId; }, [activeThreadId]);
+
+  async function refreshThreads() {
+    try {
+      const r = await fetch("/api/v1/threads");
+      const j = await r.json();
+      setThreads(j.threads || []);
+    } catch { /* ignore */ }
+  }
+
+  async function handleNewThread() {
+    try {
+      const r = await fetch("/api/v1/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const j = await r.json();
+      await refreshThreads();
+      setActiveThreadId(j.id);
+      setThreadMessages([]);
+      toast({ title: "New conversation started", status: "success", duration: 2000 });
+    } catch {
+      toast({ title: "Could not create thread", status: "error", duration: 3000 });
+    }
+  }
+
+  useEffect(() => { refreshThreads(); }, []);
+
+  useEffect(() => {
+    if (!activeThreadId) {
+      setThreadMessages([]);
+      return;
+    }
+    fetch(`/api/v1/threads/${activeThreadId}/messages`)
+      .then((r) => r.json())
+      .then((d) => setThreadMessages(d.messages || []))
+      .catch(() => setThreadMessages([]));
+  }, [activeThreadId]);
 
   useEffect(() => {
     fetch("/api/v1/equipment")
@@ -117,7 +165,12 @@ export default function AIAnalyzer() {
       const res = await fetch("/api/v1/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: question.trim(), equipment_id: selectedEq || null, hours }),
+        body: JSON.stringify({
+          question: question.trim(),
+          equipment_id: selectedEq || null,
+          hours,
+          thread_id: activeThreadId || null,
+        }),
         signal: ctrl.signal,
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
@@ -134,12 +187,26 @@ export default function AIAnalyzer() {
         buf = lines.pop();
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
+          let evt;
           try {
-            const evt = JSON.parse(line.slice(6));
-            if (evt.type === "token")  setStreamContent((p) => p + evt.content);
-            if (evt.type === "done")  { setStreamMeta(evt); setStreamDone(true); }
-            if (evt.type === "error") throw new Error(evt.detail);
-          } catch { /* skip malformed */ }
+            evt = JSON.parse(line.slice(6));
+          } catch {
+            continue;
+          }
+          if (evt.type === "token") setStreamContent((p) => p + evt.content);
+          if (evt.type === "done") {
+            setStreamMeta(evt);
+            setStreamDone(true);
+            const tid = threadRef.current;
+            if (tid) {
+              fetch(`/api/v1/threads/${tid}/messages`)
+                .then((r) => r.json())
+                .then((d) => setThreadMessages(d.messages || []))
+                .catch(() => {});
+              refreshThreads();
+            }
+          }
+          if (evt.type === "error") throw new Error(evt.detail || "Stream error");
         }
       }
     } catch (e) {
@@ -152,46 +219,37 @@ export default function AIAnalyzer() {
   const selectedEqObj = equipment.find((e) => e.id === selectedEq);
 
   return (
-    <Box p={{ base: 4, md: 8 }} maxW="1100px">
+    <PageShell maxW="1100px">
+      <PageHeader
+        title="AI Analyzer"
+        subtitle="Ask anything about your HVAC plant — powered by local AI"
+        mb={6}
+        icon={
+          <Box
+            w="38px" h="38px" borderRadius="10px" flexShrink={0}
+            bg="linear-gradient(135deg, #00c4f4, #7c3aed)"
+            display="flex" alignItems="center" justifyContent="center"
+            boxShadow="0 0 20px rgba(0,196,244,0.25)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </Box>
+        }
+      />
 
-      {/* Header */}
-      <Flex align="center" gap={3} mb={6}>
-        <Box
-          w="38px" h="38px" borderRadius="10px" flexShrink={0}
-          bg="linear-gradient(135deg, #00c4f4, #7c3aed)"
-          display="flex" alignItems="center" justifyContent="center"
-          boxShadow="0 0 20px rgba(0,196,244,0.25)"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-        </Box>
-        <Box>
-          <Heading size="md" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
-            AI Analyzer
-          </Heading>
-          <Text color="text.muted" fontSize="xs">Ask anything about your HVAC plant — powered by local AI</Text>
-        </Box>
-      </Flex>
-
-      {/* Equipment + Time selectors */}
+      {/* Equipment + Time + Thread */}
       <Flex gap={3} mb={5} flexWrap="wrap">
         <Box flex="1" minW="180px">
-          <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.12em" mb={2}>
+          <Text fontSize="10px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
             Equipment
           </Text>
           <Select
             placeholder="All equipment"
             value={selectedEq}
             onChange={(e) => setSelectedEq(e.target.value)}
-            size="sm"
-            bg="bg.surface"
-            border="1px solid"
-            borderColor="border.subtle"
-            borderRadius="10px"
-            color="text.primary"
+            {...surfaceSelectProps}
             _hover={{ borderColor: "accent.cyan" }}
-            _focus={{ borderColor: "accent.cyan", boxShadow: "0 0 0 1px var(--chakra-colors-brand-500)" }}
           >
             {["chiller", "cooling_tower", "pump"].map((type) => {
               const group = equipment.filter((e) => e.type === type);
@@ -206,24 +264,50 @@ export default function AIAnalyzer() {
         </Box>
 
         <Box>
-          <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.12em" mb={2}>
+          <Text fontSize="10px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
             Time window
           </Text>
-          <Select
-            size="sm" value={hours}
-            onChange={(e) => setHours(Number(e.target.value))}
-            bg="bg.surface" border="1px solid" borderColor="border.subtle"
-            borderRadius="10px" color="text.primary" w="140px"
-            _hover={{ borderColor: "accent.cyan" }}
-          >
-            <option value={6}>Last 6 hours</option>
-            <option value={12}>Last 12 hours</option>
-            <option value={24}>Last 24 hours</option>
-            <option value={48}>Last 48 hours</option>
-            <option value={168}>Last 7 days</option>
-          </Select>
+          <PeriodSelect value={hours} onChange={setHours} width="140px" />
+        </Box>
+
+        <Box flex="1" minW="220px">
+          <Text fontSize="10px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
+            Conversation thread
+          </Text>
+          <Flex gap={2} flexWrap="wrap">
+            <Select
+              placeholder="Memory off"
+              value={activeThreadId}
+              onChange={(e) => setActiveThreadId(e.target.value)}
+              flex={1}
+              minW="160px"
+              {...surfaceSelectProps}
+            >
+              <option value="">Memory off</option>
+              {threads.map((t) => (
+                <option key={t.id} value={t.id}>{t.title || t.id.slice(0, 8)}</option>
+              ))}
+            </Select>
+            <Button size="sm" variant="outline" borderRadius="10px" fontSize="xs" onClick={handleNewThread}>
+              New thread
+            </Button>
+          </Flex>
         </Box>
       </Flex>
+
+      {threadMessages.length > 0 && (
+        <GlassCard mb={5} p={4} maxH="220px" overflowY="auto">
+          <Text fontSize="9px" fontWeight={700} color="text.muted" mb={3}>Thread history</Text>
+          {threadMessages.map((m) => (
+            <Box key={m.id} mb={3} pb={3} borderBottom="1px solid" borderColor="border.subtle">
+              <Text fontSize="9px" color="accent.cyan" fontWeight={700} mb={1}>{m.role}</Text>
+              <Text fontSize="xs" color="text.primary" whiteSpace="pre-wrap">
+                {m.content.slice(0, 4000)}{m.content.length > 4000 ? "…" : ""}
+              </Text>
+            </Box>
+          ))}
+        </GlassCard>
+      )}
 
       {/* Chart */}
       <Box mb={5}>
@@ -326,8 +410,8 @@ export default function AIAnalyzer() {
                 </Flex>
                 {streamMeta && (
                   <HStack spacing={2}>
-                    <Badge fontSize="9px" bg="rgba(0,196,244,0.1)" color="brand.400" border="1px solid rgba(0,196,244,0.2)" borderRadius="6px" px={2}>
-                      {streamMeta.model}
+                    <Badge fontSize="9px" bg="rgba(0,196,244,0.1)" color="brand.400" border="1px solid rgba(0,196,244,0.2)" borderRadius="6px" px={2} maxW={{ base: "140px", md: "240px" }} title={streamMeta.model}>
+                      <Text as="span" fontSize="inherit" noOfLines={1}>{streamMeta.model}</Text>
                     </Badge>
                     <Badge fontSize="9px" bg="bg.surface" color="text.muted" border="1px solid" borderColor="border.subtle" borderRadius="6px" px={2}>
                       {(streamMeta.total_ms / 1000).toFixed(1)}s
@@ -343,14 +427,25 @@ export default function AIAnalyzer() {
                 const load = tsData.points.filter((p) => p.chiller_load != null);
                 const avgL = load.length ? load.reduce((s, p) => s + p.chiller_load, 0) / load.length : null;
                 return (
-                  <Grid templateColumns="repeat(4, 1fr)" borderBottom="1px solid" borderColor="border.subtle">
+                  <Grid
+                    templateColumns={{ base: "repeat(2, minmax(0, 1fr))", lg: "repeat(4, minmax(0, 1fr))" }}
+                    borderBottom="1px solid"
+                    borderColor="border.subtle"
+                  >
                     {[
                       { l: `${selectedEqObj?.name} kW/TR`, v: avg?.toFixed(3), isEff: true, eff: avg },
                       { l: "Avg Load",    v: avgL ? `${avgL.toFixed(1)}%` : null },
                       { l: "Data points", v: tsData.count },
                       { l: "Window",      v: `${tsData.hours}h` },
                     ].map((item, i) => (
-                      <Box key={i} px={4} py={3} borderRight={i < 3 ? "1px solid" : "none"} borderColor="border.subtle">
+                      <Box
+                        key={i}
+                        px={{ base: 3, md: 4 }}
+                        py={3}
+                        borderRight={{ lg: i < 3 ? "1px solid" : "none" }}
+                        borderColor="border.subtle"
+                        minW={0}
+                      >
                         <Text fontSize="9px" color="text.muted" textTransform="uppercase" fontWeight={700} letterSpacing="0.1em">{item.l}</Text>
                         <Text fontSize="lg" fontWeight={700} fontVariantNumeric="tabular-nums"
                           color={item.isEff && item.eff ? (item.eff < 0.65 ? "green.400" : item.eff < 0.85 ? "yellow.400" : "red.400") : "text.primary"}>
@@ -374,6 +469,6 @@ export default function AIAnalyzer() {
           </MotionBox>
         )}
       </AnimatePresence>
-    </Box>
+    </PageShell>
   );
 }

@@ -158,6 +158,40 @@ def run(base: str):
     else:
         fail(f"POST /api/v1/analyze", f"HTTP {code}")
 
+    section("7. Predictive maintenance (Phase 3)")
+    code, body = get(f"{base}/api/v1/maintenance?hours=24")
+    if code == 200 and "assets" in body and len(body["assets"]) >= 1:
+        ok(f"GET /api/v1/maintenance → {len(body['assets'])} assets")
+    else:
+        fail("GET /api/v1/maintenance", f"{code}")
+
+    section("8. Cost analytics (Phase 3)")
+    code, body = get(f"{base}/api/v1/cost?hours=24")
+    if code == 200 and "total_kwh" in body and "equipment" in body:
+        ok(f"GET /api/v1/cost → total_kwh={body['total_kwh']}")
+    else:
+        fail("GET /api/v1/cost", f"{code}")
+
+    section("9. Threads API (Phase 3)")
+    code, body = post(f"{base}/api/v1/threads", {})
+    if code == 200 and body.get("id"):
+        ok(f"POST /api/v1/threads → id={body['id'][:8]}…")
+        tid = body["id"]
+        code2, body2 = get(f"{base}/api/v1/threads/{tid}/messages")
+        if code2 == 200 and "messages" in body2:
+            ok(f"GET /api/v1/threads/{{id}}/messages → {len(body2['messages'])} msgs")
+        else:
+            fail("GET thread messages", f"{code2}")
+    else:
+        fail("POST /api/v1/threads", f"{code}")
+
+    section("10. Cooling tower optimizer hint")
+    code, body = get(f"{base}/api/v1/cooling-tower/cooling_tower_1/optimize?hours=24")
+    if code == 200 and "staging_hint" in body:
+        ok("GET /api/v1/cooling-tower/cooling_tower_1/optimize → hint present")
+    else:
+        fail("GET cooling tower optimize", f"{code}")
+
     # Summary
     total = passed + failed
     print(f"\n{'─'*40}")
@@ -176,7 +210,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default="http://localhost:8000", help="Backend base URL")
     args = parser.parse_args()
-    print(f"\n{BOLD}THERMYNX Phase 1 Smoke Test{RESET}")
+    print(f"\n{BOLD}THERMYNX Phase 1+ Smoke Test{RESET}")
     print(f"Target: {args.base}\n")
     ok_result = run(args.base)
     sys.exit(0 if ok_result else 1)

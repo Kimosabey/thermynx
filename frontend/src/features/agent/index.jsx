@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import {
-  Box, Flex, Heading, Text, Grid, Textarea, Select, Button,
+  Box, Flex, Text, Grid, Textarea, Select, Button,
   Badge, HStack, Tabs, TabList, Tab, TabPanels, TabPanel,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
+import PageShell from "../../shared/ui/PageShell";
+import PageHeader from "../../shared/ui/PageHeader";
+import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import AgentRunner, { useAgentStream } from "./AgentRunner";
 
@@ -164,32 +167,39 @@ export default function AgentHub() {
   }
 
   return (
-    <Box p={{ base: 4, md: 8 }} maxW="1300px">
-      {/* Header */}
-      <Flex align="center" gap={3} mb={6}>
-        <Box
-          w="40px" h="40px" borderRadius="12px" flexShrink={0}
-          bg="linear-gradient(135deg, #00c4f4, #7c3aed)"
-          display="flex" alignItems="center" justifyContent="center"
-          boxShadow="0 0 24px rgba(124,58,237,0.3)"
-        >
-          <Text fontSize="xl">🤖</Text>
-        </Box>
-        <Box>
-          <Heading size="md" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
-            AI Agents
-          </Heading>
-          <Text color="text.muted" fontSize="xs">
-            Autonomous HVAC intelligence — 5 specialist agents powered by {" "}
+    <PageShell>
+      <PageHeader
+        title="AI Agents"
+        subtitle={
+          <>
+            Autonomous HVAC intelligence — 5 specialist agents powered by{" "}
             <Text as="span" color="accent.cyan">qwen2.5:14b</Text>
-          </Text>
-        </Box>
-      </Flex>
+          </>
+        }
+        icon={
+          <Box
+            w="40px" h="40px" borderRadius="12px" flexShrink={0}
+            bg="linear-gradient(135deg, #00c4f4, #7c3aed)"
+            display="flex" alignItems="center" justifyContent="center"
+            boxShadow="0 0 24px rgba(124,58,237,0.3)"
+          >
+            <Text fontSize="xl">🤖</Text>
+          </Box>
+        }
+        mb={6}
+      />
 
       {/* Mode selector grid */}
       <Grid
-        templateColumns={{ base: "1fr 1fr", md: "repeat(5, 1fr)" }}
-        gap={3} mb={6}
+        templateColumns={{
+          base: "repeat(2, minmax(0, 1fr))",
+          sm: "repeat(3, minmax(0, 1fr))",
+          lg: "repeat(5, minmax(0, 1fr))",
+        }}
+        gap={3}
+        mb={6}
+        w="100%"
+        minW={0}
       >
         {MODES.map((m) => (
           <ModeCard
@@ -229,11 +239,10 @@ export default function AgentHub() {
                     Equipment (optional)
                   </Text>
                   <Select
-                    size="sm" placeholder="All equipment"
+                    placeholder="All equipment"
                     value={selectedEq}
                     onChange={(e) => setSelectedEq(e.target.value)}
-                    bg="bg.surface" border="1px solid" borderColor="border.subtle"
-                    borderRadius="10px" color="text.primary"
+                    {...surfaceSelectProps}
                     _hover={{ borderColor: mode?.color ?? "accent.cyan" }}
                   >
                     {["chiller", "cooling_tower", "pump"].map((type) => {
@@ -253,10 +262,10 @@ export default function AgentHub() {
                     Window
                   </Text>
                   <Select
-                    size="sm" value={hours}
+                    value={hours}
                     onChange={(e) => setHours(Number(e.target.value))}
-                    w="130px" bg="bg.surface" border="1px solid" borderColor="border.subtle"
-                    borderRadius="10px" color="text.primary"
+                    w="130px"
+                    {...surfaceSelectProps}
                   >
                     <option value={6}>6 hours</option>
                     <option value={12}>12 hours</option>
@@ -351,6 +360,6 @@ export default function AgentHub() {
         error={error}
         onStop={stop}
       />
-    </Box>
+    </PageShell>
   );
 }

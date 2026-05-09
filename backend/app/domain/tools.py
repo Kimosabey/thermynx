@@ -3,7 +3,11 @@ Agent tool registry — schemas (for Ollama) + async executors.
 All executors return JSON-serializable dicts, kept small for LLM context.
 """
 from dataclasses import asdict
+
 from app.domain.equipment import EQUIPMENT_CATALOG, get_by_id
+from app.log import get_logger
+
+log = get_logger("domain.tools")
 
 # ── Tool schemas (Ollama function-calling format) ─────────────────────────────
 
@@ -250,8 +254,12 @@ TOOL_EXECUTORS = {
 async def execute_tool(name: str, args: dict) -> dict:
     fn = TOOL_EXECUTORS.get(name)
     if not fn:
+        log.warning("unknown_tool name=%s", name)
         return {"error": f"Unknown tool: {name}"}
     try:
-        return await fn(**args)
+        out = await fn(**args)
+        log.debug("tool_ok name=%s", name)
+        return out
     except Exception as e:
+        log.exception("tool_failed name=%s", name)
         return {"error": str(e)}

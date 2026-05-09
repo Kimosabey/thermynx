@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { Box, Flex, Heading, Text, Select, Grid, Badge, Button } from "@chakra-ui/react";
+import { Box, Flex, Text, Select, Grid } from "@chakra-ui/react";
 import { motion } from "framer-motion";
+import PageShell from "../../shared/ui/PageShell";
+import PageHeader from "../../shared/ui/PageHeader";
+import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import {
   ResponsiveContainer, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine,
@@ -45,7 +48,7 @@ function StatRow({ label, valA, valB, isEff }) {
     ? (isEff ? (valA < valB ? "a" : "b") : (valA > valB ? "a" : "b"))
     : null;
   return (
-    <Grid templateColumns="1fr 1fr 1fr" gap={2} py={2} borderBottom="1px solid" borderColor="border.subtle">
+    <Grid templateColumns={{ base: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)" }} gap={2} py={2} borderBottom="1px solid" borderColor="border.subtle" minW={0}>
       <Text fontSize="xs" color="text.muted" textTransform="uppercase" letterSpacing="0.08em" fontWeight={700}>{label}</Text>
       <Text fontSize="sm" fontWeight={700} color={better==="a" ? "green.400" : (isEff ? bandColor(valA) : "text.primary")} fontVariantNumeric="tabular-nums" textAlign="center">{a}</Text>
       <Text fontSize="sm" fontWeight={700} color={better==="b" ? "green.400" : (isEff ? bandColor(valB) : "text.primary")} fontVariantNumeric="tabular-nums" textAlign="center">{b}</Text>
@@ -104,36 +107,43 @@ export default function ComparePage() {
     : null;
 
   return (
-    <Box p={{base:4,md:8}} maxW="1300px">
-      <Flex justify="space-between" align="flex-start" mb={8} flexWrap="wrap" gap={4}>
-        <Box>
-          <Heading size="md" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
-            Comparison View
-          </Heading>
-          <Text color="text.muted" mt={1} fontSize="xs">Side-by-side equipment analysis — overlay chart + delta statistics</Text>
-        </Box>
-        <Flex gap={3} flexWrap="wrap" align="center">
-          <Select size="sm" value={eqA} onChange={e=>setEqA(e.target.value)}
-            bg="bg.surface" border="1px solid" borderColor={`${COLORS.a}50`} borderRadius="10px"
-            color={COLORS.a} fontWeight={600} w="155px">
-            {equipment.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-          </Select>
-          <Text color="text.muted" fontSize="sm" fontWeight={700}>vs</Text>
-          <Select size="sm" value={eqB} onChange={e=>setEqB(e.target.value)}
-            bg="bg.surface" border="1px solid" borderColor={`${COLORS.b}50`} borderRadius="10px"
-            color={COLORS.b} fontWeight={600} w="155px">
-            {equipment.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-          </Select>
-          <Select size="sm" value={hours} onChange={e=>setHours(Number(e.target.value))}
-            bg="bg.surface" border="1px solid" borderColor="border.subtle" borderRadius="10px" color="text.primary" w="120px">
-            <option value={6}>6 hours</option>
-            <option value={12}>12 hours</option>
-            <option value={24}>24 hours</option>
-            <option value={48}>48 hours</option>
-            <option value={168}>7 days</option>
-          </Select>
-        </Flex>
-      </Flex>
+    <PageShell>
+      <PageHeader
+        title="Comparison View"
+        subtitle="Side-by-side equipment analysis — overlay chart + delta statistics"
+        actions={
+          <Flex gap={3} flexWrap="wrap" align="center" w={{ base: "100%", xl: "auto" }} maxW="100%">
+            <Select size="sm" value={eqA} onChange={(e) => setEqA(e.target.value)}
+              {...surfaceSelectProps}
+              borderColor={`${COLORS.a}50`}
+              color={COLORS.a}
+              fontWeight={600}
+              w={{ base: "100%", sm: "155px" }}
+              maxW="100%"
+            >
+              {equipment.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+            </Select>
+            <Text color="text.muted" fontSize="sm" fontWeight={700}>vs</Text>
+            <Select size="sm" value={eqB} onChange={(e) => setEqB(e.target.value)}
+              {...surfaceSelectProps}
+              borderColor={`${COLORS.b}50`}
+              color={COLORS.b}
+              fontWeight={600}
+              w={{ base: "100%", sm: "155px" }}
+              maxW="100%"
+            >
+              {equipment.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+            </Select>
+            <Select size="sm" value={hours} onChange={(e) => setHours(Number(e.target.value))} {...surfaceSelectProps} w="120px">
+              <option value={6}>6 hours</option>
+              <option value={12}>12 hours</option>
+              <option value={24}>24 hours</option>
+              <option value={48}>48 hours</option>
+              <option value={168}>7 days</option>
+            </Select>
+          </Flex>
+        }
+      />
 
       {better && (
         <MotionBox variants={fadeUp} initial="initial" animate="animate" mb={5}>
@@ -185,8 +195,10 @@ export default function ComparePage() {
       {data && !loading && (
         <MotionBox variants={fadeUp} initial="initial" animate="animate">
           <GlassCard>
+            <Box overflowX="auto" maxW="100%" w="100%">
+              <Box minW={{ base: "520px", md: "auto" }}>
             {/* Header row */}
-            <Grid templateColumns="1fr 1fr 1fr" gap={2} pb={3} mb={1} borderBottom="1px solid" borderColor="border.subtle">
+            <Grid templateColumns="minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)" gap={2} pb={3} mb={1} borderBottom="1px solid" borderColor="border.subtle">
               <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.12em" fontWeight={700}>Metric</Text>
               <Flex align="center" gap={2} justifyContent="center">
                 <Box w={2} h={2} borderRadius="full" bg={COLORS.a} />
@@ -211,9 +223,11 @@ export default function ComparePage() {
                 <StatRow label="Δ vs design" valA={ea.delta_pct}     valB={eb.delta_pct}        isEff={true} />
               </>
             )}
+              </Box>
+            </Box>
           </GlassCard>
         </MotionBox>
       )}
-    </Box>
+    </PageShell>
   );
 }

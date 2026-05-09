@@ -15,8 +15,11 @@ from typing import AsyncIterator, Any
 from app.llm.ollama import chat, stream_chat_text
 from app.domain.tools import TOOL_SCHEMAS, execute_tool
 from app.config import settings
+from app.log import get_logger
 
 MAX_STEPS = 8
+
+log = get_logger("services.agent")
 
 
 # ── Agent mode system prompts ─────────────────────────────────────────────────
@@ -70,6 +73,8 @@ async def run_agent(
     model  = model or settings.OLLAMA_DEFAULT_MODEL
     start  = time.time()
 
+    log.info("agent_loop_begin run_id=%s mode=%s model=%s", run_id, mode, model)
+
     system_prompt = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["investigator"])
 
     # Build initial user message with optional context
@@ -91,6 +96,7 @@ async def run_agent(
         try:
             response = await chat(messages, tools=TOOL_SCHEMAS, model=model)
         except Exception as e:
+            log.exception("agent_chat_failed run_id=%s mode=%s step=%s", run_id, mode, step)
             yield _sse({"type": "error", "detail": f"LLM error: {e}"})
             return
 
@@ -114,6 +120,7 @@ async def run_agent(
             yield _sse({"type": "tool_call", "tool": name, "args": args, "step": step})
 
             result = await execute_tool(name, args)
+            log.debug("agent_tool_result tool=%s step=%s keys=%s", name, step, list(result.keys())[:8])
             yield _sse({"type": "tool_result", "tool": name, "result": result, "step": step})
 
             # Append assistant tool call + tool result to message history
@@ -146,8 +153,17 @@ async def run_agent(
                 yield _sse({"type": "token", "content": chunk})
 
         total_ms = int((time.time() - start) * 1000)
+        log.info(
+            "agent_loop_complete run_id=%s mode=%s steps=%s total_ms=%s model=%s",
+            run_id,
+            mode,
+            step,
+            total_ms,
+            model,
+        )
         yield _sse({"type": "done", "run_id": run_id, "steps": step, "total_ms": total_ms, "model": model})
         return
 
     # Hit max steps without a final answer
+    log.warning("agent_max_steps run_id=%s mode=%s steps=%s", run_id, mode, MAX_STEPS)
     yield _sse({"type": "error", "detail": f"Agent reached max steps ({MAX_STEPS}) without a final answer."})

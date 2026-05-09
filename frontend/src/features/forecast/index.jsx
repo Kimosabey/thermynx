@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { Box, Flex, Heading, Text, Select, Grid, Badge } from "@chakra-ui/react";
+import { Box, Flex, Text, Select, Grid, Badge } from "@chakra-ui/react";
 import { motion } from "framer-motion";
+import PageShell from "../../shared/ui/PageShell";
+import PageHeader from "../../shared/ui/PageHeader";
+import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import {
   ResponsiveContainer, ComposedChart, Area, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine,
@@ -9,6 +12,7 @@ import GlassCard from "../../shared/ui/GlassCard";
 import { SkeletonKpiCard } from "../../shared/ui/SkeletonCard";
 
 const MotionBox  = motion(Box);
+const MotionGrid = motion(Grid);
 const fadeUp     = { initial:{opacity:0,y:12}, animate:{opacity:1,y:0,transition:{duration:0.3}} };
 const stagger    = { animate:{transition:{staggerChildren:0.07}} };
 
@@ -110,59 +114,68 @@ export default function ForecastPage() {
   const highConf = pts.filter(p=>p.confidence==="high").length;
 
   return (
-    <Box p={{base:4,md:8}} maxW="1200px">
-      <Flex justify="space-between" align="flex-start" mb={8} flexWrap="wrap" gap={4}>
-        <Box>
-          <Heading size="md" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
-            Energy Forecaster
-          </Heading>
-          <Text color="text.muted" mt={1} fontSize="xs">
-            Hour-of-day statistical profile · next {horizon}h prediction with confidence interval
-          </Text>
-        </Box>
-        <Flex gap={3} flexWrap="wrap">
-          <Select size="sm" value={selectedEq} onChange={e=>{setSelectedEq(e.target.value);setMetric("kw_per_tr");}}
-            bg="bg.surface" border="1px solid" borderColor="border.subtle" borderRadius="10px" color="text.primary" w="160px"
-            _hover={{borderColor:"#7c3aed"}}>
-            {equipment.filter(e=>e.type==="chiller").map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-            {equipment.filter(e=>e.type!=="chiller").map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-          </Select>
-          <Select size="sm" value={metric} onChange={e=>setMetric(e.target.value)}
-            bg="bg.surface" border="1px solid" borderColor="border.subtle" borderRadius="10px" color="text.primary" w="120px">
-            {availMetrics.map(m=><option key={m} value={m}>{m.replace(/_/g," ")}</option>)}
-          </Select>
-          <Select size="sm" value={horizon} onChange={e=>setHorizon(Number(e.target.value))}
-            bg="bg.surface" border="1px solid" borderColor="border.subtle" borderRadius="10px" color="text.primary" w="120px">
-            <option value={12}>Next 12h</option>
-            <option value={24}>Next 24h</option>
-            <option value={48}>Next 48h</option>
-            <option value={72}>Next 72h</option>
-          </Select>
-        </Flex>
-      </Flex>
+    <PageShell>
+      <PageHeader
+        title="Energy Forecaster"
+        subtitle={`Hour-of-day statistical profile · next ${horizon}h prediction with confidence interval`}
+        actions={
+          <Flex gap={3} flexWrap="wrap">
+            <Select
+              size="sm"
+              value={selectedEq}
+              onChange={(e) => { setSelectedEq(e.target.value); setMetric("kw_per_tr"); }}
+              {...surfaceSelectProps}
+              w="160px"
+            >
+              {equipment.filter((e) => e.type === "chiller").map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              {equipment.filter((e) => e.type !== "chiller").map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+            </Select>
+            <Select size="sm" value={metric} onChange={(e) => setMetric(e.target.value)} {...surfaceSelectProps} w="120px">
+              {availMetrics.map((m) => <option key={m} value={m}>{m.replace(/_/g, " ")}</option>)}
+            </Select>
+            <Select size="sm" value={horizon} onChange={(e) => setHorizon(Number(e.target.value))} {...surfaceSelectProps} w="120px">
+              <option value={12}>Next 12h</option>
+              <option value={24}>Next 24h</option>
+              <option value={48}>Next 48h</option>
+              <option value={72}>Next 72h</option>
+            </Select>
+          </Flex>
+        }
+      />
 
       {/* Summary KPI chips */}
       {data && !loading && (
-        <motion.div variants={stagger} initial="initial" animate="animate">
-          <Grid templateColumns={{base:"1fr 1fr",md:"repeat(4,1fr)"}} gap={4} mb={6}>
-            {[
-              {l:"Avg Predicted",  v:avgPred?.toFixed(3), u:metric==="kw_per_tr"?"kW/TR":metric==="kw"?"kW":"%"},
-              {l:"Min Predicted",  v:minPred?.toFixed(3)},
-              {l:"Max Predicted",  v:maxPred?.toFixed(3)},
-              {l:"High Confidence",v:`${highConf}/${pts.length}`, u:"hrs"},
-            ].map((s,i)=>(
-              <MotionBox key={i} variants={fadeUp}>
-                <GlassCard p={4}>
-                  <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.1em" mb={2}>{s.l}</Text>
-                  <Flex align="baseline" gap={1}>
-                    <Text fontSize="xl" fontWeight={700} color="accent.cyan" fontVariantNumeric="tabular-nums">{s.v ?? "—"}</Text>
-                    {s.u && <Text fontSize="xs" color="text.muted">{s.u}</Text>}
-                  </Flex>
-                </GlassCard>
-              </MotionBox>
-            ))}
-          </Grid>
-        </motion.div>
+        <MotionGrid
+          variants={stagger}
+          initial="initial"
+          animate="animate"
+          templateColumns={{
+            base: "minmax(0, 1fr)",
+            sm: "repeat(2, minmax(0, 1fr))",
+            lg: "repeat(4, minmax(0, 1fr))",
+          }}
+          gap={4}
+          mb={6}
+          w="100%"
+          minW={0}
+        >
+          {[
+            { l: "Avg Predicted", v: avgPred?.toFixed(3), u: metric === "kw_per_tr" ? "kW/TR" : metric === "kw" ? "kW" : "%" },
+            { l: "Min Predicted", v: minPred?.toFixed(3) },
+            { l: "Max Predicted", v: maxPred?.toFixed(3) },
+            { l: "High Confidence", v: `${highConf}/${pts.length}`, u: "hrs" },
+          ].map((s, i) => (
+            <MotionBox key={i} variants={fadeUp}>
+              <GlassCard p={4}>
+                <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.1em" mb={2}>{s.l}</Text>
+                <Flex align="baseline" gap={1}>
+                  <Text fontSize="xl" fontWeight={700} color="accent.cyan" fontVariantNumeric="tabular-nums">{s.v ?? "—"}</Text>
+                  {s.u && <Text fontSize="xs" color="text.muted">{s.u}</Text>}
+                </Flex>
+              </GlassCard>
+            </MotionBox>
+          ))}
+        </MotionGrid>
       )}
 
       {loading
@@ -178,10 +191,10 @@ export default function ForecastPage() {
           <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.12em" mb={3}>How this works</Text>
           <Flex gap={6} flexWrap="wrap">
             <Text fontSize="xs" color="text.muted">
-              <Text as="span" color="white" fontWeight={600}>Purple line</Text> — predicted value (mean of that hour-of-day over 7-day history)
+              <Text as="span" color="text.primary" fontWeight={600}>Purple line</Text> — predicted value (mean of that hour-of-day over 7-day history)
             </Text>
             <Text fontSize="xs" color="text.muted">
-              <Text as="span" color="white" fontWeight={600}>Shaded band</Text> — ±1 std deviation (68% confidence interval)
+              <Text as="span" color="text.primary" fontWeight={600}>Shaded band</Text> — ±1 std deviation (68% confidence interval)
             </Text>
             {metric === "kw_per_tr" && (
               <Text fontSize="xs" color="text.muted">
@@ -191,6 +204,6 @@ export default function ForecastPage() {
           </Flex>
         </GlassCard>
       )}
-    </Box>
+    </PageShell>
   );
 }

@@ -1,10 +1,15 @@
 from dataclasses import asdict
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.db.session import get_db, get_pg
-from app.db.telemetry import fetch_chiller_data, fetch_equipment_data, COOLING_TOWER_COLS, PUMP_COLS
-from app.domain.equipment import get_by_id, EQUIPMENT_CATALOG
+from app.db.telemetry import (
+    fetch_chiller_data,
+    fetch_equipment_data,
+    COOLING_TOWER_COLS,
+    PUMP_COLS,
+)
+from app.domain.equipment import EQUIPMENT_CATALOG
 from app.analytics.anomaly import detect_anomalies, CHILLER_METRICS, TOWER_PUMP_METRICS
 
 router = APIRouter()
@@ -12,7 +17,7 @@ router = APIRouter()
 
 @router.get("/anomalies/live")
 async def live_anomalies(
-    hours: int = Query(default=1, ge=1, le=24),
+    hours: int = Query(default=1, ge=1, le=8760),
     db: AsyncSession = Depends(get_db),
 ):
     """Run anomaly detection on-demand against the last N hours."""

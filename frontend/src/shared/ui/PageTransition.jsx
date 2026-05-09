@@ -16,6 +16,9 @@ export default function PageTransition({ children }) {
       initial="initial"
       animate="enter"
       exit="exit"
+      w="100%"
+      minW={0}
+      maxW="100%"
       style={{ width: "100%" }}
     >
       {children}

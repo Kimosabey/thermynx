@@ -1,32 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Flex, Box, IconButton, useBreakpointValue } from "@chakra-ui/react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import { Menu } from "lucide-react";
 import Sidebar from "../shared/ui/Sidebar";
 import PageTransition from "../shared/ui/PageTransition";
 
-function HamburgerIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <line x1="3" y1="6"  x2="21" y2="6"  />
-      <line x1="3" y1="12" x2="21" y2="12" />
-      <line x1="3" y1="18" x2="21" y2="18" />
-    </svg>
-  );
-}
-
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isMobile = useBreakpointValue({ base: true, md: false });
+  /** Below 2xl (~1536px): overlay drawer — fixes 1080p @125–150% scale (~1280 CSS px) without squashing main. */
+  const isDockedSidebar = useBreakpointValue(
+    { base: false, "2xl": true },
+    { fallback: false },
+  );
+  const useDrawerNav = !isDockedSidebar;
   const location = useLocation();
 
-  return (
-    <Flex minH="100vh" bg="bg.canvas">
-      <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
+  useEffect(() => {
+    if (useDrawerNav) setMobileOpen(false);
+  }, [location.pathname, useDrawerNav]);
 
-      <Box flex={1} overflow="auto" minH="100vh" position="relative">
-        {/* Mobile top bar */}
-        {isMobile && (
+  return (
+    <Flex minH="100vh" bg="bg.canvas" align="stretch">
+      <Sidebar
+        overlay={useDrawerNav}
+        mobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
+      />
+
+      <Box
+        flex="1"
+        minW={0}
+        overflow="auto"
+        overflowX="hidden"
+        minH="100vh"
+        position="relative"
+      >
+        {/* Compact top bar when nav is drawer/overlay */}
+        {useDrawerNav && (
           <Flex
             px={4} py={3}
             borderBottom="1px solid"
@@ -40,7 +51,7 @@ export default function Layout() {
           >
             <IconButton
               aria-label="Open menu"
-              icon={<HamburgerIcon />}
+              icon={<Menu size={20} strokeWidth={2} />}
               variant="ghost"
               size="sm"
               onClick={() => setMobileOpen(true)}

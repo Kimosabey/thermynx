@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
-import { Box, Flex, Heading, Text, Grid, Badge, Select, Button } from "@chakra-ui/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Box, Flex, Text, Grid, Badge, Button } from "@chakra-ui/react";
+import { CheckCircleIcon } from "@chakra-ui/icons";
+import { motion } from "framer-motion";
+import PageShell from "../../shared/ui/PageShell";
+import PageHeader from "../../shared/ui/PageHeader";
+import PeriodSelect, { HOURS_OPTIONS_ANOMALY } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 
 const MotionBox = motion(Box);
+const MotionGrid = motion(Grid);
 const stagger   = { animate: { transition: { staggerChildren: 0.05 } } };
 const fadeUp    = {
   initial: { opacity: 0, y: 12 },
@@ -99,9 +104,11 @@ function AnomalyCard({ anomaly }) {
 function EmptyState() {
   return (
     <GlassCard p={12} display="flex" alignItems="center" justifyContent="center" flexDir="column" gap={3}>
-      <Box fontSize="2xl">✓</Box>
+      <CheckCircleIcon color="green.400" boxSize={10} />
       <Text fontWeight={600} color="green.400" fontSize="sm">No anomalies detected</Text>
-      <Text color="text.muted" fontSize="xs">All equipment is operating within normal statistical range</Text>
+      <Text color="text.muted" fontSize="xs" textAlign="center" maxW="320px">
+        All equipment is operating within normal statistical range
+      </Text>
     </GlassCard>
   );
 }
@@ -130,39 +137,26 @@ export default function AnomaliesPage() {
   const warning  = anomalies.filter((a) => a.severity === "warning");
 
   return (
-    <Box p={{ base: 4, md: 8 }} maxW="1200px">
-      {/* Header */}
-      <Flex justify="space-between" align="flex-start" mb={8} flexWrap="wrap" gap={4}>
-        <Box>
-          <Heading size="md" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
-            Anomaly Detector
-          </Heading>
-          <Text color="text.muted" mt={1} fontSize="xs">
+    <PageShell>
+      <PageHeader
+        title="Anomaly Detector"
+        subtitle={
+          <>
             Statistical z-score detection · auto-scan every 5 min
             {lastScan && ` · last scanned ${lastScan.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`}
-          </Text>
-        </Box>
-        <Flex gap={3} align="center" flexWrap="wrap">
-          <Select
-            size="sm" value={hours}
-            onChange={(e) => setHours(Number(e.target.value))}
-            w="130px" bg="bg.surface" border="1px solid" borderColor="border.subtle"
-            borderRadius="10px" color="text.primary"
-            _hover={{ borderColor: "accent.cyan" }}
-          >
-            <option value={1}>Last 1 hour</option>
-            <option value={3}>Last 3 hours</option>
-            <option value={6}>Last 6 hours</option>
-            <option value={12}>Last 12 hours</option>
-            <option value={24}>Last 24 hours</option>
-          </Select>
-          <MotionBox whileTap={{ scale: 0.95 }}>
-            <Button size="sm" variant="glass" onClick={load} borderRadius="10px" fontSize="xs">
-              Scan now
-            </Button>
-          </MotionBox>
-        </Flex>
-      </Flex>
+          </>
+        }
+        actions={
+          <>
+            <PeriodSelect value={hours} onChange={setHours} options={HOURS_OPTIONS_ANOMALY} width="130px" />
+            <MotionBox whileTap={{ scale: 0.95 }}>
+              <Button size="sm" variant="glass" onClick={load} borderRadius="10px" fontSize="xs">
+                Scan now
+              </Button>
+            </MotionBox>
+          </>
+        }
+      />
 
       {/* Summary chips */}
       <Flex gap={3} mb={6} flexWrap="wrap">
@@ -195,14 +189,12 @@ export default function AnomaliesPage() {
       ) : anomalies.length === 0 ? (
         <EmptyState />
       ) : (
-        <motion.div variants={stagger} initial="initial" animate="animate">
-          <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={4}>
-            {anomalies.map((a, i) => (
-              <AnomalyCard key={`${a.equipment_id}-${a.metric}-${a.timestamp}-${i}`} anomaly={a} />
-            ))}
-          </Grid>
-        </motion.div>
+        <MotionGrid variants={stagger} initial="initial" animate="animate" templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={4}>
+          {anomalies.map((a, i) => (
+            <AnomalyCard key={`${a.equipment_id}-${a.metric}-${a.timestamp}-${i}`} anomaly={a} />
+          ))}
+        </MotionGrid>
       )}
-    </Box>
+    </PageShell>
   );
 }

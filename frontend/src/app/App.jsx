@@ -7,6 +7,9 @@ import Anomalies    from "../features/anomalies";
 import AgentHub     from "../features/agent";
 import Forecast     from "../features/forecast";
 import Compare      from "../features/compare";
+import Maintenance  from "../features/maintenance";
+import CostAnalytics from "../features/cost";
+import Reports      from "../features/reports";
 
 export default function App() {
   return (
@@ -17,9 +20,12 @@ export default function App() {
         <Route path="analyzer"   element={<AIAnalyzer />} />
         <Route path="efficiency"  element={<Efficiency />} />
         <Route path="anomalies"   element={<Anomalies />} />
-        <Route path="agent"       element={<AgentHub />} />
         <Route path="forecast"    element={<Forecast />} />
         <Route path="compare"     element={<Compare />} />
+        <Route path="maintenance" element={<Maintenance />} />
+        <Route path="cost"        element={<CostAnalytics />} />
+        <Route path="reports"     element={<Reports />} />
+        <Route path="agent"       element={<AgentHub />} />
       </Route>
     </Routes>
   );

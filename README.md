@@ -182,3 +182,4 @@ See [`BUILD_PLAN.md`](BUILD_PLAN.md) for full detail.
 - [Runbook](docs/RUNBOOK.md) — debugging, resets, tagging
 - [Prompt catalogue](docs/PROMPTS.md) — LLM prompt versions
 - [Data dictionary](docs/DATA_DICTIONARY.md) — unicharm MySQL tables
+- [Database schema reference](docs/DATABASE_SCHEMA_REFERENCE.md) — MySQL + Postgres columns & usage

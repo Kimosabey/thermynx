@@ -2,6 +2,8 @@
 
 Quick reference to the `unicharm` MySQL tables THERMYNX reads. **Read-only, no writes ever.**
 
+**Full table/column layouts (MySQL + Postgres `thermynx_app`):** [DATABASE_SCHEMA_REFERENCE.md](./DATABASE_SCHEMA_REFERENCE.md)
+
 > Full DDL is in [`../unicharm_db_ddl.md`](../unicharm_db_ddl.md). This file is the curated subset we actually use.
 
 ## Source
@@ -51,15 +53,18 @@ Per-minute chiller metrics — the **richest analytics surface**.
 
 ### `cooling_tower_1_normalized` / `cooling_tower_2_normalized`
 
-Cooling tower fan metrics.
+Cooling tower fan metrics (see [`unicharm_db_ddl.md`](../unicharm_db_ddl.md) for full DDL).
 
 | Column | Unit | Meaning |
 |--------|------|---------|
-| `slot_time` | UTC ts | |
-| `is_running` | 0 / 1 | fan on/off |
-| `fan_kw` | kW | fan electrical input |
-| `cell_count` | int | active cells |
-| `wet_bulb_c` | °C | ambient wet-bulb (drives staging optimization) |
+| `slot_time` | UTC ts | bucket end |
+| `is_running` | 0 / 1 | any fan energized |
+| `fan1_kw`, `fan2_kw`, `fan3_kw` | kW | per-fan power (DDL) |
+| `kw` | kW | total fan power (sum of fans) — **primary field THERMYNX reads** |
+| `kwh`, `cumulative_kwh` | kWh | interval + cumulative energy |
+| `run_hours` | h | fan running hours aggregate |
+
+**Not present on normalized towers today:** ambient wet-bulb / cell count. THERMYNX cooling-tower SQL uses only `slot_time`, `is_running`, `kw`, `kwh`, `cumulative_kwh`, `run_hours`. Staging hints use kW + duty; wet-bulb–aware rules activate only if future normalization adds `wet_bulb_c` or `wet_bulb_temp` on these rows.
 
 ### `condenser_pump_0102_normalized` / `condenser_pump_03_normalized`
 

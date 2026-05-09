@@ -13,6 +13,8 @@ export default function GlassCard({ children, hover = true, glow = false, p = 5,
       borderColor="border.subtle"
       p={p}
       overflow="hidden"
+      minW={0}
+      maxW="100%"
       whileHover={hover ? { y: -2, borderColor: "rgba(0,196,244,0.25)" } : undefined}
       transition={{ duration: 0.15 }}
       _before={glow ? {

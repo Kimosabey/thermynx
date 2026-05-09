@@ -10,8 +10,10 @@ from app.db.session import get_pg
 from app.db.models import AgentRun
 from app.services.agent import run_agent
 from app.config import settings
+from app.log import get_logger
 
 router = APIRouter()
+log = get_logger("api.agent")
 
 VALID_MODES = {"investigator", "optimizer", "brief", "root_cause", "maintenance"}
 
@@ -25,7 +27,7 @@ class AgentRequest(BaseModel):
 
 async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
     if req.mode not in VALID_MODES:
-        import json
+        log.warning("agent_unknown_mode mode=%s request_id=%s", req.mode, getattr(request.state, "request_id", None))
         yield f"data: {json.dumps({'type':'error','detail':f'Unknown mode: {req.mode}'})}\n\n"
         return
 
@@ -44,6 +46,14 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
     )
     pg.add(run)
     await pg.commit()
+
+    log.info(
+        "agent_run_start run_id=%s mode=%s model=%s request_id=%s",
+        run_id,
+        req.mode,
+        model,
+        getattr(request.state, "request_id", None),
+    )
 
     final_tokens: list[str] = []
     steps = 0
@@ -66,8 +76,12 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
             except Exception:
                 pass
     except Exception as e:
-        import json as _j
-        yield f"data: {_j.dumps({'type':'error','detail':str(e)})}\n\n"
+        log.exception(
+            "agent_run_stream_error run_id=%s request_id=%s",
+            run_id,
+            getattr(request.state, "request_id", None),
+        )
+        yield f"data: {json.dumps({'type':'error','detail':str(e)})}\n\n"
         status = "error"
 
     # Update run row
@@ -76,6 +90,15 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
     run.status       = status
     await pg.merge(run)
     await pg.commit()
+
+    log.info(
+        "agent_run_done run_id=%s mode=%s status=%s steps=%s request_id=%s",
+        run_id,
+        req.mode,
+        status,
+        steps,
+        getattr(request.state, "request_id", None),
+    )
 
 
 @router.post("/agent/run")

@@ -4,12 +4,10 @@ For each equipment, fetches last 60 minutes, runs z-score detection,
 and persists results to the anomalies table in Postgres.
 """
 import asyncio
-import logging
-from dataclasses import asdict
-from datetime import datetime, timedelta
 
 from sqlalchemy import text
 
+from app.log import get_logger
 from app.db.session import MySQLSession, PGSession
 from app.db.telemetry import fetch_chiller_data, fetch_equipment_data, COOLING_TOWER_COLS, PUMP_COLS
 from app.domain.equipment import EQUIPMENT_CATALOG
@@ -17,7 +15,7 @@ from app.analytics.anomaly import (
     detect_anomalies, CHILLER_METRICS, TOWER_PUMP_METRICS
 )
 
-log = logging.getLogger("thermynx.jobs")
+log = get_logger("jobs.anomaly_scan")
 
 WINDOW_HOURS  = 1    # fetch last N hours for anomaly detection
 BASELINE_HOURS = 72  # larger window to compute stable baseline
@@ -76,6 +74,11 @@ async def _scan_once():
         log.info(f"Anomaly scan complete — {found} new event(s) persisted")
 
 
+async def run_scan_async():
+    """Run inside FastAPI's event loop (AsyncIOScheduler) — do not use asyncio.run."""
+    await _scan_once()
+
+
 def run_scan():
-    """Sync wrapper called by APScheduler."""
+    """Legacy sync entry — only for manual scripts; prefer run_scan_async under uvicorn."""
     asyncio.run(_scan_once())
