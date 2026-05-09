@@ -112,15 +112,50 @@ git push origin v0.1.0-poc
 # Final POC tag: v1.0.0-poc once all four phases pass their demo gates
 ```
 
-## Phase 4 — pull embedding model
+## Phase 4 — RAG setup
 
-Before starting Phase 4 (RAG), on the Ollama box:
-
+### One-time: pull the embedding model on the Ollama box
 ```bash
 ollama pull nomic-embed-text          # ~770 MB
 ```
 
-Then run the manuals ingest script (TBD in Phase 4 build) to populate `embeddings` table.
+### One-time: install new backend dependencies
+```bash
+cd backend
+pip install pypdf==5.1.0 python-multipart==0.0.12
+# or just: pip install -r requirements.txt
+```
+
+### Ingest documents via the UI (recommended)
+1. Open `http://localhost:5173/rag`
+2. Drag-and-drop PDF, TXT, or MD files onto the upload zone (or click to browse)
+3. Click **Ingest** — progress shows per file ("Embedding file 1 of 3…")
+4. Status card updates automatically when done
+
+### Ingest documents via CLI (bulk / scripted)
+```bash
+# Place PDFs in docs/manuals/ first
+cd backend
+python scripts/ingest_docs.py --dir ../docs/manuals
+
+# Re-ingest (clear old chunks first):
+python scripts/ingest_docs.py --dir ../docs/manuals --clear
+```
+
+### Verify RAG is working
+```bash
+curl http://localhost:8000/api/v1/rag/status
+# Expected: { "ready": true, "total_chunks": N, "sources": [...] }
+
+curl "http://localhost:8000/api/v1/rag/search?q=condenser+cleaning&top_k=3"
+# Expected: ranked results with source_id and content excerpts
+```
+
+### Remove a source from the corpus
+```bash
+curl -X DELETE http://localhost:8000/api/v1/rag/sources/filename.pdf
+# Expected: { "status": "ok", "chunks_removed": N }
+```
 
 ## Render diagrams to HD images
 

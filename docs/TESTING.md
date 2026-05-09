@@ -324,8 +324,51 @@ Result: ___
 ### 4.6 RAG endpoints
 | Endpoint | Expected | Result |
 |----------|----------|--------|
-| `/api/v1/rag/status` | `{"ready":false,"total_chunks":0}` (empty) or ready if ingested | ___ |
-| `/api/v1/rag/search?q=maintenance` | results if corpus populated | ___ |
+| `GET /api/v1/rag/status` | `{"ready":false,"total_chunks":0}` (empty) or ready if ingested | ___ |
+| `GET /api/v1/rag/search?q=maintenance` | results if corpus populated | ___ |
+
+#### RAG ingest (new — Phase 4 complete)
+```bash
+# Upload a PDF and ingest it
+curl -X POST http://localhost:8000/api/v1/rag/ingest \
+  -F "file=@docs/manuals/chiller_manual.pdf"
+```
+Expected response:
+```json
+{ "status": "ok", "source_id": "chiller_manual.pdf", "chunks_stored": 42, "equipment_tags": "chiller_1", "message": "Ingested 42 chunks from 'chiller_manual.pdf'." }
+```
+Result: ___
+
+```bash
+# Re-check status — should now show ready: true
+curl http://localhost:8000/api/v1/rag/status
+```
+Expected: `{"ready":true,"total_chunks":42,"sources":[{"source_id":"chiller_manual.pdf","chunks":42,...}]}`
+Result: ___
+
+```bash
+# Delete a source
+curl -X DELETE http://localhost:8000/api/v1/rag/sources/chiller_manual.pdf
+```
+Expected: `{"status":"ok","source_id":"chiller_manual.pdf","chunks_removed":42}`
+Result: ___
+
+**Error cases:**
+| Test | Expected |
+|------|----------|
+| Upload `.xlsx` file | `400 {"detail":"Unsupported file type '.xlsx'..."}` |
+| Upload empty file | `400 {"detail":"Uploaded file is empty."}` |
+| DELETE non-existent source | `404 {"detail":"Source '...' not found."}` |
+
+Result: ___
+
+#### End-to-end RAG citation test
+1. Ingest at least one PDF (e.g. a chiller manual)
+2. Go to `/analyzer`, select chiller_1, 24h window
+3. Ask: **"What does the manual say about condenser cleaning intervals?"**
+4. Check: response includes `[source: filename §N]` citation markers
+
+Result: ___
 
 ---
 
@@ -542,7 +585,7 @@ These are expected behaviours -- not bugs:
 
 | Item | Status | Notes |
 |------|--------|-------|
-| No authentication | Expected | JWT added in Phase 5 |
+| No authentication | Expected | Internal facility tool — auth intentionally omitted |
 | pgvector needs `pgvector/pgvector:pg16` image | Expected | `docker compose down -v && docker compose up -d` |
 | `gpt-oss:120b` unusable | Expected | 65 GB > VRAM+RAM. Use `qwen2.5:14b`. |
 | 0 anomalies if all readings are normal | Expected | z-score > 3 threshold means truly anomalous data |

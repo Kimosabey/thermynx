@@ -17,9 +17,30 @@ Versions follow `v0.X.0-poc` during POC phase, then `v1.0.0` at production readi
 
 ---
 
+## [v1.0.0-poc] — pending
+> POC sign-off tag. Apply once: (1) full RAG demo passes, (2) walkthrough video recorded, (3) Graylinx + Unicharm sign-off.
+```bash
+git tag -a v1.0.0-poc -m "POC complete — all 4 feature phases working end-to-end"
+git push origin master --tags
+```
+**Remaining before tagging:**
+- [ ] `pip install pypdf==5.1.0 python-multipart==0.0.12` on the backend host
+- [ ] Verify full RAG flow: upload PDF → ingest → ask in Analyzer → response cites `[source: file §N]`
+- [ ] Record walkthrough video covering Phases 1–4
+
+---
+
 ## [v0.4.0-poc] — 2026-05-09
 
-### Added
+### Added (RAG completion — 2026-05-09)
+- `POST /rag/ingest` — multipart file upload (PDF/TXT/MD), auto-chunks at 400 words, embeds via nomic-embed-text, stores in pgvector. Max 50 MB per file.
+- `DELETE /rag/sources/{source_id}` — remove all chunks for a source from the knowledge base
+- `backend/app/services/ingest.py` — shared ingest logic used by both the API and the CLI script: `extract_text`, `chunk_text`, `infer_equipment_tags`, `embed_chunks`, `store_chunks`, `delete_source`, `ingest_document`
+- Frontend Knowledge Base page — drag-and-drop upload zone, per-file ingestion progress, success/error result per file, delete button on source cards, auto-refresh after ingest
+- `pypdf==5.1.0` and `python-multipart==0.0.12` added to requirements
+- RAG retrieval already wired into `/analyze` — `format_rag_context` injects `[source: file §N]` citation markers into the prompt
+
+### Added (docs & analysis — 2026-05-09)
 - `GET /threads/{id}` endpoint for fetching a thread with all messages
 - Graylinx brand redesign: light-capable theme, WCAG 2.2 contrast, GSAP animations, Lucide icons
 - AI Architecture Reference document (`docs/AI_ARCHITECTURE_REFERENCE.md`)
