@@ -114,7 +114,7 @@ async def _sse_stream(
             yield f"data: {json.dumps({'type': 'token', 'content': chunk})}\n\n"
         else:
             status = "ok"
-    except Exception:
+    except Exception as e:
         log.exception(
             "analyze_stream_error audit_id=%s request_id=%s",
             audit_id,

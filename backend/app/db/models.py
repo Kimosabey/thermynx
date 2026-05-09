@@ -17,7 +17,7 @@ except ImportError:
 class AnalysisAudit(Base):
     __tablename__ = "analysis_audit"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)  # 36 = uuid4 with dashes
     equipment_id: Mapped[str | None] = mapped_column(String(64))
     time_range_hours: Mapped[int | None] = mapped_column(Integer)
     question: Mapped[str] = mapped_column(Text)
