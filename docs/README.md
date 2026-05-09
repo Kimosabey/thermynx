@@ -71,6 +71,7 @@ The product roadmap lives one level up: [`../BUILD_PLAN.md`](../BUILD_PLAN.md).
 
 | Document | What it covers |
 |----------|----------------|
+| [TECH_STACK_ASSESSMENT.md](./TECH_STACK_ASSESSMENT.md) | Honest layer-by-layer review of every framework and architecture decision |
 | [FLAWS_AND_IMPROVEMENT_PLAN.md](./FLAWS_AND_IMPROVEMENT_PLAN.md) | All known gaps: P0–P3 severity, root cause, fix description, sprint plan |
 | [../BUILD_PLAN.md](../BUILD_PLAN.md) | Product vision, phases 0–6, architecture decisions, deployment, security roadmap |
 
