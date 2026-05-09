@@ -567,18 +567,19 @@ def test_reports():
         ok(f"POST /reports/daily -> JSON ({elapsed:.1f}s)", s)
         ok(f"  period: {str(raw.get('period_from',''))[:10]} to {str(raw.get('period_to',''))[:10]}", s)
         ok(f"  total_kwh={raw.get('total_kwh','?')}", s)
-        if raw.get("executive_summary"):
-            ok(f"  executive_summary present ({len(raw['executive_summary'])} chars)", s)
-            full_text = raw["executive_summary"]
+        # report returns full markdown document in 'markdown' field
+        md = raw.get("markdown", "")
+        if md:
+            ok(f"  markdown report present ({len(md)} chars)", s)
             for section_heading in ["What happened", "What it cost", "What to act on"]:
-                if section_heading.lower() in full_text.lower():
+                if section_heading.lower() in md.lower():
                     ok(f"  contains '{section_heading}' section", s)
                 else:
                     fail(f"  missing '{section_heading}' section", "", s)
         else:
-            fail("  no executive_summary in response", str(list(raw.keys())), s)
-        if raw.get("kpi_table"):
-            ok("  kpi_table present", s)
+            fail("  no markdown in response", str(list(raw.keys())), s)
+        if raw.get("total_cost_inr") is not None:
+            ok(f"  total_cost_inr=Rs{raw['total_cost_inr']:.2f}", s)
     else:
         preview = str(raw)[:120] if raw else "(empty)"
         fail("POST /reports/daily", f"HTTP {code} | {preview}", s)
