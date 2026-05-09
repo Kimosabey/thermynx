@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sv \"http://localhost:8000/api/v1/threads\" -X POST -H \"Content-Type: application/json\" -d '{}')"
+    ]
+  }
+}
