@@ -21,29 +21,37 @@ log = get_logger("app")
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    async with pg_engine.begin() as conn:
-        # Enable pgvector extension (idempotent — safe to run on every boot)
-        try:
-            from sqlalchemy import text as _t
-            await conn.execute(_t("CREATE EXTENSION IF NOT EXISTS vector"))
+    from sqlalchemy import text as _sql
+
+    # ── 1. Try to enable pgvector (own transaction — failure must not abort startup) ──
+    _pgvector_ok = False
+    try:
+        async with pg_engine.begin() as conn:
+            await conn.execute(_sql("CREATE EXTENSION IF NOT EXISTS vector"))
+            _pgvector_ok = True
             log.info("pgvector_extension_ready")
-        except Exception as e:
-            log.warning("pgvector_extension_unavailable err=%s", e)
+    except Exception as e:
+        log.warning(
+            "pgvector_extension_unavailable — RAG disabled until Postgres image "
+            "includes pgvector. Use image: pgvector/pgvector:pg16 in docker-compose. err=%s", e
+        )
 
+    # ── 2. Create all ORM tables (always runs, fresh transaction) ─────────────────────
+    async with pg_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
-        # IVFFlat index for embedding similarity search (created once, idempotent)
-        try:
-            from sqlalchemy import text as _t
-            await conn.execute(_t(
-                "CREATE INDEX IF NOT EXISTS idx_embeddings_vec "
-                "ON embeddings USING ivfflat (embedding vector_cosine_ops) "
-                "WITH (lists=50)"
-            ))
-        except Exception:
-            pass  # index creation fails if pgvector is unavailable or table not yet populated
-
     log.info("postgres_metadata_ready")
+
+    # ── 3. Create IVFFlat index (own transaction, only if pgvector is enabled) ────────
+    if _pgvector_ok:
+        try:
+            async with pg_engine.begin() as conn:
+                await conn.execute(_sql(
+                    "CREATE INDEX IF NOT EXISTS idx_embeddings_vec "
+                    "ON embeddings USING ivfflat (embedding vector_cosine_ops) "
+                    "WITH (lists=50)"
+                ))
+        except Exception as e:
+            log.warning("ivfflat_index_skipped err=%s", e)
 
     scheduler = AsyncIOScheduler()
     try:
