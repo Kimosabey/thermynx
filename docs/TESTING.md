@@ -1,598 +1,604 @@
-# THERMYNX — End-to-End Testing Checklist
+# THERMYNX -- End-to-End Testing & Verification Guide
 
-Manual test protocol for all POC features. Run top-to-bottom before tagging a release.
-Each section has a **pass criteria** — mark ✅ pass / ❌ fail / ⚠️ partial.
-
-> **Prerequisites:** `docker compose up -d` (Postgres + Redis) · `uvicorn` backend ·
-> `npm run dev` frontend · Tailscale active (MySQL + Ollama reachable).
+Complete checklist for verifying THERMYNX works correctly.
+Run top-to-bottom before tagging any release. Mark each item: OK / FAIL / SKIP.
 
 ---
 
-## 0. Stack Health
+## PART 1 -- Infrastructure Setup
 
-### 0.1 Backend liveness
+### 1.1 Docker containers
+```powershell
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
 ```
-GET http://localhost:8000/healthz
+Expected containers and images:
+
+| Container | Image | Must be |
+|-----------|-------|---------|
+| `*-postgres-1` | `pgvector/pgvector:pg16` | healthy |
+| `*-redis-1` | `redis:7-alpine` | healthy |
+
+If Postgres is still `postgres:16-alpine`, run:
+```powershell
+docker compose down -v   # wipes volume -- OK for POC
+docker compose up -d
 ```
-Expected: `{"status": "ok"}`  
 Result: ___
 
-### 0.2 Full health check
+### 1.2 pgvector extension enabled
+```sql
+-- docker compose exec postgres psql -U thermynx -d thermynx_app -c "SELECT extname, extversion FROM pg_extension;"
 ```
-GET http://localhost:8000/api/v1/health
-```
-Expected fields:
-- `status`: `"ok"` (not `"degraded"`)
-- `db.connected`: `true`
-- `ollama.connected`: `true`
-- `ollama.default_model`: `"qwen2.5:14b"`
-
+Expected: row with `extname=vector`
 Result: ___
 
-### 0.3 Frontend loads
-Open `http://localhost:5173`  
-Expected: Dashboard loads, no console errors, DB + Ollama status dots are green  
-Result: ___
-
-### 0.4 Postgres tables created
+### 1.3 Postgres tables created
 ```sql
 -- docker compose exec postgres psql -U thermynx -d thermynx_app -c "\dt"
 ```
-Expected tables: `analysis_audit`, `anomalies`, `baselines`, `agent_runs`,
-`threads`, `messages`, `embeddings`  
+Expected tables:
+- [ ] `analysis_audit`
+- [ ] `anomalies`
+- [ ] `baselines`
+- [ ] `agent_runs`
+- [ ] `threads`
+- [ ] `messages`
+- [ ] `embeddings`
+
 Result: ___
 
----
-
-## 1. Dashboard (`/dashboard`)
-
-### 1.1 KPI cards load
-Expected: 6 animated KPI cards — CH1 kW/TR, CH2 kW/TR, CH1 Load%, CH2 Load%, Ambient °C, CHW Supply °C  
-Result: ___
-
-### 1.2 Equipment cards load
-Expected: 6 equipment panels — Chiller 1, Chiller 2, Cooling Tower 1, Cooling Tower 2, Condenser Pump 1-2, Condenser Pump 3  
-Result: ___
-
-### 1.3 Running status
-Expected: `RUNNING` badge (green pulsing dot) on active equipment, `STANDBY` on offline  
-Result: ___
-
-### 1.4 Refresh works
-Click Refresh button → cards reload without page refresh  
-Result: ___
-
-### 1.5 kW/TR colour coding
-Expected: green if < 0.65, yellow if 0.65–0.85, red if > 0.85  
-Result: ___
-
----
-
-## 2. AI Analyzer (`/analyzer`)
-
-### 2.1 Equipment selector populates
-Expected: dropdown shows all 6 equipment grouped by type (Chillers / Cooling Towers / Pumps)  
-Result: ___
-
-### 2.2 Timeseries chart renders
-1. Select **Chiller 1**
-2. Time window: **Last 24 hours**
-
-Expected: Recharts chart appears with kW/TR area (gradient fill) + kW bars + efficiency reference lines at 0.65 and 0.85  
-Result: ___
-
-### 2.3 SSE streaming — basic
-1. Type: _"What is the current kW/TR efficiency of Chiller 1?"_
-2. Click **Analyze**
-
-Expected:
-- ThinkingDots appear immediately
-- First tokens appear within **≤ 3 seconds**
-- Markdown streams token-by-token
-- `done` frame received within **≤ 8 seconds**
-- Model badge + response time shown in header
-
-Result: ___ | First token: ___s | Total: ___s
-
-### 2.4 Quick prompt works
-Click any quick-prompt chip → text fills the textarea  
-Result: ___
-
-### 2.5 Stop button works
-1. Start an analysis
-2. Click **Stop** while streaming
-
-Expected: stream stops, no further tokens, backend audit row shows `status=cancelled`  
-Result: ___
-
-### 2.6 Audit row created
-After any analysis:
+### 1.4 Column widths correct (UUID = 36 chars)
 ```sql
-SELECT id, equipment_id, status, model, total_ms FROM analysis_audit ORDER BY created_at DESC LIMIT 1;
+-- docker compose exec postgres psql -U thermynx -d thermynx_app \
+--   -c "SELECT column_name, character_maximum_length FROM information_schema.columns WHERE table_name='analysis_audit' AND column_name='id';"
 ```
-Expected: row exists with `status=ok`  
+Expected: `character_maximum_length = 36`
 Result: ___
 
-### 2.7 Ctrl+Enter shortcut
-Focus textarea → press Ctrl+Enter → analysis starts  
+### 1.5 Redis is reachable
+```powershell
+docker compose exec redis redis-cli ping
+```
+Expected: `PONG`
+Result: ___
+
+### 1.6 Backend starts cleanly
+```powershell
+cd backend
+../.venv/Scripts/uvicorn main:app --reload --port 8000
+```
+Watch startup log for ALL of these lines:
+- [ ] `pgvector_extension_ready` (or warning if still on alpine image)
+- [ ] `postgres_metadata_ready`
+- [ ] `Anomaly scan scheduler started (every 5 min)`
+- [ ] `Application startup complete`
+
+Result: ___
+
+### 1.7 Frontend starts
+```powershell
+cd frontend && npm run dev
+```
+Open `http://localhost:5173` -- no blank screen, no console errors.
+Result: ___
+
+### 1.8 Tailscale / external services
+```powershell
+tailscale status
+```
+- [ ] MySQL `unicharm` host is listed and reachable
+- [ ] Ollama server (`100.125.103.28`) is listed and reachable
+
 Result: ___
 
 ---
 
-## 3. Efficiency Benchmarker (`/efficiency`)
+## PART 2 -- Automated Test Suite
 
-### 3.1 Page loads with both chillers
-Expected: 2 efficiency cards — Chiller 1 and Chiller 2  
-Result: ___
-
-### 3.2 Band classification correct
-Expected: each card shows one of: Excellent / Good / Fair / Poor / Critical  
-Verify colour matches: green/cyan/yellow/orange/red  
-Result: ___
-
-### 3.3 Animated band bar
-Expected: white marker animates to the correct position on the colour bar (0.55→1.10 scale)  
-Result: ___
-
-### 3.4 Stats grid populated
-Expected (per card): Best kW/TR, Worst kW/TR, Avg Load %, CHW ΔT, Run %, Samples  
-Result: ___
-
-### 3.5 Loss drivers shown (if inefficient)
-If band is Fair/Poor/Critical, expected: red "Loss Drivers" box with specific reasons  
-(e.g. "Low CHW ΔT (4.1°C < 5.0°C)")  
-Result: ___
-
-### 3.6 Time window selector works
-Change to **Last 7 days** → cards reload with new data  
-Result: ___
-
-### 3.7 API directly
+### 2.1 Full API test suite
+```powershell
+cd backend
+python tests/test_all_apis.py --base http://localhost:8000
 ```
-GET http://localhost:8000/api/v1/efficiency/chiller_1?hours=24
+Expected: `49+ passed, 0-1 skipped (RAG skip if no docs), 0 failed`
+
+Actual result: ___ passed / ___ failed / ___ skipped
+
+### 2.2 Original smoke test
+```powershell
+python tests/smoke_test.py --base http://localhost:8000
 ```
-Expected: JSON with `band`, `kw_per_tr_avg`, `delta_pct`, `loss_drivers[]`  
-Result: ___
+Expected: `10 passed, 0 failed`
+
+Actual result: ___ passed / ___ failed
 
 ---
 
-## 4. Anomaly Detector (`/anomalies`)
+## PART 3 -- Database Verification
 
-### 4.1 Summary chips appear
-Expected: Critical count + Warning count + Total count chips at top  
-Result: ___
-
-### 4.2 Scan now works
-Click **Scan now** → results refresh, "last scanned" timestamp updates  
-Result: ___
-
-### 4.3 Anomaly cards (if any)
-If anomalies found, expected per card:
-- Equipment name + metric
-- z-score pill (e.g. `+3.7σ`)
-- CRITICAL / WARNING badge
-- Value, Baseline, Std Dev shown
-- Description text
-
-Result: ___
-
-### 4.4 Empty state
-If no anomalies: green check mark + "No anomalies detected" message  
-Result: ___
-
-### 4.5 Live scan API
-```
-GET http://localhost:8000/api/v1/anomalies/live?hours=1
-```
-Expected: `{"anomalies": [...], "total": N, "hours": 1}`  
-Result: ___
-
-### 4.6 APScheduler job runs
-Check backend logs after 5 minutes:
-```
-Anomaly scan complete — N new event(s) persisted
-```
-Result: ___
-
----
-
-## 5. Energy Forecaster (`/forecast`)
-
-### 5.1 Forecast chart renders
-1. Select **Chiller 1**
-2. Metric: **kw_per_tr**
-3. Horizon: **Next 24h**
-
-Expected: purple line (predicted) + shaded CI band (±1σ) + green/red reference lines  
-Result: ___
-
-### 5.2 Summary KPIs populated
-Expected: Avg Predicted, Min Predicted, Max Predicted, High Confidence hours  
-Result: ___
-
-### 5.3 Metric selector
-Switch to **kw** → chart updates with kW forecast (no reference lines)  
-Result: ___
-
-### 5.4 Equipment selector
-Switch to **Cooling Tower 1** → only `kw` metric available (not kw_per_tr)  
-Result: ___
-
-### 5.5 API response
-```
-GET http://localhost:8000/api/v1/forecast/chiller_1?metric=kw_per_tr&horizon=24&history_days=7
-```
-Expected: `{points: [{hour_label, predicted, lower, upper, confidence}], note: "..."}`  
-Result: ___
-
----
-
-## 6. Comparison View (`/compare`)
-
-### 6.1 Default loads Chiller 1 vs Chiller 2
-Expected: overlay chart with two lines (cyan = CH1, purple = CH2)  
-Result: ___
-
-### 6.2 Winner banner
-Expected: "🏆 Chiller X is performing better (kW/TR: X.XXX vs Y.YYY — delta Z.ZZZ kW/TR)"  
-Result: ___
-
-### 6.3 Overlay chart
-Expected: both kW/TR lines on same chart with synced x-axis + green/red reference lines  
-Result: ___
-
-### 6.4 Side-by-side stat table
-Expected rows: kW/TR avg, kW avg, TR avg, Load %, CHW ΔT, Run %, Eff band, Δ vs design  
-Better value per row highlighted in green  
-Result: ___
-
-### 6.5 Equipment selector changes
-Change equipment B → chart and table update  
-Result: ___
-
-### 6.6 API
-```
-GET http://localhost:8000/api/v1/compare?a=chiller_1&b=chiller_2&hours=24
-```
-Expected: `{a: {summary, efficiency, timeseries}, b: {summary, efficiency, timeseries}}`  
-Result: ___
-
----
-
-## 7. Predictive Maintenance (`/maintenance`)
-
-### 7.1 Page loads with all equipment
-Expected: health score cards for all 6 equipment, sorted by urgency (lowest score first)  
-Result: ___
-
-### 7.2 Health score gauges
-Expected: SVG radial arc per equipment, colour-coded (green >75, yellow 50–75, red <50)  
-Result: ___
-
-### 7.3 Grade badge
-Expected: Excellent / Good / Fair / Poor / Critical per equipment  
-Result: ___
-
-### 7.4 Priority flags
-Expected (if degraded): flags like `high_anomalies`, `degradation_trend`, `low_running`  
-Result: ___
-
-### 7.5 API
-```
-GET http://localhost:8000/api/v1/maintenance?hours=168
-```
-Expected: `{assets: [{id, name, score, grade, flags, recommendations}]}`  
-Result: ___
-
----
-
-## 8. Cost Analytics (`/cost`)
-
-### 8.1 Plant total KPI
-Expected: animated counter showing total kWh + total ₹ for selected window  
-Result: ___
-
-### 8.2 Equipment breakdown bar chart
-Expected: horizontal bar chart with each equipment's kWh + ₹ + % of plant  
-Result: ___
-
-### 8.3 Tariff display
-Expected: "₹8.5/kWh" (or configured TARIFF_INR_PER_KWH) shown  
-Result: ___
-
-### 8.4 Time window
-Change to **Last 7 days** → totals update  
-Result: ___
-
-### 8.5 API
-```
-GET http://localhost:8000/api/v1/cost?hours=24
-```
-Expected: `{total_kwh, total_inr, rs_per_tr_hr, equipment: [...]}`  
-Result: ___
-
----
-
-## 9. Report Builder (`/reports`)
-
-### 9.1 KPI table populates
-Expected: table with equipment-level kW/TR + cost data for selected period  
-Result: ___
-
-### 9.2 LLM exec summary streams
-Click **Generate Report** → ThinkingDots → markdown streams in:  
-Expected 3 sections: **What happened** / **What it cost** / **What to act on**  
-Result: ___ | Latency: ___s
-
-### 9.3 Download button
-Click **Download** → browser saves a `.md` file with full report content  
-Result: ___
-
-### 9.4 API
-```
-POST http://localhost:8000/api/v1/reports/daily
-Body: {"hours": 24}
-```
-Expected: SSE stream with KPI block + LLM summary  
-Result: ___
-
----
-
-## 10. Conversational Memory (via AI Analyzer)
-
-### 10.1 New thread creation
-In AI Analyzer: click **New Thread** → toast "New conversation started"  
-Result: ___
-
-### 10.2 Thread appears in list
-Expected: sidebar/dropdown shows the new thread with auto-generated title  
-Result: ___
-
-### 10.3 Message persists
-1. Ask "What is Chiller 1 efficiency?" → wait for response
-2. Ask follow-up: "Why is it at that level?"
-
-Expected: LLM references the previous Q&A in its answer (conversation aware)  
-Result: ___
-
-### 10.4 Thread messages API
-```
-GET http://localhost:8000/api/v1/threads
-GET http://localhost:8000/api/v1/threads/{id}/messages
-```
-Expected: threads list + messages with role + content  
-Result: ___
-
-### 10.5 Thread title auto-set
-Expected: thread title = first question (truncated to 200 chars)  
-Result: ___
-
----
-
-## 11. Cooling Tower Optimizer
-
-### 11.1 API
-```
-GET http://localhost:8000/api/v1/cooling-tower/cooling_tower_1/optimize?hours=24
-```
-Expected: `{staging_hint, current_duty_pct, recommended_cells, estimated_saving_kwh}`  
-Result: ___
-
----
-
-## 12. AI Agents (`/agent`)
-
-### 12.1 Hub loads with 5 mode cards
-Expected: Investigator, Optimizer, Daily Brief, Root Cause, Maintenance — each with colour, tagline, presets  
-Result: ___
-
-### 12.2 Mode card selection animates
-Click a mode → top accent bar animates in, panel below transitions  
-Result: ___
-
-### 12.3 Preset chips fill textarea
-Click any preset → textarea fills  
-Result: ___
-
-### 12.4 Investigator — full run
-1. Select **Investigator**
-2. Equipment: **Chiller 1**, Window: **24h**
-3. Click preset: "Investigate Chiller 1 efficiency — why is it underperforming?"
-4. Click **Run Investigator**
-
-Expected:
-- Left pane: live trace — `tool_call` cards appear (⚡ Efficiency Calc, 🔍 Anomaly Scan, etc.)
-- Each tool card expandable (shows args/result as JSON)
-- Right pane: markdown streams in when agent finishes tool loop
-- Header shows: model + step count + total time
-
-Result: ___ | Steps: ___ | Time: ___s
-
-### 12.5 Tool calls are logged
+### 3.1 MySQL (unicharm) -- source data check
 ```sql
-SELECT id, mode, steps_taken, status, total_ms FROM agent_runs ORDER BY created_at DESC LIMIT 1;
+-- Connect: mysql -h <tailscale-ip> -P 3307 -u ro_user -p unicharm
+
+-- Check normalized tables exist and have data
+SELECT TABLE_NAME, TABLE_ROWS
+FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = 'unicharm'
+  AND TABLE_NAME LIKE '%_normalized'
+ORDER BY TABLE_NAME;
 ```
-Expected: row with `status=ok`, steps ≥ 2  
+Expected: at least 6 normalized tables with row counts > 0
+
 Result: ___
 
-### 12.6 Optimizer mode
-1. Select **Optimizer**
-2. Preset: "How can I reduce total kWh consumption this shift?"
-3. Run
-
-Expected: structured markdown with Current State / Optimization Opportunities / Expected Savings  
-Result: ___
-
-### 12.7 Daily Brief mode
-1. Select **Daily Brief**
-2. No equipment needed — just click preset "Generate a complete plant status briefing"
-3. Run
-
-Expected: covers all equipment, top 3 action items  
-Result: ___
-
-### 12.8 Stop mid-run
-Start any agent → click **Stop** → trace freezes, `cancelled` logged  
-Result: ___
-
-### 12.9 Agent history API
+```sql
+-- Check latest data in each chiller table
+SELECT 'chiller_1' AS eq, MAX(slot_time) AS latest FROM chiller_1_normalized
+UNION ALL
+SELECT 'chiller_2', MAX(slot_time) FROM chiller_2_normalized
+UNION ALL
+SELECT 'cooling_tower_1', MAX(slot_time) FROM cooling_tower_1_normalized;
 ```
-GET http://localhost:8000/api/v1/agent/history?limit=5
+Expected: `latest` dates are consistent (all roughly the same date).
+Note the date -- this is your `TELEMETRY_TIME_ANCHOR` window end.
+
+Actual latest date: ___
+
+```sql
+-- Verify read-only access (this should FAIL with permission error)
+INSERT INTO chiller_1_normalized (slot_time) VALUES (NOW());
 ```
-Expected: last 5 runs with mode, steps, status, total_ms  
+Expected: `ERROR 1142: INSERT command denied` (confirms read-only user)
+Result: ___
+
+### 3.2 MySQL -- data quality checks
+```sql
+-- Check for null kW/TR values (equipment running but no efficiency reading)
+SELECT COUNT(*) AS total,
+       SUM(CASE WHEN is_running=1 AND kw_per_tr IS NULL THEN 1 ELSE 0 END) AS running_no_kwtr
+FROM chiller_1_normalized
+WHERE slot_time >= DATE_SUB(MAX(slot_time) OVER(), INTERVAL 24 HOUR);
+```
+Note: some nulls are expected during off-peak or standby periods.
+Result: ___
+
+```sql
+-- kW/TR distribution -- sanity check
+SELECT
+  MIN(kw_per_tr) AS min_kwtr,
+  AVG(kw_per_tr) AS avg_kwtr,
+  MAX(kw_per_tr) AS max_kwtr,
+  COUNT(*) AS rows
+FROM chiller_1_normalized
+WHERE is_running = 1
+  AND slot_time >= (SELECT DATE_SUB(MAX(slot_time), INTERVAL 7 DAY) FROM chiller_1_normalized);
+```
+Expected: avg_kwtr between 0.4 and 2.0 (realistic HVAC range)
+Result: ___
+
+### 3.3 Postgres (thermynx_app) -- schema verification
+```sql
+-- docker compose exec postgres psql -U thermynx -d thermynx_app
+
+-- Check all column types are correct
+SELECT table_name, column_name, data_type, character_maximum_length
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND column_name = 'id'
+ORDER BY table_name;
+```
+Expected: all `id` columns have `character_maximum_length = 36` or `data_type = uuid`
+Result: ___
+
+```sql
+-- Check analysis_audit rows after running some analyses
+SELECT id, equipment_id, status, model, total_ms, created_at
+FROM analysis_audit
+ORDER BY created_at DESC
+LIMIT 5;
+```
+Expected: rows with `status = 'ok'` after successful analyses
+Result: ___
+
+```sql
+-- Check agent_runs after running agents
+SELECT id, mode, steps_taken, status, total_ms
+FROM agent_runs
+ORDER BY created_at DESC
+LIMIT 5;
+```
+Result: ___
+
+```sql
+-- Check anomalies table (populated by background job every 5 min)
+SELECT equipment_id, metric, severity, z_score, created_at
+FROM anomalies
+ORDER BY created_at DESC
+LIMIT 10;
+```
+Note: table may be empty if no anomalies detected in the data window.
+Result: ___
+
+```sql
+-- Check embeddings table
+SELECT source_id, COUNT(*) AS chunks, MAX(created_at) AS last_ingested
+FROM embeddings
+GROUP BY source_id;
+```
+Expected: empty if no docs ingested; populated after running ingest_docs.py
+Result: ___
+
+```sql
+-- Check pgvector index exists
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE tablename = 'embeddings'
+  AND indexname = 'idx_embeddings_vec';
+```
+Expected: one row with `ivfflat` in the index definition
+Result: ___
+
+### 3.4 Redis -- cache state
+```powershell
+docker compose exec redis redis-cli INFO keyspace
+```
+Expected: shows `db0` with some keys after frontend has made requests
+Result: ___
+
+```powershell
+# Check key count
+docker compose exec redis redis-cli DBSIZE
+```
 Result: ___
 
 ---
 
-## 13. Knowledge Base / RAG (`/rag`)
+## PART 4 -- API Endpoint Verification
 
-### 13.1 Page loads with corpus status
-Expected:
-- If no docs ingested: yellow "No documents ingested" banner + ingestion instructions
-- If docs ingested: source cards with chunk counts + last-ingested timestamp
+For each endpoint below, test with curl or browser (GET) / Postman (POST).
 
-Result: ___
+### 4.1 Core
+| Endpoint | Method | Expected | Result |
+|----------|--------|----------|--------|
+| `/healthz` | GET | `{"status":"ok"}` | ___ |
+| `/api/v1/health` | GET | `status=ok`, `db.connected=true`, `ollama.connected=true` | ___ |
+| `/api/v1/equipment` | GET | Array of 6 equipment | ___ |
+| `/api/v1/equipment/summary?hours=24` | GET | Summary with kW/TR per chiller | ___ |
 
-### 13.2 Ingestion (requires manual doc placement)
+### 4.2 Timeseries (all resolutions)
+| Endpoint | Expected | Result |
+|----------|----------|--------|
+| `/api/v1/equipment/chiller_1/timeseries?hours=24&resolution=15m` | 97 pts, window from DB latest | ___ |
+| `/api/v1/equipment/chiller_1/timeseries?hours=24&resolution=5m` | ~289 pts | ___ |
+| `/api/v1/equipment/chiller_1/timeseries?hours=24&resolution=1h` | ~25 pts | ___ |
+| `/api/v1/equipment/chiller_2/timeseries?hours=24&resolution=15m` | 97 pts | ___ |
+| `/api/v1/equipment/cooling_tower_1/timeseries?hours=24&resolution=15m` | data returned | ___ |
+| `/api/v1/equipment/condenser_pump_1/timeseries?hours=24&resolution=15m` | data returned | ___ |
+
+### 4.3 Intelligence modules
+| Endpoint | Expected | Result |
+|----------|----------|--------|
+| `/api/v1/efficiency?hours=24` | 2 chillers, band + drivers | ___ |
+| `/api/v1/efficiency/chiller_1?hours=24` | band, kw_per_tr_avg, delta_pct | ___ |
+| `/api/v1/anomalies/live?hours=1` | anomalies array (may be empty) | ___ |
+| `/api/v1/anomalies/history?limit=10` | persisted anomalies | ___ |
+| `/api/v1/forecast/chiller_1?metric=kw_per_tr&horizon=24` | 24 forecast points with CI | ___ |
+| `/api/v1/compare?a=chiller_1&b=chiller_2&hours=24` | both summaries, efficiency, timeseries | ___ |
+
+### 4.4 Advanced features (POST with body)
 ```bash
-# Place any PDF/TXT/MD in docs/manuals/ then:
+# Analyze (SSE -- use curl -N)
+curl -N -X POST http://localhost:8000/api/v1/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"question":"What is kW/TR?","equipment_id":"chiller_1","hours":24}'
+```
+Expected: `data: {"type":"token",...}` lines stream in, ends with `data: {"type":"done",...}`
+Result: ___
+
+```bash
+# Report
+curl -N -X POST http://localhost:8000/api/v1/reports/daily \
+  -H "Content-Type: application/json" \
+  -d '{"hours":24}'
+```
+Result: ___
+
+```bash
+# Agent run
+curl -N -X POST http://localhost:8000/api/v1/agent/run \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"brief","goal":"One sentence plant status."}'
+```
+Result: ___
+
+### 4.5 Phase 3 features
+| Endpoint | Expected | Result |
+|----------|----------|--------|
+| `/api/v1/maintenance?hours=168` | 6 assets with score + grade | ___ |
+| `/api/v1/cost?hours=24` | total_kwh, total_inr, equipment breakdown | ___ |
+| `/api/v1/cooling-tower/cooling_tower_1/optimize?hours=24` | staging_hint present | ___ |
+| `POST /api/v1/threads` | `{"id":"...","title":null}` | ___ |
+| `GET /api/v1/threads` | threads array | ___ |
+| `GET /api/v1/agent/history` | runs array | ___ |
+
+### 4.6 RAG endpoints
+| Endpoint | Expected | Result |
+|----------|----------|--------|
+| `/api/v1/rag/status` | `{"ready":false,"total_chunks":0}` (empty) or ready if ingested | ___ |
+| `/api/v1/rag/search?q=maintenance` | results if corpus populated | ___ |
+
+---
+
+## PART 5 -- Frontend Page Checks
+
+Open each page in browser. Mark OK if page loads without errors.
+
+| Page | URL | Check | Result |
+|------|-----|-------|--------|
+| Dashboard | `/dashboard` | KPI cards animate in, equipment cards show RUNNING/STANDBY, DB+Ollama status green | ___ |
+| AI Analyzer | `/analyzer` | Equipment dropdown populated, chart renders on selection, streaming works | ___ |
+| Efficiency | `/efficiency` | 2 chiller cards with band bars + colour coding | ___ |
+| Anomalies | `/anomalies` | Scan-now button works, counter chips show counts | ___ |
+| Forecast | `/forecast` | Purple gradient CI band chart renders | ___ |
+| Compare | `/compare` | Two-line overlay chart + stat table | ___ |
+| Maintenance | `/maintenance` | Health score gauges per equipment | ___ |
+| Cost | `/cost` | Total kWh + bar chart breakdown | ___ |
+| Reports | `/reports` | Generate button streams LLM summary, Download saves .md | ___ |
+| AI Agents | `/agent` | 5 mode cards, run produces trace + streaming report | ___ |
+| Knowledge | `/rag` | Status card shows corpus state | ___ |
+
+### Frontend console checks
+Open DevTools Console (F12). After loading each page:
+- [ ] No `motion()` deprecation warnings
+- [ ] No `fontVariantNumeric` DOM prop warnings
+- [ ] No 500 errors in Network tab
+- [ ] No CORS errors
+
+Result: ___
+
+---
+
+## PART 6 -- Ollama / LLM Verification
+
+### 6.1 Model list
+```powershell
+# On Ollama server (via SSH/RDP) or via API:
+curl http://100.125.103.28:11434/api/tags | python -m json.tool
+```
+Expected models: `qwen2.5:14b`, `nomic-embed-text:latest`, `phi:latest`
+Result: ___
+
+### 6.2 Default model set correctly
+```bash
+curl http://localhost:8000/api/v1/health | python -m json.tool
+```
+Expected: `"default_model": "qwen2.5:14b"`
+Result: ___
+
+### 6.3 qwen2.5:14b fits in VRAM
+On the Ollama server, check VRAM usage while a model is running:
+```
+nvidia-smi
+```
+Expected: qwen2.5:14b uses ~9 GB of the 20 GB available.
+Result: ___
+
+### 6.4 nomic-embed-text for RAG
+```bash
+curl -X POST http://100.125.103.28:11434/api/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{"model":"nomic-embed-text","prompt":"test"}'
+```
+Expected: JSON with `"embedding": [...]` array of 768 floats
+Result: ___
+
+---
+
+## PART 7 -- RAG Setup (if using)
+
+### 7.1 Ingest documents
+```powershell
+# Place PDF/TXT/MD files in docs/manuals/ first
 cd backend
 python scripts/ingest_docs.py --dir ../docs/manuals
 ```
 Expected output:
 ```
 Processing: <filename>
-  chunks: N × ~400 words
+  chunks: N x ~400 words
   embedding via nomic-embed-text... done (N vectors stored)
-Ingestion complete — N chunks across 1 file(s)
+Ingestion complete -- N chunks across 1 file(s)
 ```
 Result: ___
 
-### 13.3 Corpus status after ingestion
+### 7.2 Verify embeddings in Postgres
+```sql
+SELECT source_id, COUNT(*) AS chunks
+FROM embeddings
+GROUP BY source_id;
 ```
-GET http://localhost:8000/api/v1/rag/status
-```
-Expected: `{ready: true, total_chunks: N, sources: [...]}`  
+Expected: rows with chunk counts matching ingested files
 Result: ___
 
-### 13.4 Semantic search
-1. Type: "maintenance interval condenser"
-2. Click **Search**
-
-Expected: ranked results with % match scores, source filenames, expandable content  
-Result: ___
-
-### 13.5 RAG in Analyzer (after ingestion)
-1. Go to AI Analyzer
-2. Ask: "What does the manual say about condenser tube cleaning intervals?"
-
-Expected: answer includes `[source: filename §N]` citations  
-Result: ___
-
-### 13.6 RAG in Agent (retrieve_manual tool)
-In Investigator mode, goal: "Check manual for chiller maintenance specs"  
-Expected: agent calls `📜 retrieve_manual` tool in trace  
-Result: ___
-
----
-
-## 14. Sidebar Navigation
-
-### 14.1 All routes accessible
-Click each sidebar item and confirm page loads:
-- [ ] Dashboard `/dashboard`
-- [ ] AI Analyzer `/analyzer`
-- [ ] Efficiency `/efficiency`
-- [ ] Anomalies `/anomalies`
-- [ ] Forecast `/forecast`
-- [ ] Compare `/compare`
-- [ ] Maintenance `/maintenance`
-- [ ] Cost `/cost`
-- [ ] Reports `/reports`
-- [ ] AI Agents `/agent`
-- [ ] Knowledge `/rag`
-
-Result: ___
-
-### 14.2 Desktop collapse
-Click chevron → sidebar collapses to 64px icon-only with spring animation  
-Click again → expands back  
-Result: ___
-
-### 14.3 Mobile drawer
-Resize browser to < 1536px → sidebar disappears, hamburger appears in top bar  
-Click hamburger → drawer slides in with overlay  
-Click overlay → drawer closes  
-Result: ___
-
-### 14.4 Active route highlight
-Navigate to any page → that sidebar item has cyan left accent + subtle background  
-Result: ___
-
----
-
-## 15. Automated Smoke Test
-
+### 7.3 Test semantic search
 ```bash
-cd backend
-python tests/smoke_test.py
+curl "http://localhost:8000/api/v1/rag/search?q=maintenance+interval&top_k=3"
 ```
+Expected: `{"total":N,"results":[...]}` with relevance scores
+Result: ___
 
-Expected output summary:
-```
-Results: 10 passed, 0 failed / 10 total
-All checks passed.
-```
+### 7.4 RAG in AI Analyzer
+1. Go to `/analyzer`
+2. Select Chiller 1, 24h window
+3. Ask: "What does the manual say about condenser cleaning intervals?"
+4. Check: response includes `[source: filename §N]` citations
 
-Copy actual result here:
-```
-Results: ___ passed, ___ failed / ___ total
-```
+Result: ___
 
 ---
 
-## 16. Performance Spot Checks
+## PART 8 -- Performance Spot Checks
 
-| Endpoint | Target p95 | Measured |
-|----------|-----------|---------|
-| `GET /api/v1/equipment` | < 150 ms | ___ ms |
-| `GET /api/v1/equipment/summary` | < 600 ms | ___ ms |
-| `GET /api/v1/equipment/chiller_1/timeseries?hours=24` | < 600 ms | ___ ms |
-| `POST /api/v1/analyze` — first token | < 3 s | ___ s |
-| `POST /api/v1/analyze` — full (24h) | < 8 s | ___ s |
-| `POST /api/v1/agent/run` — first tool result | < 5 s | ___ s |
-| Frontend initial load (FCP) | < 1.5 s | ___ s |
+Measure with browser DevTools Network tab or curl with timing.
 
----
-
-## 17. Known Limitations (POC)
-
-These are expected — not bugs:
-
-| Limitation | Notes |
-|------------|-------|
-| No auth | All endpoints are open. Phase 5 hardening adds JWT. |
-| pgvector requires restart if not enabled at boot | Run `docker compose down -v && docker compose up -d` after switching to `pgvector/pgvector:pg16` image |
-| `gpt-oss:120b` not runnable | 65 GB > 20 GB VRAM + 32 GB RAM. Ignore. |
-| Anomaly baseline needs 72h+ of data | If data < 72h, baseline quality is reduced |
-| Forecast needs 7-day history | Returns fewer points for equipment with limited historical data |
-| RAG requires manual ingestion | Drop files in `docs/manuals/` and run `scripts/ingest_docs.py` |
-| PDF extraction requires `pip install pypdf` | TXT/MD works out of the box |
-| Reports use flat tariff | TOU tariff support is post-POC |
+| Endpoint | Target p95 | Measured | Pass? |
+|----------|-----------|---------|-------|
+| `GET /api/v1/equipment` | < 200 ms | ___ ms | ___ |
+| `GET /api/v1/equipment/summary?hours=24` | < 1 s | ___ ms | ___ |
+| `GET /timeseries?hours=24&resolution=15m` | < 800 ms | ___ ms | ___ |
+| `POST /analyze` -- first token | < 3 s | ___ s | ___ |
+| `POST /analyze` -- full response | < 8 s | ___ s | ___ |
+| `POST /agent/run` -- first tool result | < 5 s | ___ s | ___ |
+| Frontend Dashboard FCP | < 2 s | ___ s | ___ |
 
 ---
 
-## Sign-off
+## PART 9 -- Background Job Verification
 
-| Phase | Feature | Status |
-|-------|---------|--------|
-| Phase 0 | Foundation | ☐ |
-| Phase 1 | AI Analyzer + streaming | ☐ |
-| Phase 2 | Efficiency + Anomalies + Forecast + Compare | ☐ |
-| Phase 3 | Maintenance + Cost + Reports + Memory + Agents (5 modes) | ☐ |
-| Phase 4 | RAG + Knowledge Base | ☐ |
+### 9.1 Anomaly scan runs automatically
+Wait 5-10 minutes after starting the backend, then:
+```sql
+-- Check if anomaly scan has run
+SELECT COUNT(*) FROM anomalies;
 
-**Tester:** ___________________  
-**Date:** ___________________  
-**Backend version:** `git rev-parse --short HEAD` → ___________________  
-**Overall result:** ☐ PASS → safe to tag `v1.0.0-poc` &nbsp;&nbsp; ☐ FAIL → see issues above
+-- Check APScheduler logged the job
+-- Look in uvicorn terminal for: "Anomaly scan complete -- N new event(s)"
+```
+Result: ___
+
+### 9.2 Verify anomaly scan covers all equipment
+```bash
+curl "http://localhost:8000/api/v1/anomalies/history?limit=20"
+```
+Check that `equipment_id` values cover multiple pieces of equipment (not just one).
+Result: ___
+
+---
+
+## PART 10 -- Error Handling Verification
+
+These should return proper error responses (not 500):
+
+| Test | Expected response |
+|------|------------------|
+| `GET /api/v1/equipment/unknown_eq/timeseries` | `404 {"detail":"Unknown equipment: unknown_eq"}` |
+| `GET /api/v1/efficiency/cooling_tower_1` | `400 {"detail":"...not a chiller..."}` |
+| `GET /api/v1/compare?a=chiller_1&b=chiller_99` | `404 {"detail":"Unknown equipment: chiller_99"}` |
+| `POST /api/v1/agent/run` with `mode=invalid` | `200 SSE {"type":"error","detail":"Unknown mode..."}` |
+| `GET /api/v1/analyze` (GET not POST) | `405 {"detail":"Method Not Allowed"}` |
+
+Result: ___
+
+---
+
+## PART 11 -- Data Integrity Checks
+
+### 11.1 Analysis audit trail
+After running 2-3 analyses:
+```sql
+SELECT id, equipment_id, status, model, total_ms, created_at
+FROM analysis_audit
+ORDER BY created_at DESC
+LIMIT 5;
+```
+- [ ] `status = 'ok'` for completed analyses
+- [ ] `total_ms` is populated (not null)
+- [ ] `model = 'qwen2.5:14b'`
+- [ ] `id` is 36 chars (UUID format)
+
+Result: ___
+
+### 11.2 Thread/message persistence
+1. Go to `/analyzer`, create a new thread
+2. Send a question, wait for response
+3. Send a follow-up question that references the first
+
+```sql
+SELECT t.id, t.title, COUNT(m.id) AS msg_count
+FROM threads t
+LEFT JOIN messages m ON m.thread_id = t.id
+GROUP BY t.id, t.title
+ORDER BY t.created_at DESC
+LIMIT 5;
+```
+Expected: thread with 2 messages (user Q + assistant A)
+Result: ___
+
+### 11.3 No writes to unicharm MySQL
+```sql
+-- Verify THERMYNX never wrote to the source DB
+-- On unicharm MySQL:
+SHOW BINARY LOGS;
+-- Check for any THERMYNX-sourced writes (should be none)
+```
+Expected: no writes from the THERMYNX user (we use read-only credentials)
+Result: ___
+
+---
+
+## PART 12 -- Known Limitations (POC)
+
+These are expected behaviours -- not bugs:
+
+| Item | Status | Notes |
+|------|--------|-------|
+| No authentication | Expected | JWT added in Phase 5 |
+| pgvector needs `pgvector/pgvector:pg16` image | Expected | `docker compose down -v && docker compose up -d` |
+| `gpt-oss:120b` unusable | Expected | 65 GB > VRAM+RAM. Use `qwen2.5:14b`. |
+| 0 anomalies if all readings are normal | Expected | z-score > 3 threshold means truly anomalous data |
+| Forecast shows 14 points not 24 | Expected | Based on actual data coverage in 7d history; gap periods produce no points |
+| "Last 24h" uses DB latest, not wall clock | Expected | `TELEMETRY_TIME_ANCHOR=latest_in_db` in `.env` |
+| Reports stream empty if Postgres has issues | Expected | Fix: check `analysis_audit.id` VARCHAR(36) |
+| RAG skipped if no docs ingested | Expected | Run `scripts/ingest_docs.py` |
+| `gpt-oss:120b` shows in model list | Expected | Just don't set it as default model |
+
+---
+
+## PART 13 -- Sign-off
+
+### Quick checklist summary
+
+**Infrastructure:**
+- [ ] Postgres running `pgvector/pgvector:pg16`
+- [ ] pgvector extension enabled
+- [ ] All 7 tables created with correct column widths
+- [ ] Redis healthy
+- [ ] Backend starts without errors
+- [ ] Frontend loads without console errors
+
+**Data:**
+- [ ] MySQL normalized tables have data
+- [ ] `TELEMETRY_TIME_ANCHOR=latest_in_db` in `.env`
+- [ ] Timeseries returns data (not 0 rows)
+
+**APIs -- Phase 1:**
+- [ ] Health, Equipment, Summary, Timeseries all 200
+- [ ] POST /analyze streams SSE tokens + done frame
+
+**APIs -- Phase 2:**
+- [ ] Efficiency bands correct
+- [ ] Anomaly scan works
+- [ ] Forecast returns points
+- [ ] Compare returns both equipment
+
+**APIs -- Phase 3:**
+- [ ] Maintenance scores returned
+- [ ] Cost analytics returned
+- [ ] POST /analyze writes `status=ok` to `analysis_audit`
+- [ ] Agent runs complete with steps > 1
+
+**RAG (if docs ingested):**
+- [ ] Embeddings table populated
+- [ ] /rag/search returns ranked results
+- [ ] /analyze responses include `[source: ...]` citations
+
+**Run full test suite and record result:**
+```
+python tests/test_all_apis.py --base http://localhost:8000
+```
+Result: ___ passed / ___ failed / ___ skipped
+
+**Tester:** ___________________________
+**Date:** ___________________________
+**Git commit:** `git rev-parse --short HEAD` => ___________________________
+**Overall:** [ ] PASS -- ready for `v1.0.0-poc` tag  [ ] FAIL -- see issues above
