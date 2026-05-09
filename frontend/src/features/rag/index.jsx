@@ -1,6 +1,7 @@
-﻿import { useState, useEffect } from "react";
-import { Box, Flex, Text, Grid, Badge, Textarea, Button } from "@chakra-ui/react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { Box, Flex, Text, Grid, Badge, Textarea, Button, Spinner } from "@chakra-ui/react";
+import { Upload, Trash2, FileText, CheckCircle, AlertCircle, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import GlassCard from "../../shared/ui/GlassCard";
@@ -8,6 +9,8 @@ import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 
 const MotionBox = motion.create(Box);
 const fadeUp = { initial:{opacity:0,y:12}, animate:{opacity:1,y:0,transition:{duration:0.25}} };
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function StatusBadge({ ready }) {
   return (
@@ -23,15 +26,35 @@ function StatusBadge({ ready }) {
   );
 }
 
-function SourceCard({ source }) {
+function SourceCard({ source, onDelete }) {
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await fetch(`/api/v1/rag/sources/${encodeURIComponent(source.source_id)}`, { method: "DELETE" });
+      onDelete(source.source_id);
+    } catch { /* ignore */ }
+    setDeleting(false);
+  }
+
   return (
     <GlassCard p={4}>
       <Flex justify="space-between" align="flex-start" mb={2}>
-        <Text fontWeight={600} fontSize="sm" color="text.primary" noOfLines={1}>{source.source_id}</Text>
-        <Badge fontSize="9px" bg="rgba(0,196,244,0.1)" color="brand.400"
-          border="1px solid rgba(0,196,244,0.2)" borderRadius="6px" px={2}>
-          {source.chunks} chunks
-        </Badge>
+        <Flex align="center" gap={2} minW={0}>
+          <FileText size={13} color="#64748b" style={{ flexShrink: 0 }} />
+          <Text fontWeight={600} fontSize="sm" color="text.primary" noOfLines={1}>{source.source_id}</Text>
+        </Flex>
+        <Flex align="center" gap={2} flexShrink={0} ml={2}>
+          <Badge fontSize="9px" bg="rgba(0,196,244,0.1)" color="brand.400"
+            border="1px solid rgba(0,196,244,0.2)" borderRadius="6px" px={2}>
+            {source.chunks} chunks
+          </Badge>
+          <Box as="button" onClick={handleDelete} disabled={deleting}
+            color="text.muted" _hover={{ color: "red.400" }} transition="color 0.15s">
+            {deleting ? <Spinner size="xs" /> : <Trash2 size={13} />}
+          </Box>
+        </Flex>
       </Flex>
       <Text fontSize="xs" color="text.muted">
         Last ingested: {source.last_ingested ? new Date(source.last_ingested).toLocaleString("en-IN") : "—"}
@@ -75,8 +98,7 @@ function ResultCard({ result, index }) {
         </Text>
         {result.content.length > 200 && (
           <Box as="button" onClick={() => setExpanded(!expanded)}
-            fontSize="10px" color="accent.cyan" mt={2}
-            _hover={{ opacity: 0.8 }}>
+            fontSize="10px" color="accent.cyan" mt={2} _hover={{ opacity: 0.8 }}>
             {expanded ? "Show less ▲" : "Show more ▼"}
           </Box>
         )}
@@ -85,6 +107,183 @@ function ResultCard({ result, index }) {
   );
 }
 
+// ── Upload section ─────────────────────────────────────────────────────────────
+
+function FileRow({ file, result }) {
+  const isSuccess = result?.status === "ok";
+  const isError   = result?.error;
+  return (
+    <Flex align="center" gap={3} py={2}
+      borderBottom="1px solid" borderColor="border.subtle" _last={{ borderBottom: "none" }}>
+      <FileText size={14} color="#64748b" style={{ flexShrink: 0 }} />
+      <Box flex={1} minW={0}>
+        <Text fontSize="xs" color="text.primary" fontWeight={500} noOfLines={1}>{file.name}</Text>
+        <Text fontSize="10px" color="text.muted">{(file.size / 1024).toFixed(0)} KB</Text>
+      </Box>
+      {result ? (
+        isSuccess ? (
+          <Flex align="center" gap={1} color="green.400">
+            <CheckCircle size={13} />
+            <Text fontSize="10px" fontWeight={600}>{result.chunks_stored} chunks</Text>
+          </Flex>
+        ) : (
+          <Flex align="center" gap={1} color="red.400">
+            <AlertCircle size={13} />
+            <Text fontSize="10px" fontWeight={600} noOfLines={1} maxW="120px">{result.error}</Text>
+          </Flex>
+        )
+      ) : null}
+    </Flex>
+  );
+}
+
+function UploadSection({ onIngestComplete }) {
+  const fileInputRef  = useRef(null);
+  const [files,       setFiles]       = useState([]);
+  const [ingesting,   setIngesting]   = useState(false);
+  const [progress,    setProgress]    = useState("");   // "Embedding file 2 of 4…"
+  const [results,     setResults]     = useState({});   // filename → {status,chunks_stored} | {error}
+  const [isDragOver,  setIsDragOver]  = useState(false);
+
+  function addFiles(newFiles) {
+    const accepted = Array.from(newFiles).filter(f =>
+      /\.(pdf|txt|md)$/i.test(f.name)
+    );
+    setFiles(prev => {
+      const existing = new Set(prev.map(f => f.name));
+      return [...prev, ...accepted.filter(f => !existing.has(f.name))];
+    });
+    setResults({});
+  }
+
+  function removeFile(name) {
+    setFiles(prev => prev.filter(f => f.name !== name));
+    setResults(prev => { const r = {...prev}; delete r[name]; return r; });
+  }
+
+  async function handleIngest() {
+    if (!files.length) return;
+    setIngesting(true);
+    setResults({});
+    const newResults = {};
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setProgress(`Embedding ${file.name} (${i + 1} of ${files.length})…`);
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const resp = await fetch("/api/v1/rag/ingest", { method: "POST", body: fd });
+        const data = await resp.json();
+        if (!resp.ok) {
+          newResults[file.name] = { error: data.detail ?? `HTTP ${resp.status}` };
+        } else {
+          newResults[file.name] = { status: "ok", chunks_stored: data.chunks_stored };
+        }
+      } catch (e) {
+        newResults[file.name] = { error: e.message ?? "Network error" };
+      }
+      setResults({ ...newResults });
+    }
+
+    setProgress("");
+    setIngesting(false);
+    onIngestComplete();
+  }
+
+  const allDone = files.length > 0 && files.every(f => results[f.name]);
+
+  return (
+    <GlassCard p={4} mb={6}>
+      <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase"
+        letterSpacing="0.12em" mb={3}>
+        Upload Documents
+      </Text>
+
+      {/* Drop zone */}
+      <Box
+        border="1px dashed"
+        borderColor={isDragOver ? "accent.cyan" : "border.subtle"}
+        borderRadius="10px"
+        bg={isDragOver ? "rgba(0,196,244,0.05)" : "rgba(0,0,0,0.15)"}
+        p={6} mb={files.length ? 3 : 0} textAlign="center" cursor="pointer"
+        transition="all 0.15s"
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={e => { e.preventDefault(); setIsDragOver(false); addFiles(e.dataTransfer.files); }}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.txt,.md"
+          multiple
+          style={{ display: "none" }}
+          onChange={e => { addFiles(e.target.files); e.target.value = ""; }}
+        />
+        <Flex direction="column" align="center" gap={2}>
+          <Upload size={20} color="#64748b" />
+          <Text fontSize="xs" color="text.muted">
+            Drag & drop files here, or{" "}
+            <Text as="span" color="accent.cyan" fontWeight={600}>click to browse</Text>
+          </Text>
+          <Text fontSize="10px" color="text.muted">PDF, TXT, MD — up to 50 MB each</Text>
+        </Flex>
+      </Box>
+
+      {/* File list */}
+      <AnimatePresence>
+        {files.length > 0 && (
+          <MotionBox
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            overflow="hidden"
+          >
+            <Box border="1px solid" borderColor="border.subtle" borderRadius="10px" px={3} mb={3}>
+              {files.map(f => (
+                <Flex key={f.name} align="center" gap={2}>
+                  <Box flex={1}>
+                    <FileRow file={f} result={results[f.name]} />
+                  </Box>
+                  {!ingesting && !results[f.name] && (
+                    <Box as="button" onClick={() => removeFile(f.name)}
+                      color="text.muted" _hover={{ color: "red.400" }} ml={1} flexShrink={0}>
+                      <X size={12} />
+                    </Box>
+                  )}
+                </Flex>
+              ))}
+            </Box>
+
+            <Flex justify="space-between" align="center">
+              <Text fontSize="xs" color="text.muted">
+                {ingesting ? progress : allDone ? `${files.filter(f => results[f.name]?.status === "ok").length} of ${files.length} ingested` : `${files.length} file${files.length > 1 ? "s" : ""} selected`}
+              </Text>
+              <Flex gap={2}>
+                {!ingesting && (
+                  <Button size="sm" variant="ghost" onClick={() => { setFiles([]); setResults({}); }}
+                    borderRadius="9px" fontSize="xs" color="text.muted" px={3}>
+                    Clear
+                  </Button>
+                )}
+                <Button size="sm" onClick={handleIngest}
+                  isLoading={ingesting} loadingText={progress || "Ingesting…"}
+                  borderRadius="9px" fontWeight={600} px={5}
+                  isDisabled={!files.length || allDone}>
+                  Ingest
+                </Button>
+              </Flex>
+            </Flex>
+          </MotionBox>
+        )}
+      </AnimatePresence>
+    </GlassCard>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function RAGPage() {
   const [status,    setStatus]    = useState(null);
   const [query,     setQuery]     = useState("");
@@ -92,9 +291,20 @@ export default function RAGPage() {
   const [searching, setSearching] = useState(false);
   const [searched,  setSearched]  = useState(false);
 
-  useEffect(() => {
-    fetch("/api/v1/rag/status").then(r=>r.json()).then(setStatus).catch(()=>{});
-  }, []);
+  function fetchStatus() {
+    fetch("/api/v1/rag/status").then(r => r.json()).then(setStatus).catch(() => {});
+  }
+
+  useEffect(() => { fetchStatus(); }, []);
+
+  function handleSourceDeleted(sourceId) {
+    setStatus(prev => {
+      if (!prev) return prev;
+      const sources = prev.sources.filter(s => s.source_id !== sourceId);
+      const total_chunks = sources.reduce((s, r) => s + r.chunks, 0);
+      return { ...prev, sources, total_chunks, ready: total_chunks > 0 };
+    });
+  }
 
   async function handleSearch() {
     if (!query.trim()) return;
@@ -112,35 +322,21 @@ export default function RAGPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Knowledge Base (RAG)"
-        subtitle="Semantic search over ingested equipment manuals, ASHRAE guides, and incident reports"
+        title="Knowledge Base"
+        subtitle="Upload equipment manuals, ASHRAE guides, or incident reports — ground AI answers in your documents"
         actions={status && <StatusBadge ready={status.ready} />}
       />
 
-      {/* Ingestion instructions */}
-      {status && !status.ready && (
-        <MotionBox initial={{ opacity: 0 }} animate={{ opacity: 1 }} mb={6}>
-          <GlassCard p={5}>
-            <Text fontWeight={700} fontSize="sm" color="yellow.400" mb={3}>
-              No documents ingested yet
-            </Text>
-            <Text fontSize="xs" color="text.muted" lineHeight={1.8} mb={4}>
-              Place PDF, TXT, or MD files in <Text as="span" color="white" fontFamily="mono">docs/manuals/</Text> then run:
-            </Text>
-            <Box bg="rgba(0,0,0,0.4)" border="1px solid" borderColor="border.subtle"
-              borderRadius="10px" p={4} fontFamily="mono" fontSize="xs" color="green.300">
-              cd backend<br />
-              python scripts/ingest_docs.py --dir ../docs/manuals<br />
-              <Text as="span" color="text.muted"># add --clear to re-ingest existing sources</Text>
-            </Box>
-            <Text fontSize="xs" color="text.muted" mt={3}>
-              Requires: Ollama reachable with <Text as="span" color="white">nomic-embed-text</Text> pulled (274 MB — already installed on your Ollama server).
-            </Text>
-          </GlassCard>
-        </MotionBox>
+      {/* Upload section */}
+      <UploadSection onIngestComplete={fetchStatus} />
+
+      {/* Corpus sources */}
+      {status === null && (
+        <Grid templateColumns={{ base:"1fr", md:"repeat(3,1fr)" }} gap={3} mb={6}>
+          {[0,1,2].map(i => <SkeletonEquipCard key={i} />)}
+        </Grid>
       )}
 
-      {/* Corpus status */}
       {status?.sources?.length > 0 && (
         <Box mb={6}>
           <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase"
@@ -148,7 +344,9 @@ export default function RAGPage() {
             Ingested sources — {status.total_chunks} chunks total
           </Text>
           <Grid templateColumns={{ base:"1fr", md:"repeat(2,1fr)", lg:"repeat(3,1fr)" }} gap={3}>
-            {status.sources.map(s => <SourceCard key={s.source_id} source={s} />)}
+            {status.sources.map(s => (
+              <SourceCard key={s.source_id} source={s} onDelete={handleSourceDeleted} />
+            ))}
           </Grid>
         </Box>
       )}
@@ -196,7 +394,9 @@ export default function RAGPage() {
             {results.length} results for "{query}"
           </Text>
           <Flex flexDir="column" gap={3}>
-            {results.map((r, i) => <ResultCard key={`${r.source_id}-${r.chunk_idx}`} result={r} index={i} />)}
+            {results.map((r, i) => (
+              <ResultCard key={`${r.source_id}-${r.chunk_idx}`} result={r} index={i} />
+            ))}
           </Flex>
         </Box>
       )}
