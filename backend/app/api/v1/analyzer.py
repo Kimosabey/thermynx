@@ -17,6 +17,7 @@ from app.db.telemetry import fetch_all_hvac_context, compute_summary, fetch_chil
 from app.domain.equipment import get_by_id
 from app.llm.ollama import stream_generate
 from app.prompts.hvac_prompts import build_analyze_prompt
+from app.services.rag import retrieve, format_rag_context
 from app.config import settings
 from app.log import get_logger
 
@@ -91,8 +92,14 @@ async def _sse_stream(
             context = await fetch_all_hvac_context(db, hours=req.hours)
         summary = await compute_summary(context)
 
+    # RAG retrieval — inject relevant doc chunks before the prompt (graceful degradation)
+    rag_chunks = await retrieve(pg, req.question, top_k=5, equipment_id=req.equipment_id)
+    rag_context = format_rag_context(rag_chunks) if rag_chunks else ""
+
     prompt = build_analyze_prompt(
-        req.question, context, summary, conversation_history=conversation_history
+        req.question, context, summary,
+        conversation_history=conversation_history,
+        rag_context=rag_context,
     )
     prompt_hash = _hash(prompt)
 

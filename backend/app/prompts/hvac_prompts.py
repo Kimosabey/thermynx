@@ -70,6 +70,7 @@ def build_analyze_prompt(
     context: dict[str, Any],
     summary: dict[str, Any],
     conversation_history: list[dict[str, str]] | None = None,
+    rag_context: str = "",
 ) -> str:
     sections = []
     if conversation_history:
@@ -100,10 +101,17 @@ def build_analyze_prompt(
             sections.append(f"### {key.replace('_', ' ').title()} ({len(rows)} records)\n")
             sections.append(_fmt_equipment_rows(rows))
 
+    if rag_context:
+        sections.append(f"\n---\n{rag_context}")
+
     sections.append(f"\n---\n## QUESTION\n{question}\n")
+    cite_note = (
+        " Where relevant, cite documentation sources using [source: filename §chunk_idx]."
+        if rag_context else ""
+    )
     sections.append(
         "\nRespond with a structured markdown analysis. "
-        "Be specific — cite kW/TR values, timestamps, and delta-T readings from the data above."
+        f"Be specific — cite kW/TR values, timestamps, and delta-T readings from the data above.{cite_note}"
     )
 
     return "\n".join(sections)

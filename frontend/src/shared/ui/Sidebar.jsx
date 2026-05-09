@@ -20,6 +20,7 @@ import {
   IndianRupee,
   FileText,
   Bot,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   Wind,
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { label: "Cost", to: "/cost", Icon: IndianRupee },
   { label: "Reports", to: "/reports", Icon: FileText },
   { label: "AI Agents", to: "/agent", Icon: Bot },
+  { label: "Knowledge", to: "/rag",   Icon: BookOpen },
 ];
 
 const navListVariants = {

@@ -110,6 +110,26 @@ TOOL_SCHEMAS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "retrieve_manual",
+            "description": (
+                "Search equipment manuals, ASHRAE guides, and incident reports for relevant "
+                "information using semantic similarity. Use this when the question involves "
+                "maintenance intervals, fault codes, engineering limits, or specifications."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query":        {"type": "string", "description": "Natural language search query"},
+                    "equipment_id": {"type": "string", "description": "Optional: filter to equipment-specific docs"},
+                    "top_k":        {"type": "integer", "default": 4},
+                },
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 
@@ -239,6 +259,31 @@ async def _exec_get_anomaly_history(
     return {"total": len(results), "anomalies": results}
 
 
+async def _exec_retrieve_manual(
+    query: str,
+    equipment_id: str | None = None,
+    top_k: int = 4,
+) -> dict:
+    from app.db.session import PGSession
+    from app.services.rag import retrieve
+    async with PGSession() as pg:
+        chunks = await retrieve(pg, query, top_k=top_k, equipment_id=equipment_id)
+    if not chunks:
+        return {"total": 0, "chunks": [], "note": "No relevant documentation found. Embeddings table may be empty — run scripts/ingest_docs.py first."}
+    return {
+        "total": len(chunks),
+        "chunks": [
+            {
+                "source": c.source_id,
+                "chunk_idx": c.chunk_idx,
+                "score": c.score,
+                "content": c.content[:600],  # truncate for LLM context
+            }
+            for c in chunks
+        ],
+    }
+
+
 # ── Registry ─────────────────────────────────────────────────────────────────
 
 TOOL_EXECUTORS = {
@@ -248,6 +293,7 @@ TOOL_EXECUTORS = {
     "get_timeseries_summary": _exec_get_timeseries_summary,
     "compare_equipment":      _exec_compare_equipment,
     "get_anomaly_history":    _exec_get_anomaly_history,
+    "retrieve_manual":        _exec_retrieve_manual,
 }
 
 

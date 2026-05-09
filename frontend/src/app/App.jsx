@@ -10,6 +10,7 @@ import Compare      from "../features/compare";
 import Maintenance  from "../features/maintenance";
 import CostAnalytics from "../features/cost";
 import Reports      from "../features/reports";
+import RAGKnowledge from "../features/rag";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="cost"        element={<CostAnalytics />} />
         <Route path="reports"     element={<Reports />} />
         <Route path="agent"       element={<AgentHub />} />
+        <Route path="rag"         element={<RAGKnowledge />} />
       </Route>
     </Routes>
   );

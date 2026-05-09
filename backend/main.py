@@ -22,7 +22,26 @@ log = get_logger("app")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     async with pg_engine.begin() as conn:
+        # Enable pgvector extension (idempotent — safe to run on every boot)
+        try:
+            from sqlalchemy import text as _t
+            await conn.execute(_t("CREATE EXTENSION IF NOT EXISTS vector"))
+            log.info("pgvector_extension_ready")
+        except Exception as e:
+            log.warning("pgvector_extension_unavailable err=%s", e)
+
         await conn.run_sync(Base.metadata.create_all)
+
+        # IVFFlat index for embedding similarity search (created once, idempotent)
+        try:
+            from sqlalchemy import text as _t
+            await conn.execute(_t(
+                "CREATE INDEX IF NOT EXISTS idx_embeddings_vec "
+                "ON embeddings USING ivfflat (embedding vector_cosine_ops) "
+                "WITH (lists=50)"
+            ))
+        except Exception:
+            pass  # index creation fails if pgvector is unavailable or table not yet populated
 
     log.info("postgres_metadata_ready")
 
