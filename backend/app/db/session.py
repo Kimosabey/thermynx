@@ -1,38 +1,41 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from pydantic_settings import BaseSettings
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from app.config import settings
 
 
-class Settings(BaseSettings):
-    DB_HOST: str = "localhost"
-    DB_PORT: int = 3307
-    DB_USER: str = "root"
-    DB_PASSWORD: str = "changeme"
-    DB_NAME: str = "unicharm"
-    OLLAMA_HOST: str = "http://100.125.103.28:11434"
-    OLLAMA_MODEL: str = "llama3.1"
-    BACKEND_PORT: int = 8000
-
-    class Config:
-        env_file = ".env"
-
-
-settings = Settings()
-
-DATABASE_URL = (
+# ── MySQL unicharm (read-only telemetry) ──────────────────────────────────────
+MYSQL_URL = (
     f"mysql+aiomysql://{settings.DB_USER}:{settings.DB_PASSWORD}"
     f"@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 )
 
-engine = create_async_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
+mysql_engine = create_async_engine(MYSQL_URL, echo=False, pool_pre_ping=True)
 
-AsyncSessionLocal = sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
+MySQLSession = sessionmaker(
+    bind=mysql_engine, class_=AsyncSession, expire_on_commit=False
 )
 
 
 async def get_db():
-    async with AsyncSessionLocal() as session:
+    async with MySQLSession() as session:
         yield session
+
+
+# ── Postgres thermynx_app (app data) ─────────────────────────────────────────
+pg_engine = create_async_engine(
+    settings.POSTGRES_URL, echo=False, pool_pre_ping=True
+)
+
+PGSession = sessionmaker(
+    bind=pg_engine, class_=AsyncSession, expire_on_commit=False
+)
+
+
+async def get_pg():
+    async with PGSession() as session:
+        yield session
+
+
+# ── ORM base (all models inherit from this) ───────────────────────────────────
+class Base(DeclarativeBase):
+    pass

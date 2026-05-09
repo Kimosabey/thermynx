@@ -1,116 +1,95 @@
-from typing import Any
-import json
-
-
-SYSTEM_CONTEXT = """You are THERMYNX, an expert AI Operations Intelligence system for HVAC facility management at a Unicharm manufacturing plant. You analyze real-time and historical data from chillers, cooling towers, condenser pumps, and other HVAC equipment.
-
-Your knowledge includes:
-- Chiller performance: COP, kW/TR efficiency benchmarks (good: <0.65 kW/TR, acceptable: 0.65-0.85, poor: >0.85)
-- Cooling load analysis using Tons of Refrigeration (TR) and chilled water delta-T
-- Cooling tower approach temperature, fan efficiency
-- Condenser water system dynamics
-- Predictive maintenance indicators: high kW/TR, low delta-T, abnormal temperatures
-- Energy optimization strategies for HVAC plants
-
-Always provide:
-1. Clear observations from the data
-2. Efficiency assessment with benchmarks
-3. Actionable recommendations with priority
-4. Any anomalies or alerts
-
-Format responses with clear sections using markdown headers. Be concise and practical for operations staff."""
-
-
-def format_chiller_rows(rows: list[dict], limit: int = 10) -> str:
-    if not rows:
-        return "No data available."
-    sample = rows[:limit]
-    lines = []
-    for r in sample:
-        ts = str(r.get("slot_time", ""))[:16]
-        running = "ON" if r.get("is_running") else "OFF"
-        kw = r.get("kw") or "N/A"
-        tr = r.get("tr") or "N/A"
-        kw_tr = r.get("kw_per_tr") or "N/A"
-        load = r.get("chiller_load") or "N/A"
-        elt = r.get("evap_leaving_temp") or "N/A"
-        dT = r.get("chw_delta_t") or "N/A"
-        lines.append(
-            f"  {ts} | {running} | kW:{kw} | TR:{tr} | kW/TR:{kw_tr} | Load:{load}% | CHLT:{elt}°C | ΔT:{dT}°C"
-        )
-    return "\n".join(lines)
-
-
-def format_equipment_rows(rows: list[dict], limit: int = 6) -> str:
-    if not rows:
-        return "No data available."
-    sample = rows[:limit]
-    lines = []
-    for r in sample:
-        ts = str(r.get("slot_time", ""))[:16]
-        running = "ON" if r.get("is_running") else "OFF"
-        kw = r.get("kw") or "N/A"
-        lines.append(f"  {ts} | {running} | kW:{kw}")
-    return "\n".join(lines)
-
-
-def build_analyze_prompt(question: str, context: dict[str, Any], summary: dict[str, Any]) -> str:
-    ch1_rows = format_chiller_rows(context.get("chiller_1", []))
-    ch2_rows = format_chiller_rows(context.get("chiller_2", []))
-    ct1_rows = format_equipment_rows(context.get("cooling_tower_1", []))
-    ct2_rows = format_equipment_rows(context.get("cooling_tower_2", []))
-    cp1_rows = format_equipment_rows(context.get("condenser_pump_1", []))
-    cp3_rows = format_equipment_rows(context.get("condenser_pump_3", []))
-
-    s_ch1 = summary.get("chiller_1", {})
-    s_ch2 = summary.get("chiller_2", {})
-
-    prompt = f"""{SYSTEM_CONTEXT}
-
----
-
-## LIVE DATA SNAPSHOT — Last {context.get('hours_window', 24)} Hours
-Fetched at: {context.get('fetched_at', 'N/A')} UTC
-
-### CHILLER 1 SUMMARY
-- Records: {s_ch1.get('record_count', 0)} | Running: {s_ch1.get('running_pct', 'N/A')}% of time
-- Avg kW: {s_ch1.get('avg_kw', 'N/A')} | Avg TR: {s_ch1.get('avg_tr', 'N/A')} | Avg kW/TR: {s_ch1.get('avg_kw_per_tr', 'N/A')}
-- Avg CHW ΔT: {s_ch1.get('avg_chw_delta_t', 'N/A')}°C | Avg Load: {s_ch1.get('avg_chiller_load', 'N/A')}%
-- Latest Ambient Temp: {s_ch1.get('latest_ambient_temp', 'N/A')}°C | Latest Leaving Temp: {s_ch1.get('latest_evap_leaving_temp', 'N/A')}°C
-
-Recent readings (newest first):
-{ch1_rows}
-
-### CHILLER 2 SUMMARY
-- Records: {s_ch2.get('record_count', 0)} | Running: {s_ch2.get('running_pct', 'N/A')}% of time
-- Avg kW: {s_ch2.get('avg_kw', 'N/A')} | Avg TR: {s_ch2.get('avg_tr', 'N/A')} | Avg kW/TR: {s_ch2.get('avg_kw_per_tr', 'N/A')}
-- Avg CHW ΔT: {s_ch2.get('avg_chw_delta_t', 'N/A')}°C | Avg Load: {s_ch2.get('avg_chiller_load', 'N/A')}%
-- Latest Ambient Temp: {s_ch2.get('latest_ambient_temp', 'N/A')}°C | Latest Leaving Temp: {s_ch2.get('latest_evap_leaving_temp', 'N/A')}°C
-
-Recent readings (newest first):
-{ch2_rows}
-
-### COOLING TOWER 1 SUMMARY
-- Records: {summary.get('cooling_tower_1', {}).get('record_count', 0)} | Running: {summary.get('cooling_tower_1', {}).get('running_pct', 'N/A')}% | Avg kW: {summary.get('cooling_tower_1', {}).get('avg_kw', 'N/A')}
-{ct1_rows}
-
-### COOLING TOWER 2 SUMMARY
-- Records: {summary.get('cooling_tower_2', {}).get('record_count', 0)} | Running: {summary.get('cooling_tower_2', {}).get('running_pct', 'N/A')}% | Avg kW: {summary.get('cooling_tower_2', {}).get('avg_kw', 'N/A')}
-{ct2_rows}
-
-### CONDENSER PUMP 1&2 SUMMARY
-- Records: {summary.get('condenser_pump_1', {}).get('record_count', 0)} | Running: {summary.get('condenser_pump_1', {}).get('running_pct', 'N/A')}% | Avg kW: {summary.get('condenser_pump_1', {}).get('avg_kw', 'N/A')}
-{cp1_rows}
-
-### CONDENSER PUMP 3 SUMMARY
-- Records: {summary.get('condenser_pump_3', {}).get('record_count', 0)} | Running: {summary.get('condenser_pump_3', {}).get('running_pct', 'N/A')}% | Avg kW: {summary.get('condenser_pump_3', {}).get('avg_kw', 'N/A')}
-{cp3_rows}
-
----
-
-## OPERATOR QUESTION
-{question}
-
-## YOUR ANALYSIS
 """
-    return prompt
+Versioned HVAC prompt templates.
+All prompt building is pure — no I/O imports.
+"""
+from typing import Any
+
+SYSTEM_CONTEXT = """You are THERMYNX, a senior HVAC energy engineer specializing in chiller plant optimization.
+You have deep expertise in:
+- Chiller performance analysis (kW/TR efficiency benchmarks: good <0.65, acceptable 0.65–0.85, poor >0.85)
+- Cooling tower approach temperature and wet-bulb relationships
+- Condenser water delta-T and flow balance
+- Chilled water delta-T and AHU load distribution
+- Energy optimization, fouling detection, and predictive maintenance signals
+
+When analyzing data:
+1. Always cite specific values and timestamps from the data
+2. Compare against benchmarks (kW/TR, delta-T norms)
+3. Identify root causes, not just symptoms
+4. Give actionable recommendations with expected impact
+5. Structure your response with: **Findings** / **Likely Causes** / **Recommendations**
+6. Use markdown formatting (bold headers, bullet points, tables where helpful)"""
+
+
+def _fmt_chiller_rows(rows: list[dict], max_rows: int = 15) -> str:
+    if not rows:
+        return "  No data available\n"
+    sample = rows[:max_rows]
+    lines = ["  | Time | kW | TR | kW/TR | Load% | CHW ΔT | Evap Out |"]
+    lines.append("  |------|----|----|-------|-------|--------|----------|")
+    for r in sample:
+        t = str(r.get("slot_time", ""))[:16]
+        kw = f"{float(r['kw']):.1f}" if r.get("kw") is not None else "—"
+        tr = f"{float(r['tr']):.1f}" if r.get("tr") is not None else "—"
+        eff = f"{float(r['kw_per_tr']):.3f}" if r.get("kw_per_tr") is not None else "—"
+        load = f"{float(r['chiller_load']):.1f}" if r.get("chiller_load") is not None else "—"
+        dt = f"{float(r['chw_delta_t']):.2f}" if r.get("chw_delta_t") is not None else "—"
+        evap = f"{float(r['evap_leaving_temp']):.2f}" if r.get("evap_leaving_temp") is not None else "—"
+        lines.append(f"  | {t} | {kw} | {tr} | {eff} | {load} | {dt} | {evap} |")
+    if len(rows) > max_rows:
+        lines.append(f"  ... (+{len(rows) - max_rows} more rows)")
+    return "\n".join(lines) + "\n"
+
+
+def _fmt_equipment_rows(rows: list[dict], max_rows: int = 8) -> str:
+    if not rows:
+        return "  No data available\n"
+    sample = rows[:max_rows]
+    lines = ["  | Time | Running | kW |"]
+    lines.append("  |------|---------|-----|")
+    for r in sample:
+        t = str(r.get("slot_time", ""))[:16]
+        running = "Yes" if r.get("is_running") else "No"
+        kw = f"{float(r['kw']):.2f}" if r.get("kw") is not None else "—"
+        lines.append(f"  | {t} | {running} | {kw} |")
+    return "\n".join(lines) + "\n"
+
+
+def _fmt_summary(name: str, s: dict) -> str:
+    if not s:
+        return ""
+    parts = [f"  {name}:"]
+    for k, v in s.items():
+        if v is not None:
+            parts.append(f"    {k}: {v}")
+    return "\n".join(parts)
+
+
+def build_analyze_prompt(
+    question: str,
+    context: dict[str, Any],
+    summary: dict[str, Any],
+) -> str:
+    sections = [SYSTEM_CONTEXT, "\n---\n## LIVE PLANT DATA\n"]
+
+    for key in ["chiller_1", "chiller_2"]:
+        rows = context.get(key, [])
+        if rows:
+            sections.append(f"### {key.replace('_', ' ').title()} ({len(rows)} records)\n")
+            sections.append(_fmt_chiller_rows(rows))
+            if key in summary:
+                sections.append(_fmt_summary(f"{key} summary", summary[key]) + "\n")
+
+    for key in ["cooling_tower_1", "cooling_tower_2", "condenser_pump_1", "condenser_pump_3"]:
+        rows = context.get(key, [])
+        if rows:
+            sections.append(f"### {key.replace('_', ' ').title()} ({len(rows)} records)\n")
+            sections.append(_fmt_equipment_rows(rows))
+
+    sections.append(f"\n---\n## QUESTION\n{question}\n")
+    sections.append(
+        "\nRespond with a structured markdown analysis. "
+        "Be specific — cite kW/TR values, timestamps, and delta-T readings from the data above."
+    )
+
+    return "\n".join(sections)
