@@ -58,6 +58,14 @@ async def list_threads(limit: int = 50, pg: AsyncSession = Depends(get_pg)):
     }
 
 
+@router.get("/threads/{thread_id}")
+async def get_thread(thread_id: str, pg: AsyncSession = Depends(get_pg)):
+    t = await pg.get(Thread, thread_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    return ThreadOut(id=t.id, title=t.title, created_at=t.created_at, updated_at=t.updated_at)
+
+
 @router.get("/threads/{thread_id}/messages")
 async def list_messages(thread_id: str, pg: AsyncSession = Depends(get_pg)):
     t = await pg.get(Thread, thread_id)

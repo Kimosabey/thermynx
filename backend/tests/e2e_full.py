@@ -14,8 +14,9 @@ import sys
 import json
 import time
 import argparse
-import urllib.request
 import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime
 
 BASE    = "http://localhost:8000"
@@ -495,12 +496,13 @@ def test_maintenance():
         else:
             fail(f"GET /maintenance?hours={hours}", f"HTTP {code}", s)
 
-    # Single equipment
+    # Single equipment — field is health_score not score
     code, body = get("/api/v1/maintenance/chiller_1?hours=168")
-    if code == 200 and "score" in body:
-        ok(f"GET /maintenance/chiller_1 -> score={body.get('score','?')}", s)
+    if code == 200 and "health_score" in body:
+        hs = body.get("health_score","?")
+        ok(f"GET /maintenance/chiller_1 -> health_score={hs} degradation={body.get('degradation_flag','?')}", s)
     else:
-        fail("GET /maintenance/chiller_1", f"HTTP {code}", s)
+        fail("GET /maintenance/chiller_1", f"HTTP {code} keys={list(body.keys()) if isinstance(body,dict) else '?'}", s)
 
 
 def test_cost():
@@ -820,8 +822,6 @@ def print_summary():
 # ═════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    import urllib.parse
-
     parser = argparse.ArgumentParser(description="THERMYNX End-to-End Test Suite")
     parser.add_argument("--base",  default="http://localhost:8000")
     parser.add_argument("--quick", action="store_true",
