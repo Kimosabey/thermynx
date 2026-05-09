@@ -69,8 +69,22 @@ def build_analyze_prompt(
     question: str,
     context: dict[str, Any],
     summary: dict[str, Any],
+    conversation_history: list[dict[str, str]] | None = None,
 ) -> str:
-    sections = [SYSTEM_CONTEXT, "\n---\n## LIVE PLANT DATA\n"]
+    sections = []
+    if conversation_history:
+        sections.append("## PRIOR CONVERSATION IN THIS THREAD\n")
+        for m in conversation_history:
+            role = m.get("role", "?").upper()
+            content = (m.get("content") or "").strip()
+            if not content:
+                continue
+            if len(content) > 4000:
+                content = content[:4000] + "\n… (truncated)"
+            sections.append(f"### {role}\n{content}\n")
+        sections.append("---\n")
+
+    sections.extend([SYSTEM_CONTEXT, "\n---\n## LIVE PLANT DATA\n"])
 
     for key in ["chiller_1", "chiller_2"]:
         rows = context.get(key, [])
@@ -93,3 +107,34 @@ def build_analyze_prompt(
     )
 
     return "\n".join(sections)
+
+
+REPORT_SUMMARY_SYSTEM = """You are THERMYNX — senior HVAC operations engineer writing executive summaries for plant managers.
+
+Rules:
+- Output markdown only — exactly three short paragraphs as headings:
+  **What happened** · **What it cost** · **What to act on**
+- Use ONLY facts reflected in the KPI/anomaly blocks provided; do not invent numbers.
+- Maximum ~180 words total — concise and actionable.
+- Tone: professional, calm, operator-focused."""
+
+
+def build_report_summary_user_message(
+    period_from: str,
+    period_to: str,
+    kpi_table: str,
+    top_anomalies: str,
+    total_kwh: str,
+) -> str:
+    return (
+        f"Reporting window (UTC): **{period_from}** → **{period_to}**\n\n"
+        "## KPI snapshot\n"
+        f"{kpi_table}\n\n"
+        "## Recent anomalies / alerts\n"
+        f"{top_anomalies}\n\n"
+        "## Energy total\n"
+        f"Approximate plant electrical cooling/auxiliary energy over selected chillers & auxiliaries: **{total_kwh} kWh** "
+        "(see KPI breakdown).\n\n"
+        "Write the executive markdown summary now."
+    )
+

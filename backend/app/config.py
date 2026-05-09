@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings
 
 
@@ -8,6 +10,10 @@ class Settings(BaseSettings):
     DB_USER: str = "root"
     DB_PASSWORD: str = "changeme"
     DB_NAME: str = "unicharm"
+
+    # Telemetry window end: ``latest_in_db`` uses MAX(slot_time) across plant tables —
+    # right for months-old dumps; ``wall_clock`` uses UTC now — right for live feeds.
+    TELEMETRY_TIME_ANCHOR: Literal["wall_clock", "latest_in_db"] = "latest_in_db"
 
     # Postgres thermynx_app (application data)
     POSTGRES_URL: str = "postgresql+asyncpg://thermynx:dev@localhost:5432/thermynx_app"
@@ -20,6 +26,15 @@ class Settings(BaseSettings):
     OLLAMA_DEFAULT_MODEL: str = "qwen2.5:14b"
 
     BACKEND_PORT: int = 8000
+
+    # Phase 3 cost analytics — flat blended tariff (₹/kWh), POC default
+    TARIFF_INR_PER_KWH: float = 8.5
+
+    # Logging — DEBUG | INFO | WARNING | ERROR
+    LOG_LEVEL: str = "INFO"
+    LOG_JSON: bool = False
+    LOG_ACCESS: bool = True
+    LOG_SQL_ECHO: bool = False
 
     class Config:
         env_file = ".env"

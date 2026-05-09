@@ -4,8 +4,10 @@ from sqlalchemy import text
 from app.db.session import get_db
 from app.config import settings
 from app.llm.ollama import check_ollama_health
+from app.log import get_logger
 
 router = APIRouter()
+log = get_logger("api.health")
 
 
 @router.get("/health")
@@ -14,8 +16,8 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     try:
         await db.execute(text("SELECT 1"))
         db_ok = True
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("mysql_ping_failed host=%s port=%s err=%s", settings.DB_HOST, settings.DB_PORT, e)
 
     ollama_ok, models = await check_ollama_health()
 

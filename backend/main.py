@@ -1,31 +1,40 @@
+from app.logging_setup import configure_logging
+
+configure_logging()
+
 import time
 import uuid
-import logging
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from apscheduler.schedulers.background import BackgroundScheduler
-from app.api.router import router
-from app.db.session import pg_engine, Base
+from fastapi.responses import JSONResponse
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-log = logging.getLogger("thermynx")
+from app.api.router import router
+from app.config import settings
+from app.db.session import pg_engine, Base
+from app.log import get_logger
+
+log = get_logger("app")
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # Create thermynx_app tables
     async with pg_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # Start background anomaly scan every 5 minutes
-    scheduler = BackgroundScheduler()
+    log.info("postgres_metadata_ready")
+
+    scheduler = AsyncIOScheduler()
     try:
-        from app.jobs.anomaly_scan import run_scan
-        scheduler.add_job(run_scan, "interval", minutes=5, id="anomaly_scan", max_instances=1)
+        from app.jobs.anomaly_scan import run_scan_async
+
+        scheduler.add_job(run_scan_async, "interval", minutes=5, id="anomaly_scan", max_instances=1)
         scheduler.start()
         log.info("Anomaly scan scheduler started (every 5 min)")
     except Exception as e:
-        log.warning(f"Could not start anomaly scheduler: {e}")
+        log.warning("Could not start anomaly scheduler: %s", e)
 
     yield
 
@@ -38,6 +47,22 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    rid = getattr(request.state, "request_id", None)
+    log.exception(
+        "unhandled_exception method=%s path=%s request_id=%s",
+        request.method,
+        request.url.path,
+        rid,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "request_id": rid},
+    )
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,8 +79,21 @@ async def request_id_middleware(request: Request, call_next):
     request.state.request_id = request_id
     start = time.time()
     response = await call_next(request)
+    elapsed_ms = round((time.time() - start) * 1000)
     response.headers["X-Request-Id"] = request_id
-    response.headers["X-Response-Time-Ms"] = str(round((time.time() - start) * 1000))
+    response.headers["X-Response-Time-Ms"] = str(elapsed_ms)
+
+    if settings.LOG_ACCESS:
+        access = get_logger("access")
+        access.info(
+            "%s %s -> %s %dms request_id=%s",
+            request.method,
+            request.url.path,
+            response.status_code,
+            elapsed_ms,
+            request_id,
+        )
+
     return response
 
 

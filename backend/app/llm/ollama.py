@@ -1,7 +1,12 @@
 import json
 from typing import AsyncIterator, Any
+
 import httpx
+
 from app.config import settings
+from app.log import get_logger
+
+log = get_logger("llm.ollama")
 
 TIMEOUT      = httpx.Timeout(120.0, connect=10.0)
 TOOL_TIMEOUT = httpx.Timeout(60.0,  connect=10.0)
@@ -11,12 +16,15 @@ async def list_models() -> list[str]:
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         resp = await client.get(f"{settings.OLLAMA_HOST}/api/tags")
         resp.raise_for_status()
-        return [m["name"] for m in resp.json().get("models", [])]
+        raw = resp.json().get("models", [])
+        log.debug("ollama_list_models count=%s", len(raw))
+        return [m["name"] for m in raw]
 
 
 async def stream_generate(prompt: str, model: str | None = None) -> AsyncIterator[str]:
     """Yield text chunks via /api/generate (prompt-based, no tool support)."""
     target = model or settings.OLLAMA_DEFAULT_MODEL
+    log.debug("stream_generate_start model=%s prompt_chars=%s", target, len(prompt))
     payload = {
         "model": target,
         "prompt": prompt,
@@ -62,7 +70,14 @@ async def chat(
     async with httpx.AsyncClient(timeout=TOOL_TIMEOUT) as client:
         resp = await client.post(f"{settings.OLLAMA_HOST}/api/chat", json=payload)
         resp.raise_for_status()
-        return resp.json()
+        data = resp.json()
+        log.debug(
+            "chat_done model=%s has_tools=%s msg_chars=%s",
+            target,
+            bool(tools),
+            len((data.get("message") or {}).get("content") or ""),
+        )
+        return data
 
 
 async def stream_chat_text(
@@ -71,6 +86,7 @@ async def stream_chat_text(
 ) -> AsyncIterator[str]:
     """Stream text chunks from /api/chat (final answer, no tools)."""
     target = model or settings.OLLAMA_DEFAULT_MODEL
+    log.debug("stream_chat_text_start model=%s messages=%s", target, len(messages))
     payload = {
         "model": target,
         "messages": messages,
@@ -96,6 +112,8 @@ async def stream_chat_text(
 
 async def check_ollama_health() -> tuple[bool, list[str]]:
     try:
-        return True, await list_models()
-    except Exception:
+        models = await list_models()
+        return True, models
+    except Exception as e:
+        log.warning("ollama_health_check_failed host=%s err=%s", settings.OLLAMA_HOST, e)
         return False, []
