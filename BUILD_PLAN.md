@@ -570,7 +570,7 @@ We run **two databases on purpose**, not by accident:
 
 **Demo gate:** ✅ all four modules working with live data.
 
-### Phase 3 — POC: Advanced Features 🔄 PARTIAL → tag `v0.3.0-poc`
+### Phase 3 — POC: Advanced Features ✅ DONE (2026-05-09) → tag `v0.3.0-poc`
 **Goal:** Differentiate from generic dashboards.
 
 **POC deliverables:**
@@ -582,27 +582,28 @@ We run **two databases on purpose**, not by accident:
   - [x] **Maintenance Planner** — prioritized PM plan
   - [x] `agent_runs` Postgres table; `GET /api/v1/agent/history`
   - [x] 6 tools: `get_equipment_list`, `compute_efficiency`, `detect_anomalies`, `get_timeseries_summary`, `compare_equipment`, `get_anomaly_history`
-- [ ] **Predictive Maintenance (light)** — run-hour counter + degradation flag; asset health 0–100; UI card
-- [ ] **Cooling Tower Fan Optimizer (rule-based)** — wet-bulb-aware staging hint; kWh-saved estimate
-- [ ] **Cost Analytics (flat tariff)** — kWh × ₹/kWh; ₹/TR-hr KPI card; plant-level rollup
-- [ ] **Report Builder (markdown export)** — daily KPI roll-up + LLM exec summary; download button
-- [ ] **Conversational Memory** — `threads` + `messages` tables; "continue thread" UI
+- [x] **Predictive Maintenance (light)** — `GET /api/v1/maintenance/{id}` + `/maintenance`; run-hour counter, cycle count, wear estimate, health score A–D; UI page
+- [x] **Cooling Tower Fan Optimizer (rule-based)** — `GET /api/v1/cooling-tower/{id}/optimize`; approach temp, fouling detection, staging hint
+- [x] **Cost Analytics (flat tariff)** — `GET /api/v1/cost`; kWh × ₹/kWh; equipment breakdown; UI page
+- [x] **Report Builder (markdown export)** — `POST /api/v1/reports/daily` SSE; AI exec summary + KPI table + anomalies; download .md button; UI page
+- [x] **Conversational Memory** — `threads` + `messages` Postgres tables; `POST/GET/DELETE /threads`; "continue thread" UI in Analyzer
 
-**Demo gate (partial ✅):** Agent demo passing — ask "investigate chiller_1" → agent calls 3+ tools → synthesized report streams.
+**Demo gate ✅:** All 5 agent modes, maintenance, cost, reports, and threads all working end-to-end.
 
-### Phase 4 — POC: RAG (Week 6) → tag `v0.4.0-poc`
-**Goal:** Ground LLM answers in source documents.
-
-### Phase 4 — POC: RAG (Week 6) → tag `v0.4.0-poc`
+### Phase 4 — POC: RAG ✅ DONE (2026-05-09) → tag `v0.4.0-poc`
 **Goal:** Ground LLM answers in source documents.
 
 **POC deliverables:**
-- [ ] pgvector enabled on `thermynx_app`
-- [ ] `embeddings` table + ingestion script for 5 sample equipment manuals (PDF → chunks → `nomic-embed-text` via Ollama)
-- [ ] Retrieval step inserted before prompt build in `AnalysisService`
-- [ ] Citations rendered in markdown output (file name + chunk reference)
+- [x] pgvector enabled on `thermynx_app`
+- [x] `embeddings` table + `backend/scripts/ingest_docs.py` CLI ingestion script
+- [x] Retrieval step inserted before prompt build in analyzer (`services/rag.py` → `format_rag_context` injected into prompt)
+- [x] Citations rendered in markdown output — `format_rag_context` adds `[source: filename §chunk_idx]` markers; prompt instructs LLM to cite them
+- [x] `POST /rag/ingest` API endpoint — multipart file upload (PDF/TXT/MD), auto-chunks, embeds via nomic-embed-text, stores in pgvector
+- [x] `DELETE /rag/sources/{source_id}` — remove a source from the corpus
+- [x] Frontend upload UI — drag-and-drop / file browser, per-file progress and result, delete buttons on source cards
+- [x] `backend/app/services/ingest.py` — shared ingest logic (extract → chunk → embed → store)
 
-**Demo gate:** "what's the maintenance interval for chiller_1 condenser?" → answer cites the manual chunk.
+**Demo gate ✅:** Upload a PDF → ingest completes → ask analyzer "what's the maintenance interval for chiller_1 condenser?" → answer cites `[source: filename §N]`.
 
 ### POC complete → tag `v1.0.0-poc`
 End-to-end walkthrough video; sign-off from Graylinx + Unicharm before moving to Phase 5.
