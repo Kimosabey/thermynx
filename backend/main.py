@@ -16,6 +16,7 @@ from slowapi.errors import RateLimitExceeded
 from app.api.router import router
 from app.config import settings
 from app.db.session import pg_engine, Base
+from app.errors import AppError
 from app.limiter import limiter
 from app.services import cache as cache_svc
 from app.log import get_logger
@@ -86,6 +87,19 @@ app = FastAPI(
 # ── Rate limiting (slowapi) ───────────────────────────────────────────────────
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.exception_handler(AppError)
+async def app_error_handler(request: Request, exc: AppError):
+    rid = getattr(request.state, "request_id", None)
+    log.warning(
+        "app_error status=%s detail=%s path=%s request_id=%s",
+        exc.status_code, exc.detail, request.url.path, rid,
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "request_id": rid},
+    )
 
 
 @app.exception_handler(Exception)
