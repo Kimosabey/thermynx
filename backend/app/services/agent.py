@@ -7,6 +7,7 @@ Flow:
   3. When model returns plain text → stream it back via /api/chat (streaming)
   4. Each step emits SSE frames: thought | tool_call | tool_result | token | done | error
 """
+import asyncio
 import decimal
 import json
 import time
@@ -130,7 +131,11 @@ async def run_agent(
 
             yield _sse({"type": "tool_call", "tool": name, "args": args, "step": step})
 
-            result = await execute_tool(name, args)
+            try:
+                result = await asyncio.wait_for(execute_tool(name, args), timeout=30.0)
+            except asyncio.TimeoutError:
+                log.warning("agent_tool_timeout tool=%s run_id=%s step=%s", name, run_id, step)
+                result = {"error": f"Tool '{name}' timed out after 30 s — skipping."}
             log.debug("agent_tool_result tool=%s step=%s keys=%s", name, step, list(result.keys())[:8])
             yield _sse({"type": "tool_result", "tool": name, "result": result, "step": step})
 
