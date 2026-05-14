@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Box, Flex, Text, Divider, Tooltip, Image } from "@chakra-ui/react";
+import { Box, Flex, Text, Tooltip, Image, useColorMode } from "@chakra-ui/react";
+import { Sun, Moon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -133,6 +134,81 @@ function NavItem({ label, to, Icon, collapsed, onNavigate }) {
   );
 }
 
+// ── Theme toggle (Light / Dark segmented control) ─────────────────────────────
+
+function ThemeToggle({ collapsed }) {
+  const { colorMode, setColorMode } = useColorMode();
+  const isDark = colorMode === "dark";
+
+  if (collapsed) {
+    return (
+      <MotionBox
+        as="button"
+        onClick={() => setColorMode(isDark ? "light" : "dark")}
+        aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
+        w="28px" h="28px" borderRadius="8px"
+        border="1px solid rgba(255,255,255,0.10)"
+        bg="rgba(31,63,254,0.18)"
+        display="flex" alignItems="center" justifyContent="center"
+        color="#93A8FF" cursor="pointer"
+        whileHover={{ borderColor: "rgba(31,63,254,0.5)", color: "white" }}
+        transition={{ duration: 0.15 }}
+      >
+        {isDark ? <Moon size={13} strokeWidth={2} /> : <Sun size={13} strokeWidth={2} />}
+      </MotionBox>
+    );
+  }
+
+  return (
+    <Box
+      position="relative"
+      display="inline-flex"
+      bg="rgba(255,255,255,0.04)"
+      border="1px solid rgba(255,255,255,0.08)"
+      borderRadius="full"
+      p="2px"
+    >
+      {/* Sliding indicator */}
+      <Box
+        position="absolute"
+        top="2px" bottom="2px"
+        w="calc(50% - 2px)"
+        left={!isDark ? "2px" : "50%"}
+        bg="rgba(31,63,254,0.35)"
+        border="1px solid rgba(31,63,254,0.55)"
+        borderRadius="full"
+        boxShadow="0 4px 12px rgba(5,17,242,0.4)"
+        transition="left 0.22s cubic-bezier(0.25,0.46,0.45,0.94)"
+        pointerEvents="none"
+      />
+      {[
+        { id: "light", icon: <Sun size={13} strokeWidth={2} />, label: "Light" },
+        { id: "dark",  icon: <Moon size={13} strokeWidth={2} />, label: "Dark" },
+      ].map(opt => (
+        <Box
+          key={opt.id}
+          as="button"
+          role="radio"
+          aria-checked={colorMode === opt.id}
+          onClick={() => setColorMode(opt.id)}
+          position="relative" zIndex={1}
+          display="inline-flex" alignItems="center" gap="6px"
+          px="11px" py="4px"
+          border="none" borderRadius="full"
+          bg="transparent"
+          color={colorMode === opt.id ? "white" : "rgba(255,255,255,0.45)"}
+          fontSize="11px" fontWeight={600} letterSpacing="-0.01em"
+          cursor="pointer" transition="color 0.18s"
+          fontFamily="body"
+        >
+          {opt.icon}
+          <Text as="span" fontSize="11px" fontWeight={600}>{opt.label}</Text>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
 export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
   const [collapsed, setCollapsed] = useState(false);
   const width = overlay ? "260px" : collapsed ? "68px" : "230px";
@@ -241,24 +317,33 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
           </MotionBox>
         </Box>
 
-        {/* Footer — version + collapse */}
+        {/* Footer — version + theme toggle + collapse */}
         <Box borderTop="1px solid rgba(255,255,255,0.06)" flexShrink={0}>
           <AnimatePresence>
             {!collapsed && (
               <MotionBox
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                px="20px" py="10px"
+                px="20px" pt="10px" pb="8px"
               >
                 <Text fontSize="10px" color="rgba(255,255,255,0.2)" textAlign="center">
-                  Unicharm Facility · v0.3.0-poc
+                  Unicharm Facility · v0.4.0-poc
                 </Text>
               </MotionBox>
             )}
           </AnimatePresence>
 
-          {/* Collapse toggle — desktop only */}
-          {!overlay && (
-            <Flex justify={collapsed ? "center" : "flex-end"} px={collapsed ? 0 : "12px"} pb="12px">
+          <Flex
+            direction={collapsed ? "column" : "row"}
+            align="center"
+            justify={collapsed ? "center" : "space-between"}
+            gap={2}
+            px={collapsed ? 0 : "12px"}
+            pb="12px"
+          >
+            <ThemeToggle collapsed={collapsed} />
+
+            {/* Collapse toggle — desktop only */}
+            {!overlay && (
               <MotionBox
                 as="button"
                 w="28px" h="28px" borderRadius="8px"
@@ -266,7 +351,7 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
                 display="flex" alignItems="center" justifyContent="center"
                 color="rgba(255,255,255,0.35)"
                 onClick={() => setCollapsed(!collapsed)}
-                whileHover={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(5,17,242,0.5)" }}
+                whileHover={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(31,63,254,0.5)" }}
                 transition={{ duration: 0.15 }}
                 aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               >
@@ -274,8 +359,8 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
                   <ChevronLeft size={14} strokeWidth={2} />
                 </MotionBox>
               </MotionBox>
-            </Flex>
-          )}
+            )}
+          </Flex>
         </Box>
       </MotionBox>
     </>
