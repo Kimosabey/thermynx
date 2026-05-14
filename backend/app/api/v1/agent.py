@@ -9,6 +9,7 @@ from sqlalchemy import text
 from app.db.session import get_pg
 from app.db.models import AgentRun
 from app.services.agent import run_agent
+from app.limiter import limiter
 from app.config import settings
 from app.log import get_logger
 
@@ -102,9 +103,10 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
 
 
 @router.post("/agent/run")
+@limiter.limit("10/minute")
 async def agent_run(
-    req: AgentRequest,
     request: Request,
+    req: AgentRequest,
     pg: AsyncSession = Depends(get_pg),
 ):
     return StreamingResponse(

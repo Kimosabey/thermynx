@@ -18,6 +18,7 @@ from app.domain.equipment import get_by_id
 from app.llm.ollama import stream_generate
 from app.prompts.hvac_prompts import build_analyze_prompt
 from app.services.rag import retrieve, format_rag_context
+from app.limiter import limiter
 from app.config import settings
 from app.log import get_logger
 
@@ -162,9 +163,10 @@ async def _sse_stream(
 
 
 @router.post("/analyze")
+@limiter.limit("10/minute")
 async def analyze(
-    req: AnalyzeRequest,
     request: Request,
+    req: AnalyzeRequest,
     pg: AsyncSession = Depends(get_pg),
 ):
     if req.thread_id:

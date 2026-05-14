@@ -10,10 +10,13 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.api.router import router
 from app.config import settings
 from app.db.session import pg_engine, Base
+from app.limiter import limiter
 from app.services import cache as cache_svc
 from app.log import get_logger
 
@@ -79,6 +82,10 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# ── Rate limiting (slowapi) ───────────────────────────────────────────────────
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @app.exception_handler(Exception)

@@ -13,3 +13,4 @@ numpy==2.4.4
 pypdf==5.1.0
 python-multipart==0.0.12
 alembic==1.14.1
+slowapi==0.1.9
