@@ -1,4 +1,4 @@
-.PHONY: dev deps stop reset logs migrate migrate-create migrate-stamp
+.PHONY: dev deps stop reset logs obs obs-stop worker migrate migrate-create migrate-stamp
 
 # Start stateful deps (Postgres + Redis) in background
 deps:
@@ -32,6 +32,24 @@ reset:
 
 logs:
 	docker compose logs -f
+
+# ── Observability stack (Prometheus + Loki + Grafana) ─────────────────────────
+
+# Start observability stack (Grafana at http://localhost:3000)
+obs:
+	docker compose --profile obs up -d
+	@echo "Grafana →  http://localhost:3000  (no login required)"
+	@echo "Prometheus → http://localhost:9090"
+	@echo "Loki  →  http://localhost:3100"
+
+obs-stop:
+	docker compose --profile obs down
+
+# ── arq job worker ────────────────────────────────────────────────────────────
+
+# Run the arq worker in a dedicated terminal (production-style, separate process)
+worker:
+	cd backend && ../.venv/Scripts/python -m arq app.jobs.worker.WorkerSettings
 
 # ── Database migrations (Alembic) ─────────────────────────────────────────────
 
