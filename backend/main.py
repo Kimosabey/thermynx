@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import asyncio
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -63,19 +63,26 @@ async def lifespan(_app: FastAPI):
         except Exception as e:
             log.warning("ivfflat_index_skipped err=%s", e)
 
-    scheduler = AsyncIOScheduler()
+    # ── 4. arq worker (in-process for POC; run `make worker` for separate process) ──
+    _worker_task: asyncio.Task | None = None
     try:
-        from app.jobs.anomaly_scan import run_scan_async
+        from arq.worker import create_worker
+        from app.jobs.worker import WorkerSettings
 
-        scheduler.add_job(run_scan_async, "interval", minutes=5, id="anomaly_scan", max_instances=1)
-        scheduler.start()
-        log.info("Anomaly scan scheduler started (every 5 min)")
+        _arq_worker = create_worker(WorkerSettings)
+        _worker_task = asyncio.create_task(_arq_worker.async_run())
+        log.info("arq_worker_started cron=every_5min mode=in_process")
     except Exception as e:
-        log.warning("Could not start anomaly scheduler: %s", e)
+        log.warning("arq_worker_start_failed err=%s — anomaly scans disabled", e)
 
     yield
 
-    scheduler.shutdown(wait=False)
+    if _worker_task and not _worker_task.done():
+        _worker_task.cancel()
+        try:
+            await _worker_task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(

@@ -1,10 +1,8 @@
 """
-Background anomaly scan job — runs every 5 minutes via APScheduler.
+Background anomaly scan job — runs every 5 minutes via arq cron.
 For each equipment, fetches last 60 minutes, runs z-score detection,
 and persists results to the anomalies table in Postgres.
 """
-import asyncio
-
 from sqlalchemy import text
 
 from app.log import get_logger
@@ -74,11 +72,12 @@ async def _scan_once():
         log.info(f"Anomaly scan complete — {found} new event(s) persisted")
 
 
-async def run_scan_async():
-    """Run inside FastAPI's event loop (AsyncIOScheduler) — do not use asyncio.run."""
+async def run_scan_job(_ctx: dict) -> str:
+    """arq cron job entry point — _ctx injected by arq, not used directly."""
     await _scan_once()
+    return "ok"
 
 
-def run_scan():
-    """Legacy sync entry — only for manual scripts; prefer run_scan_async under uvicorn."""
-    asyncio.run(_scan_once())
+async def run_scan_async():
+    """Manual / in-process trigger — use run_scan_job for arq."""
+    await _scan_once()
