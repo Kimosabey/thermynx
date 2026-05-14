@@ -81,6 +81,17 @@ async def _sse_stream(
         msgs = list(res.scalars())
         conversation_history = [{"role": m.role, "content": m.content} for m in reversed(msgs)]
 
+        # Persist the user message immediately — before streaming begins.
+        # This ensures the question is recorded even if the stream fails or
+        # the user closes the tab before a response arrives.
+        pg.add(Message(
+            id=str(uuid.uuid4()),
+            thread_id=req.thread_id,
+            role="user",
+            content=req.question,
+        ))
+        await pg.commit()
+
     async with MySQLSession() as db:
         if req.equipment_id:
             eq = get_by_id(req.equipment_id)
@@ -144,16 +155,15 @@ async def _sse_stream(
         getattr(request.state, "request_id", None),
     )
 
-    if req.thread_id and status == "ok" and response_text.strip():
-        pg.add(Message(id=str(uuid.uuid4()), thread_id=req.thread_id, role="user", content=req.question))
-        pg.add(
-            Message(
-                id=str(uuid.uuid4()),
-                thread_id=req.thread_id,
-                role="assistant",
-                content=response_text,
-            )
-        )
+    # Persist assistant response — user message was already saved before streaming.
+    # Save as long as we got some content back (even on partial streams).
+    if req.thread_id and response_text.strip():
+        pg.add(Message(
+            id=str(uuid.uuid4()),
+            thread_id=req.thread_id,
+            role="assistant",
+            content=response_text,
+        ))
         thr = await pg.get(Thread, req.thread_id)
         if thr:
             thr.updated_at = datetime.utcnow()
