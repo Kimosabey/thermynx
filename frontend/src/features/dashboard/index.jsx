@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useState, useCallback } from "react";
 import { Box, Flex, Grid, Text, Badge } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import {
@@ -17,6 +17,8 @@ import PageHeader from "../../shared/ui/PageHeader";
 import GlassCard from "../../shared/ui/GlassCard";
 import KpiCard from "../../shared/ui/KpiCard";
 import StatusPulse from "../../shared/ui/StatusPulse";
+import ErrorAlert from "../../shared/ui/ErrorAlert";
+import useApi from "../../shared/hooks/useApi";
 import { SkeletonKpiCard, SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 
 const MotionBox  = motion.create(Box);
@@ -132,38 +134,28 @@ function EquipCard({ name, data, type }) {
 }
 
 export default function Dashboard() {
-  const [health, setHealth]     = useState(null);
-  const [summary, setSummary]   = useState(null);
-  const [telemetryWindow, setTelemetryWindow] = useState(null);
-  const [loading, setLoading]   = useState(true);
   const [spinning, setSpinning] = useState(false);
-  const [error, setError]       = useState(null);
 
-  async function loadData() {
+  const { data: health, refetch: refetchHealth } = useApi("/api/v1/health");
+
+  const {
+    data:      summaryData,
+    isLoading: loading,
+    error,
+    refetch:   refetchSummary,
+  } = useApi(`/api/v1/equipment/summary?hours=${SUMMARY_HOURS}`);
+
+  const refetch = useCallback(async () => {
     setSpinning(true);
-    setError(null);
-    try {
-      const [hRes, eRes] = await Promise.all([
-        fetch("/api/v1/health"),
-        fetch(`/api/v1/equipment/summary?hours=${SUMMARY_HOURS}`),
-      ]);
-      setHealth(await hRes.json());
-      const eq = await eRes.json();
-      setSummary(eq.summary);
-      setTelemetryWindow(eq.telemetry_window ?? null);
-    } catch {
-      setError("Cannot reach backend. Is the server running?");
-    } finally {
-      setLoading(false);
-      setSpinning(false);
-    }
-  }
+    await Promise.all([refetchHealth(), refetchSummary()]);
+    setSpinning(false);
+  }, [refetchHealth, refetchSummary]);
 
-  useEffect(() => { loadData(); }, []);
-
-  const s = summary || {};
-  const dbOk     = health?.db?.connected;
-  const ollamaOk = health?.ollama?.connected;
+  const s               = summaryData?.summary || {};
+  const telemetryWindow = summaryData?.telemetry_window ?? null;
+  const freshnessWarn   = summaryData?.freshness_warning ?? null;
+  const dbOk            = health?.db?.connected;
+  const ollamaOk        = health?.ollama?.connected;
 
   return (
     <PageShell>
@@ -239,18 +231,15 @@ export default function Dashboard() {
         }
       />
 
+      <ErrorAlert error={error} />
+      <ErrorAlert error={freshnessWarn} mb={4} />
+
       {telemetryWindow?.anchor === "latest_in_db" && telemetryWindow?.until_utc && (
         <Text fontSize="xs" color="text.muted" mb={5} lineHeight="tall">
           Historical snapshot: window ends{" "}
           <Box as="span" fontWeight={600} color="text.primary">{telemetryWindow.until_utc}</Box>
           {" "}UTC ({telemetryWindow.since_utc} → {telemetryWindow.until_utc}).
         </Text>
-      )}
-
-      {error && (
-        <GlassCard mb={6} p={4}>
-          <Text color="red.400" fontSize="sm">{error}</Text>
-        </GlassCard>
       )}
 
       {/* KPI strip — minmax prevents grid blowout; dense cols only on xl+ */}
