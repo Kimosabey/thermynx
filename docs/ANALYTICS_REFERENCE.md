@@ -1,4 +1,4 @@
-# THERMYNX — Analytics Reference
+# Graylinx — Analytics Reference
 
 All analytics live in `backend/app/analytics/` as **pure functions** — no database calls, no side effects. This makes them trivially unit-testable and reusable from both API endpoints and the background anomaly scan job.
 
@@ -251,4 +251,4 @@ The optimizer suggests a condenser water leaving temperature setpoint based on:
 - Current load
 - Number of cells operating
 
-This is a read-only recommendation — THERMYNX does not write to any BMS or actuator.
+This is a read-only recommendation — Graylinx does not write to any BMS or actuator.

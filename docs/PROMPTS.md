@@ -1,6 +1,6 @@
-# THERMYNX — Prompt Catalogue
+# Graylinx — Prompt Catalogue
 
-All system + user prompts THERMYNX uses, **versioned**. Never edit a prompt in place — bump the version and reference it via `prompt_version_id` in `analysis_audit`, so we can correlate output quality with prompt changes.
+All system + user prompts Graylinx uses, **versioned**. Never edit a prompt in place — bump the version and reference it via `prompt_version_id` in `analysis_audit`, so we can correlate output quality with prompt changes.
 
 > Source of truth: `backend/app/prompts/` (Python module). This file mirrors what's there and explains the *why*.
 

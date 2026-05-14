@@ -1,6 +1,6 @@
-# THERMYNX AI Backend Architecture Reference
+# Graylinx AI Backend Architecture Reference
 
-This document provides a technical overview of the backend architecture and AI implementation strategies used in the THERMYNX HVAC AI Operations Intelligence Platform.
+This document provides a technical overview of the backend architecture and AI implementation strategies used in the Graylinx HVAC AI Operations Intelligence Platform.
 
 ## 1. Core Technology Stack
 
@@ -19,7 +19,7 @@ The backend is built as a high-performance, asynchronous Python service designed
 
 ## 2. AI Intelligence Stack (The "Vanilla" Approach)
 
-THERMYNX intentionally avoids heavy "all-in-one" AI frameworks (like LangChain or LlamaIndex) in favor of a lean, custom implementation. This provides maximum control, lower latency, and easier customization for HVAC engineering logic.
+Graylinx intentionally avoids heavy "all-in-one" AI frameworks (like LangChain or LlamaIndex) in favor of a lean, custom implementation. This provides maximum control, lower latency, and easier customization for HVAC engineering logic.
 
 ### A. LLM Engine: Ollama
 *   **Protocol:** Direct REST API integration via `httpx`.
@@ -29,7 +29,7 @@ THERMYNX intentionally avoids heavy "all-in-one" AI frameworks (like LangChain o
 *   **Location:** `backend/app/llm/ollama.py` handles all communication.
 
 ### B. Agent Framework: ReAct (Reasoning and Acting)
-Instead of a third-party agent library, THERMYNX uses a custom **ReAct Loop** implemented in `backend/app/services/agent.py`.
+Instead of a third-party agent library, Graylinx uses a custom **ReAct Loop** implemented in `backend/app/services/agent.py`.
 
 **The 8-Step ReAct Loop:**
 1.  **Prompt:** Send the system persona + user goal + tool definitions to Ollama.
@@ -50,7 +50,7 @@ RAG is used to give the AI access to facility manuals, SOPs, and technical docum
 
 ## 3. Why No Heavy AI Frameworks?
 
-| Feature | THERMYNX Approach | Framework Approach (LangChain/etc.) |
+| Feature | Graylinx Approach | Framework Approach (LangChain/etc.) |
 | :--- | :--- | :--- |
 | **Performance** | Sub-millisecond overhead. | Significant abstraction overhead. |
 | **Customization** | Full control over the ReAct loop and prompt formatting. | Often constrained by framework abstractions. |

@@ -1,4 +1,4 @@
-# THERMYNX — API Reference
+# Graylinx — API Reference
 
 Base URL: `http://localhost:8000/api/v1`
 OpenAPI UI: `http://localhost:8000/docs`

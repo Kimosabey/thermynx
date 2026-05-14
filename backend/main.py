@@ -86,7 +86,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title="THERMYNX AI Operations Intelligence",
+    title="Graylinx AI Operations Intelligence",
     description="AI-powered HVAC operations platform for Unicharm facility",
     version="0.1.0",
     lifespan=lifespan,
@@ -166,7 +166,7 @@ app.include_router(router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    return {"service": "THERMYNX API", "version": "0.1.0", "status": "running"}
+    return {"service": "Graylinx API", "version": "0.1.0", "status": "running"}
 
 
 @app.get("/healthz")

@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Form inputs</title><link rel="stylesheet" href="_card.css">
+<style>
+  .field { background:#FFF; border:1px solid #C7C9FF; border-radius:10px; font-family:var(--font-body); font-size:13px; color:#1D1D21; padding:9px 12px; width:100%; transition: all 0.15s; outline: none; }
+  .field::placeholder { color: #808087; }
+  .field:hover { border-color:#989DFF; }
+  .field:focus { border-color:#1F3FFE; box-shadow: 0 0 0 3px rgba(31,63,254,0.12); }
+</style></head>
+<body>
+  <p class="eyebrow" style="margin-bottom:14px;">Inputs · radius 10 · focus ring 3px @ 12% brand</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div>
+      <p class="eyebrow" style="margin:0 0 6px;">Equipment</p>
+      <select class="field"><option>All equipment</option></select>
+    </div>
+    <div>
+      <p class="eyebrow" style="margin:0 0 6px;">Time window</p>
+      <select class="field"><option>Last 24 hours</option></select>
+    </div>
+  </div>
+  <div style="margin-top:12px;">
+    <p class="eyebrow" style="margin:0 0 6px;">Your question</p>
+    <textarea class="field" rows="3" placeholder="Ask about chiller efficiency, energy consumption, anomalies, maintenance…"></textarea>
+  </div>
+  <p class="muted" style="font-size:11px;margin-top:12px;line-height:1.6;">Focused field gets a 3px <span class="mono">rgba(31,63,254,0.12)</span> halo. Hover deepens border to <span class="mono">--border-strong</span>.</p>
+</body></html>

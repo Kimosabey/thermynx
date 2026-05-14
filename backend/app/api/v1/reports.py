@@ -134,7 +134,7 @@ async def build_daily_report(
     )
 
     parts = [
-        "# THERMYNX Daily Operations Report\n\n",
+        "# Graylinx Daily Operations Report\n\n",
         f"_Generated **{period_end.isoformat()}Z** · rolling window **{hours}** h_\n\n",
         "## KPI and energy cost (flat tariff)\n\n",
         f"Blended tariff assumption: **₹{settings.TARIFF_INR_PER_KWH}/kWh** (override via app settings).\n\n",

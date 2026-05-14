@@ -1,0 +1,26 @@
+INFO:     Will watch for changes in these directories: ['D:\\Harshan\\HVAC AI Operations Intelligence Platform\\backend']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [5052] using StatReload
+INFO:     Started server process [33292]
+INFO:     Waiting for application startup.
+2026-05-14 11:58:43 | INFO  | thermynx.app | pgvector_extension_ready
+2026-05-14 11:58:43 | INFO  | thermynx.app | postgres_metadata_ready
+2026-05-14 11:58:43 | WARNING | thermynx.app | ivfflat_index_skipped err=(sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.DatatypeMismatchError'>: operator class "vector_cosine_ops" does not accept data type text
+[SQL: CREATE INDEX IF NOT EXISTS idx_embeddings_vec ON embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists=50)]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-05-14 11:58:43 | INFO  | thermynx.app | Anomaly scan scheduler started (every 5 min)
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app\api\v1\analyzer.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [33292]
+INFO:     Started server process [24736]
+INFO:     Waiting for application startup.
+2026-05-14 12:13:50 | INFO  | thermynx.app | pgvector_extension_ready
+2026-05-14 12:13:50 | INFO  | thermynx.app | postgres_metadata_ready
+2026-05-14 12:13:50 | WARNING | thermynx.app | ivfflat_index_skipped err=(sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.DatatypeMismatchError'>: operator class "vector_cosine_ops" does not accept data type text
+[SQL: CREATE INDEX IF NOT EXISTS idx_embeddings_vec ON embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists=50)]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-05-14 12:13:50 | INFO  | thermynx.app | Anomaly scan scheduler started (every 5 min)
+INFO:     Application startup complete.

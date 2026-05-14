@@ -1,0 +1,182 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Reasoning trace step</title><link rel="stylesheet" href="_card.css">
+<style>
+  @keyframes shimmer-text {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @keyframes step-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(31,63,254,0.45); }
+    50%      { box-shadow: 0 0 0 6px rgba(31,63,254,0); }
+  }
+  @keyframes draw-rail {
+    0%   { transform: scaleY(0); }
+    100% { transform: scaleY(1); }
+  }
+
+  .trace { position: relative; padding-left: 22px; }
+  .trace::before {
+    content: '';
+    position: absolute; left: 8px; top: 14px; bottom: 14px;
+    width: 2px; border-radius: 9999px;
+    background: linear-gradient(180deg, #1F3FFE 0%, #1F3FFE 30%, #C7C9FF 30%, #C7C9FF 100%);
+    transform-origin: top;
+  }
+  .step { position: relative; padding: 8px 0 10px; }
+  .step__dot {
+    position: absolute; left: -22px; top: 14px;
+    width: 18px; height: 18px; border-radius: 9999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #FFFFFF; border: 1.5px solid #C7C9FF;
+    color: #C7C9FF;
+    z-index: 2;
+  }
+  .step.is-done .step__dot {
+    background: #1F3FFE; border-color: #1F3FFE; color: #FFFFFF;
+  }
+  .step.is-running .step__dot {
+    background: #FFFFFF; border-color: #1F3FFE; color: #1F3FFE;
+    animation: step-pulse 1.6s ease-out infinite;
+  }
+
+  .step__row {
+    display: flex; align-items: center; gap: 10px;
+    background: #FFFFFF;
+    border: 1px solid #E1E3FF;
+    border-radius: 12px;
+    padding: 9px 12px;
+    transition: all 180ms var(--ease-spring);
+  }
+  .step.is-done .step__row {
+    background: rgba(31,63,254,0.04);
+    border-color: rgba(31,63,254,0.18);
+  }
+  .step.is-running .step__row {
+    border-color: rgba(31,63,254,0.30);
+    box-shadow: 0 4px 14px rgba(31,63,254,0.08);
+  }
+  .step.is-pending .step__row {
+    background: #FAFAFE;
+    border-color: #ECEDFF;
+  }
+
+  .step__tool-icon {
+    width: 22px; height: 22px; border-radius: 7px;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: rgba(31,63,254,0.10); color: #1F3FFE;
+  }
+  .step.is-done .step__tool-icon { background: rgba(5,150,105,0.12); color: #059669; }
+  .step.is-pending .step__tool-icon { background: #EFF0FF; color: #A5A5AA; }
+
+  .step__label {
+    font-size: 12px; font-weight: 600; color: #1D1D21;
+    letter-spacing: -0.005em;
+  }
+  .step.is-pending .step__label { color: #A5A5AA; font-weight: 500; }
+
+  /* Claude-style shimmer text on the running step */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      #1D1D21 0%, #1D1D21 35%,
+      #6671FF 45%, #1F3FFE 50%, #6671FF 55%,
+      #1D1D21 65%, #1D1D21 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: shimmer-text 2.1s linear infinite;
+  }
+
+  .step__meta {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 10px; color: #808087;
+    font-family: var(--font-mono);
+  }
+  .badge-step {
+    font-family: var(--font-body); font-size: 9px; font-weight: 700;
+    background: rgba(31,63,254,0.08); color: #1F3FFE;
+    border-radius: 5px; padding: 2px 6px;
+    letter-spacing: 0.04em;
+  }
+  .step.is-done .badge-step {
+    background: rgba(5,150,105,0.10); color: #059669;
+  }
+  .check-dot {
+    width: 12px; height: 12px; border-radius: 9999px;
+    background: #10b981;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #FFF;
+  }
+
+  .step__detail {
+    margin: 8px 0 0;
+    padding: 8px 10px;
+    background: #EFF0FF;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px; color: #3B3B42; line-height: 1.6;
+  }
+  .step__detail .k { color: #808087; }
+  .step__detail .v { color: #1F3FFE; }
+</style></head>
+<body>
+  <p class="eyebrow" style="margin-bottom:14px;">Reasoning trace · running step shimmers (Claude-style) · rail fills as steps complete</p>
+
+  <div class="trace">
+
+    <!-- DONE step -->
+    <div class="step is-done">
+      <span class="step__dot">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
+      <div class="step__row">
+        <span class="step__tool-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/></svg>
+        </span>
+        <span class="step__label">Equipment List</span>
+        <span class="step__meta">
+          <span class="badge-step">step 1</span>
+          <span>6 items · 240ms</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- RUNNING step (Claude shimmer) -->
+    <div class="step is-running">
+      <span class="step__dot">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>
+      </span>
+      <div class="step__row">
+        <span class="step__tool-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </span>
+        <span class="step__label shimmer">Computing efficiency for Chiller 1…</span>
+        <span class="step__meta">
+          <span class="badge-step">step 2</span>
+          <span>1.4s</span>
+        </span>
+      </div>
+      <div class="step__detail">
+        <span class="k">tool:</span> <span class="v">compute_efficiency</span><br>
+        <span class="k">args:</span> { equipment_id: <span class="v">"chiller_1"</span>, hours: <span class="v">24</span> }
+      </div>
+    </div>
+
+    <!-- PENDING step -->
+    <div class="step is-pending">
+      <span class="step__dot"></span>
+      <div class="step__row">
+        <span class="step__tool-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <span class="step__label">Anomaly Scan</span>
+        <span class="step__meta">queued</span>
+      </div>
+    </div>
+
+  </div>
+</body></html>

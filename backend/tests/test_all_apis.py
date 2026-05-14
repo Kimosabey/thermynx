@@ -1,5 +1,5 @@
 """
-THERMYNX - Full API Test Suite
+Graylinx - Full API Test Suite
 Tests every endpoint across all phases.
 
 Usage:
@@ -400,12 +400,12 @@ def run(base: str):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="THERMYNX Full API Test")
+    parser = argparse.ArgumentParser(description="Graylinx Full API Test")
     parser.add_argument("--base", default="http://localhost:8000", help="Backend URL")
     parser.add_argument("--verbose", action="store_true", help="Show extra detail")
     args = parser.parse_args()
     VERBOSE = args.verbose
-    print(f"\n{BLD}THERMYNX Full API Test Suite{RST}")
+    print(f"\n{BLD}Graylinx Full API Test Suite{RST}")
     print(f"Target: {args.base}\n")
     ok_result = run(args.base)
     sys.exit(0 if ok_result else 1)

@@ -41,7 +41,7 @@ export default function Layout() {
             />
             <Text fontFamily="heading" fontWeight={800} fontSize="14px"
               color="accent.primary" letterSpacing="-0.02em">
-              THERMYNX
+              Graylinx
             </Text>
           </Flex>
         )}

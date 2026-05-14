@@ -1,4 +1,4 @@
-# THERMYNX — Agent & Tools Reference
+# Graylinx — Agent & Tools Reference
 
 The AI agent system uses a **ReAct (Reasoning + Acting)** loop: the LLM reasons about what to do, calls a tool, observes the result, reasons again, and so on until it can write a final answer.
 

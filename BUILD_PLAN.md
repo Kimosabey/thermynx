@@ -1,9 +1,9 @@
-# THERMYNX — End-to-End Build Plan
+# Graylinx — End-to-End Build Plan
 
-**Product:** THERMYNX AI Operations Intelligence Platform
+**Product:** Graylinx AI Operations Intelligence Platform
 **Owner:** Harshan Aiyappa (Graylinx AI)
 **Customer:** Unicharm Facility (HVAC plant rooms)
-**Repo:** https://github.com/Kimosabey/thermynx
+**Repo:** https://github.com/Kimosabey/Graylinx
 **Status:** **POC in progress** — Phase 0 foundation complete (10 commits on `master`). Full architecture preserved as north star; current scope is in §1A.
 **Visual reference:** all architecture diagrams + system flows render inline at [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (sources in [`docs/diagrams/`](docs/diagrams/)).
 
@@ -11,7 +11,7 @@
 
 ## 1. Executive Summary
 
-THERMYNX is an enterprise AI platform that turns raw HVAC telemetry from the Unicharm chiller plant into operational intelligence: real-time KPIs, efficiency benchmarking, anomaly detection, energy forecasting, and conversational AI explanations powered by a privately hosted Ollama LLM.
+Graylinx is an enterprise AI platform that turns raw HVAC telemetry from the Unicharm chiller plant into operational intelligence: real-time KPIs, efficiency benchmarking, anomaly detection, energy forecasting, and conversational AI explanations powered by a privately hosted Ollama LLM.
 
 The product converts the existing `unicharm` MySQL database (port 3307) — already populated with normalized chiller, cooling tower, condenser pump, and AHU data — into a decision-support tool for plant operators, energy engineers, and facility managers.
 
@@ -88,7 +88,7 @@ After POC sign-off → **Phase 5 Hardening** before any customer-facing deploy.
 
 ## 4. Architecture
 
-THERMYNX is a layered, async-first system with hard read/write isolation between the customer's telemetry source (MySQL) and the platform's own application data (PostgreSQL). Every cross-process call has an explicit timeout, a performance budget, and a defined failure mode.
+Graylinx is a layered, async-first system with hard read/write isolation between the customer's telemetry source (MySQL) and the platform's own application data (PostgreSQL). Every cross-process call has an explicit timeout, a performance budget, and a defined failure mode.
 
 ### 4.1 Architectural Principles
 
@@ -106,7 +106,7 @@ THERMYNX is a layered, async-first system with hard read/write isolation between
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                            THERMYNX PLATFORM                             │
+│                            Graylinx PLATFORM                             │
 │                                                                          │
 │   ┌─────────────┐    HTTPS/SSE    ┌──────────────┐                      │
 │   │  React SPA  │ ◄─────────────► │   FastAPI    │                      │
@@ -332,14 +332,14 @@ Explicit, enforced via load tests in CI before each release. Regressions are bug
 
 ### 4.13 Deployment Topology (on-premise, single host)
 
-THERMYNX deploys to **one Linux server inside the Unicharm plant network**. No cloud, no Kubernetes, no image registry. Everything runs as a docker compose stack on that single host.
+Graylinx deploys to **one Linux server inside the Unicharm plant network**. No cloud, no Kubernetes, no image registry. Everything runs as a docker compose stack on that single host.
 
 ```text
                        Unicharm plant network
                                   │
                                   ▼
             ┌──────────────────────────────────────────┐
-            │   THERMYNX on-prem host (single Linux)   │
+            │   Graylinx on-prem host (single Linux)   │
             │            docker compose stack          │
             │                                          │
             │   ┌──────────────┐                       │
@@ -361,7 +361,7 @@ THERMYNX deploys to **one Linux server inside the Unicharm plant network**. No c
             │          ▼                  ▼            │
             │   ┌────────────┐     ┌────────────┐      │
             │   │ Postgres   │     │ Redis      │      │
-            │   │ thermynx   │     │ cache +    │      │
+            │   │ Graylinx   │     │ cache +    │      │
             │   │   _app     │     │ arq queue  │      │
             │   │  (volume + │     │            │      │
             │   │  pg_dump)  │     │            │      │
@@ -496,7 +496,7 @@ End-to-end traces for the five critical paths. Format: `[participant] action`.
 | **Chakra UI** | Enterprise-grade tokens, accessible, theme-able for white-label later |
 | **Ollama (self-hosted)** | Data privacy (no cloud calls with HVAC data), cost predictability |
 | **MySQL `unicharm`** (telemetry, read-only) | Already exists, populated, indexed — reuse as source-of-truth, never write back |
-| **PostgreSQL `thermynx_app`** (app DB) | Owns everything THERMYNX *creates*: users, threads, rollups, audit, embeddings. Keeps source data clean and lets us use pgvector for RAG without a 4th service |
+| **PostgreSQL `thermynx_app`** (app DB) | Owns everything Graylinx *creates*: users, threads, rollups, audit, embeddings. Keeps source data clean and lets us use pgvector for RAG without a 4th service |
 | **pgvector** (extension) | RAG embeddings live next to relational app data — one connection pool, one backup, no separate vector DB ops |
 | **Redis** | Response/prompt cache, rate-limit counters, and arq job queue — single service, three jobs |
 | **arq** (Redis queue) | Async job runner for periodic anomaly scans + rollup refresh; native asyncio, no Celery weight |
@@ -518,7 +518,7 @@ We run **two databases on purpose**, not by accident:
 | **Ollama** (Tailscale) | LLM inference | Network call | No persistent state on our side |
 
 **Why not just MySQL for everything?**
-- We do **not** want THERMYNX writes (chat history, audit, rollups, embeddings) to land in the customer's plant data DB. Hard separation = safer ops, simpler permissions, easier read-replica path later.
+- We do **not** want Graylinx writes (chat history, audit, rollups, embeddings) to land in the customer's plant data DB. Hard separation = safer ops, simpler permissions, easier read-replica path later.
 - pgvector on Postgres is mature and removes the need for Chroma/Qdrant entirely.
 
 **Why not TimescaleDB / dedicated TSDB?**
@@ -851,7 +851,7 @@ CREATE INDEX idx_chiller_1_running ON chiller_1_normalized(is_running, slot_time
 (Repeat per normalized table.)
 
 ### 8.3 Read Replica Path (Phase 3+)
-If query load grows, point THERMYNX at a read replica of `unicharm` to isolate from ingestion.
+If query load grows, point Graylinx at a read replica of `unicharm` to isolate from ingestion.
 
 ### 8.4 Derived Aggregates (Phase 2+)
 Pre-compute hourly/daily rollups in **`thermynx_app` (PostgreSQL)**, not in `unicharm`:
@@ -1062,7 +1062,7 @@ POC runs on **one machine** — a developer laptop or a small on-prem box. The o
 │  docker compose up                     │
 │                                        │
 │   api (uvicorn, --reload) ─┬─ postgres │
-│                            │  thermynx │
+│                            │  Graylinx │
 │                            │   _app    │
 │                            └─ redis    │
 │                                (cache) │
@@ -1174,7 +1174,7 @@ Prometheus `/metrics`, OpenTelemetry → Tempo, Loki log aggregation, Grafana da
 - Daily active operators: > 5 within 30 days of launch
 - AI Analyzer queries/day: > 50 within 30 days
 - Recommendations actioned: > 20% (tracked via feedback button)
-- kWh saved attributable to THERMYNX recommendations: > 5% within 6 months
+- kWh saved attributable to Graylinx recommendations: > 5% within 6 months
 
 ---
 
@@ -1220,7 +1220,7 @@ These need owner input before proceeding:
 - [ ] **Auth scope (Phase 3):** SSO via Microsoft (Unicharm AD) or local accounts?
 - [x] **Hosting:** **On-prem at Unicharm** — single Linux host, docker compose stack, no cloud / k8s / managed services. *(decided 2026-05-08)*
 - [ ] **Ollama redundancy:** Single host enough or need HA?
-- [ ] **Branding:** THERMYNX standalone or co-branded with Graylinx + Unicharm?
+- [ ] **Branding:** Graylinx primary wordmark + facility (e.g. Unicharm) co-marking?
 - [ ] **Data retention:** How long to keep analysis history per user?
 - [x] **Application DB:** PostgreSQL (`thermynx_app`) — separate from `unicharm` MySQL telemetry source. *(decided 2026-05-08)*
 - [x] **Vector store:** pgvector inside `thermynx_app` — no separate vector DB. *(decided 2026-05-08)*
@@ -1232,7 +1232,7 @@ These need owner input before proceeding:
 ## Appendix A — File Structure (Target State)
 
 ```text
-thermynx/
+repo-root/
 ├── .github/workflows/      # CI/CD
 ├── backend/
 │   ├── app/
@@ -1319,14 +1319,14 @@ thermynx/
 
 ### B.2 Assumptions
 
-1. The `unicharm` MySQL DB at port 3307 is reachable from THERMYNX hosts via Tailscale.
+1. The `unicharm` MySQL DB at port 3307 is reachable from Graylinx hosts via Tailscale.
 2. Normalized tables refresh on at least 5-minute cadence and contain `slot_time` as a UTC timestamp.
 3. The Ollama box (`100.125.103.28:11434` over Tailscale) has GPU sufficient for `llama3.1:8b` at acceptable latency.
 4. Single-tenant deployment for Unicharm in MVP; multi-tenant deferred to Phase 5.
 5. All users have moderate technical literacy (operators / engineers / facility managers — not consumers).
 6. English is the only supported UI language at MVP.
-7. Network between THERMYNX cluster and `unicharm` MySQL has p95 RTT < 50 ms.
-8. BMS / PLC integration is one-way *read* only — THERMYNX never issues control commands.
+7. Network between Graylinx cluster and `unicharm` MySQL has p95 RTT < 50 ms.
+8. BMS / PLC integration is one-way *read* only — Graylinx never issues control commands.
 
 ### B.3 Dependencies (External)
 
@@ -1340,7 +1340,7 @@ thermynx/
 
 ### B.4 Out-of-Scope (explicit)
 
-- **Real-time control / write-back** — THERMYNX is read-only and advisory; never sends setpoints to BMS or PLCs.
+- **Real-time control / write-back** — Graylinx is read-only and advisory; never sends setpoints to BMS or PLCs.
 - **Native mobile apps** — responsive web only.
 - **Voice / chatbot embedding** in third-party apps (Teams, Slack, WhatsApp).
 - **Custom alert routing** to PagerDuty / Opsgenie — Phase 5+ if requested.

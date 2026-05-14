@@ -1,4 +1,4 @@
-# Getting Started with THERMYNX (POC)
+# Getting Started with Graylinx (POC)
 
 **Goal:** clone, run, demo locally — under 10 minutes on a fresh laptop.
 

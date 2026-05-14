@@ -1,0 +1,211 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Sidebar nav · collapse pattern</title><link rel="stylesheet" href="_card.css">
+<style>
+  .stage {
+    background: #06091A;
+    border-radius: 16px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 220px 64px;
+    gap: 0;
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+  }
+  .stage::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 220px;
+    width: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+  .sb { display: flex; flex-direction: column; height: 340px; }
+  .sb__logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .sb--collapsed .sb__logo { justify-content: center; padding: 14px 0; }
+  .sb__mark {
+    width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+    background: #FFF;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 1px rgba(5,17,242,0.2), 0 3px 10px rgba(5,17,242,0.25);
+  }
+  .sb__brand {
+    font-family: var(--font-heading); font-weight: 800; font-size: 13px;
+    color: #FFF; letter-spacing: -0.02em; line-height: 1.1;
+  }
+  .sb__brand small {
+    display: block; font-size: 8px; color: rgba(255,255,255,0.35);
+    letter-spacing: 0.16em; text-transform: uppercase; margin-top: 2px;
+    font-family: var(--font-body); font-weight: 700;
+  }
+  .sb__group {
+    font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.25);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 14px 18px 4px;
+  }
+  .sb--collapsed .sb__group {
+    padding: 14px 0 4px;
+    text-align: center;
+    color: transparent;
+    position: relative;
+  }
+  .sb--collapsed .sb__group::after {
+    content: '';
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-25%);
+    width: 18px; height: 1px; background: rgba(255,255,255,0.12);
+  }
+  .sb__list { display: flex; flex-direction: column; gap: 2px; padding: 0 6px; }
+  .sb__item {
+    display: flex; align-items: center; gap: 11px;
+    padding: 8px 11px; margin: 0 2px;
+    border-radius: 11px;
+    border: 1px solid transparent;
+    color: rgba(255,255,255,0.55);
+    transition: all 160ms var(--ease-spring);
+    cursor: pointer;
+    font-size: 13px; font-weight: 500;
+    position: relative;
+    background: transparent;
+  }
+  .sb__item-label {
+    white-space: nowrap;
+    transition: opacity 200ms var(--ease-spring), max-width 250ms var(--ease-spring);
+  }
+  .sb--collapsed .sb__item { justify-content: center; padding: 8px 0; margin: 0 6px; }
+  .sb--collapsed .sb__item-label { opacity: 0; max-width: 0; overflow: hidden; }
+  .sb__item:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.92);
+  }
+  .sb__item.is-active {
+    background: rgba(5,17,242,0.20);
+    border-color: rgba(5,17,242,0.35);
+    color: #93A8FF;
+    font-weight: 600;
+  }
+  .sb__item.is-active::before {
+    content: '';
+    position: absolute; left: 0; top: 22%; bottom: 22%;
+    width: 3px; background: #1F3FFE;
+    border-radius: 9999px;
+    box-shadow: 0 0 10px rgba(31,63,254,0.85);
+  }
+  .sb--collapsed .sb__item.is-active::before { left: -2px; }
+  .sb__spacer { flex: 1; }
+  .sb__foot {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 10px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    color: rgba(255,255,255,0.45);
+  }
+  .sb--collapsed .sb__foot { justify-content: center; padding: 10px 0; }
+  .sb__foot-text { font-size: 10px; color: rgba(255,255,255,0.20); }
+  .sb--collapsed .sb__foot-text { display: none; }
+  .sb__toggle {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.55);
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 150ms var(--ease-spring);
+  }
+  .sb__toggle:hover {
+    background: rgba(31,63,254,0.18);
+    border-color: rgba(31,63,254,0.40);
+    color: #FFF;
+  }
+  .tooltip {
+    position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+    background: #1D1D21; color: #FFF;
+    padding: 4px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 2;
+  }
+  .tooltip::before {
+    content: '';
+    position: absolute; right: 100%; top: 50%; transform: translateY(-50%);
+    border: 4px solid transparent; border-right-color: #1D1D21;
+  }
+  .legend {
+    display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px;
+    font-size: 11px; color: var(--text-muted);
+  }
+  .legend strong { color: #1D1D21; font-weight: 600; }
+</style></head>
+<body>
+  <p class="eyebrow" style="margin-bottom:12px;">Sidebar · expand &harr; collapse · 230px &rarr; 64px · 250ms spring · labels fade + collapse maxWidth</p>
+
+  <div class="stage">
+    <!-- EXPANDED -->
+    <div class="sb">
+      <div class="sb__logo">
+        <span class="sb__mark"><img src="../assets/logo.png" alt="Graylinx" style="width:24px;"/></span>
+        <span class="sb__brand">Graylinx<small>HVAC intelligence</small></span>
+      </div>
+      <div class="sb__group">Intelligence</div>
+      <div class="sb__list">
+        <div class="sb__item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span class="sb__item-label">Efficiency</span>
+        </div>
+        <div class="sb__item is-active">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="sb__item-label">Anomalies</span>
+        </div>
+        <div class="sb__item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+          <span class="sb__item-label">Forecast</span>
+        </div>
+        <div class="sb__item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v18"/></svg>
+          <span class="sb__item-label">Compare</span>
+        </div>
+      </div>
+      <div class="sb__spacer"></div>
+      <div class="sb__foot">
+        <span class="sb__foot-text">v0.3.0-poc</span>
+        <button class="sb__toggle" aria-label="Collapse">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- COLLAPSED -->
+    <div class="sb sb--collapsed">
+      <div class="sb__logo">
+        <span class="sb__mark"><img src="../assets/logo.png" alt="" style="width:22px;"/></span>
+      </div>
+      <div class="sb__group"></div>
+      <div class="sb__list">
+        <div class="sb__item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div class="sb__item is-active">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="tooltip">Anomalies</span>
+        </div>
+        <div class="sb__item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+        </div>
+        <div class="sb__item">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v18"/></svg>
+        </div>
+      </div>
+      <div class="sb__spacer"></div>
+      <div class="sb__foot">
+        <button class="sb__toggle" aria-label="Expand">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><strong>Active</strong> · 3px left indicator with glow + brand-tint fill</span>
+    <span><strong>Tooltip</strong> appears on collapsed hover</span>
+    <span><strong>Toggle</strong> in footer flips chevron direction</span>
+  </div>
+</body></html>

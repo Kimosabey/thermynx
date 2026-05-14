@@ -1,0 +1,58 @@
+@import url("../../colors_and_type.css");
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg-canvas);
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "tnum" 1, "kern" 1;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+button { font-family: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+input, textarea, select { font-family: inherit; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(31,63,254,0.2); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(31,63,254,0.4); }
+
+/* App shell layout */
+.app-shell { display: flex; min-height: 100vh; }
+.app-main {
+  flex: 1;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* Animations used across components */
+@keyframes pulse-halo {
+  0%   { transform: scale(1);   opacity: 1; }
+  50%  { transform: scale(1.8); opacity: 0; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes thinking-dot {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50%      { transform: translateY(-5px); opacity: 1; }
+}
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes fade-up {
+  0%   { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes page-enter {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up { animation: fade-up 420ms var(--ease-spring) both; }
+.page-enter { animation: page-enter 220ms var(--ease-spring) both; }

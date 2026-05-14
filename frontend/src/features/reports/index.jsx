@@ -42,7 +42,7 @@ export default function ReportsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `thermynx-report-${hours}h.md`;
+    a.download = `graylinx-report-${hours}h.md`;
     a.click();
     URL.revokeObjectURL(url);
   }

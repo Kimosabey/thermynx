@@ -1,6 +1,6 @@
-# THERMYNX -- End-to-End Testing & Verification Guide
+# Graylinx -- End-to-End Testing & Verification Guide
 
-Complete checklist for verifying THERMYNX works correctly.
+Complete checklist for verifying Graylinx works correctly.
 Run top-to-bottom before tagging any release. Mark each item: OK / FAIL / SKIP.
 
 ---
@@ -569,12 +569,12 @@ Result: ___
 
 ### 11.3 No writes to unicharm MySQL
 ```sql
--- Verify THERMYNX never wrote to the source DB
+-- Verify Graylinx never wrote to the source DB
 -- On unicharm MySQL:
 SHOW BINARY LOGS;
--- Check for any THERMYNX-sourced writes (should be none)
+-- Check for any Graylinx-sourced writes (should be none)
 ```
-Expected: no writes from the THERMYNX user (we use read-only credentials)
+Expected: no writes against `unicharm` from Graylinx app credentials (MySQL is read-only).
 Result: ___
 
 ---

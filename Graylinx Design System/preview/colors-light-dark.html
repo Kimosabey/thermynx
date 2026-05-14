@@ -1,0 +1,63 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Light &amp; Dark</title><link rel="stylesheet" href="_card.css">
+<style>
+  .pair { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pane { border-radius: 14px; padding: 14px; overflow: hidden; position: relative; }
+  .pane--light { background: #EFF0FF; color: #1D1D21; border: 1px solid #C7C9FF; }
+  .pane--dark  { background: #0A0E1F; color: #F1F1F4; border: 1px solid rgba(255,255,255,0.08); }
+  .pane h4 { font-family: var(--font-heading); font-size: 13px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 10px; display:flex; align-items:center; gap:8px; }
+  .pane h4 .dot { width:10px; height:10px; border-radius:50%; }
+  .pane--light h4 .dot { background:#1F3FFE; box-shadow:0 0 0 3px rgba(31,63,254,0.18); }
+  .pane--dark  h4 .dot { background:#6B85FF; box-shadow:0 0 0 3px rgba(31,63,254,0.30); }
+  .row { display:flex; gap:8px; align-items:center; }
+  .card {
+    border-radius: 12px; padding: 10px 12px; font-size:11px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card--light { background:#FFFFFF; border:1px solid #C7C9FF; box-shadow:0 1px 3px rgba(29,29,33,0.06), 0 4px 16px rgba(31,63,254,0.04); }
+  .card--dark  { background:#131933; border:1px solid rgba(255,255,255,0.08); box-shadow:0 1px 3px rgba(0,0,0,0.45), 0 4px 16px rgba(0,0,0,0.28); }
+  .kpi { font-family: var(--font-heading); font-weight:800; font-size:20px; letter-spacing:-0.03em; font-variant-numeric: tabular-nums; }
+  .kpi--light { color:#10b981; }
+  .kpi--dark  { color:#34D399; }
+  .btn { font-size:11px; font-weight:600; padding:5px 11px; border-radius:8px; border:none; cursor:pointer; }
+  .btn--solid { background:#1F3FFE; color:#FFF; }
+  .btn--outline-light { background:transparent; color:#1D1D21; border:1.5px solid #989DFF; }
+  .btn--outline-dark  { background:transparent; color:#F1F1F4; border:1.5px solid rgba(255,255,255,0.18); }
+  .label { font-size:9px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; }
+  .label--light { color:#808087; }
+  .label--dark  { color:#8E8E9A; }
+</style></head>
+<body>
+  <p class="eyebrow" style="margin-bottom:12px;">Light &amp; Dark · same tokens, surfaces &amp; text flip · brand color is invariant</p>
+  <div class="pair">
+    <div class="pane pane--light">
+      <h4><span class="dot"></span>Light</h4>
+      <div class="card card--light" style="margin-bottom:8px;">
+        <div>
+          <div class="label label--light">Chiller 1 kW/TR</div>
+          <div class="kpi kpi--light">0.612</div>
+        </div>
+        <button class="btn btn--solid">Analyze</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn btn--outline-light">Outline</button>
+        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(5,150,105,0.10);color:#059669;border:1px solid rgba(5,150,105,0.25);letter-spacing:0.04em;">RUNNING</span>
+      </div>
+    </div>
+
+    <div class="pane pane--dark">
+      <h4><span class="dot"></span>Dark</h4>
+      <div class="card card--dark" style="margin-bottom:8px;color:#F1F1F4;">
+        <div>
+          <div class="label label--dark">Chiller 1 kW/TR</div>
+          <div class="kpi kpi--dark">0.612</div>
+        </div>
+        <button class="btn btn--solid">Analyze</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn btn--outline-dark">Outline</button>
+        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(52,211,153,0.14);color:#34D399;border:1px solid rgba(52,211,153,0.30);letter-spacing:0.04em;">RUNNING</span>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:11px;color:var(--text-muted);margin-top:14px;line-height:1.6;">Switch with <code>data-theme="dark"</code> on <code>&lt;html&gt;</code>. The sidebar stays dark in both modes (it's always navy by design).</p>
+</body></html>

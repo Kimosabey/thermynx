@@ -1,4 +1,4 @@
-# THERMYNX — Flaws, Gaps & Improvement Plan
+# Graylinx — Flaws, Gaps & Improvement Plan
 
 > Generated: 2026-05-09 | Branch: master | Author: harshan.aiyappa@graylinx.ai
 
@@ -19,7 +19,7 @@
 
 ## 1. Executive Summary
 
-THERMYNX is a **fully-functional POC** covering Phases 1–4 of the BUILD_PLAN. The architecture is sound: clean 5-layer FastAPI backend, async MySQL/Postgres dual-DB design, Ollama-based ReAct agent loop, and a polished Chakra UI frontend. All 11 feature pages, 16 API endpoints, and 5 agent modes are wired end-to-end.
+Graylinx is a **fully-functional POC** covering Phases 1–4 of the BUILD_PLAN. The architecture is sound: clean 5-layer FastAPI backend, async MySQL/Postgres dual-DB design, Ollama-based ReAct agent loop, and a polished Chakra UI frontend. All 11 feature pages, 16 API endpoints, and 5 agent modes are wired end-to-end.
 
 **What works well:**
 - End-to-end streaming (analyzer, agents) via SSE

@@ -1,5 +1,5 @@
 """
-Typed exception hierarchy for THERMYNX.
+Typed exception hierarchy for Graylinx.
 
 Raising an AppError subclass anywhere in the stack produces a clean
 HTTP response with a user-facing message and request_id — no stack

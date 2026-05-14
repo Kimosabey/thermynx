@@ -1,4 +1,4 @@
-# THERMYNX — Database schema reference
+# Graylinx — Database schema reference
 
 Single FYI document for **where data lives**, **what columns exist**, and **how the backend uses them**. Regenerate column lists after major DDL changes using the commands at the end.
 
@@ -6,7 +6,7 @@ Single FYI document for **where data lives**, **what columns exist**, and **how 
 
 ## 1. Two databases
 
-| Database | Engine | Role | THERMYNX access |
+| Database | Engine | Role | Graylinx access |
 |----------|--------|------|-----------------|
 | **`unicharm`** | MySQL 8 | Facility telemetry (normalized HVAC series + vendor tables) | **Read-only** (`SELECT`). Connection: `mysql+aiomysql://…` via [`backend/app/db/session.py`](../backend/app/db/session.py). |
 | **`thermynx_app`** | PostgreSQL 16 | App state (audit, anomalies, agents, threads) | **Read/write**. Connection: `POSTGRES_URL` in `.env`. Tables created by SQLAlchemy `Base.metadata.create_all` at startup. |
@@ -15,7 +15,7 @@ Single FYI document for **where data lives**, **what columns exist**, and **how 
 
 ---
 
-## 2. MySQL `unicharm` — tables THERMYNX queries
+## 2. MySQL `unicharm` — tables Graylinx queries
 
 ### 2.1 Equipment catalog → normalized table map
 
@@ -136,7 +136,7 @@ Same schema for both. **No** `wet_bulb_c` / `wet_bulb_temp` / `cell_count`.
 | `run_hours` | decimal(10,4) | YES | |
 | `created_at` | datetime | NO | |
 
-### 3.4 Other normalized tables (exist in DB; **not** in THERMYNX catalog yet)
+### 3.4 Other normalized tables (exist in DB; **not** in Graylinx catalog yet)
 
 **`plant_normalized`** — plant-level rollup row per bucket.
 
@@ -155,9 +155,9 @@ Same schema for both. **No** `wet_bulb_c` / `wet_bulb_temp` / `cell_count`.
 
 ---
 
-## 4. MySQL `unicharm` — tables THERMYNX does **not** query
+## 4. MySQL `unicharm` — tables Graylinx does **not** query
 
-Per product rules, THERMYNX uses **only** `*_normalized` telemetry surfaces for HVAC analytics — **not** raw vendor exports:
+Per product rules, Graylinx uses **only** `*_normalized` telemetry surfaces for HVAC analytics — **not** raw vendor exports:
 
 - **Avoid:** `*_metric`, `*_om_p` (variable schemas; normalization upstream).
 - **Avoid:** IBMS / user / schedule / GL-* operational tables unless a future feature explicitly scopes read-only access.
@@ -275,4 +275,4 @@ DESCRIBE primary_pump_1_normalized;
 "
 ```
 
-*Document generated for THERMYNX POC — align with live `DESCRIBE` after any DDL migration.*
+*Document generated for Graylinx POC — align with live `DESCRIBE` after any DDL migration.*

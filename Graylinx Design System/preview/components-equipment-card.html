@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Equipment card</title><link rel="stylesheet" href="_card.css">
+<style>
+  @keyframes pulse { 0%{transform:scale(1);opacity:1;} 50%{transform:scale(1.8);opacity:0;} 100%{transform:scale(1);opacity:1;} }
+  .pulse-halo { animation: pulse 2s ease-in-out infinite; }
+</style></head>
+<body>
+  <p class="eyebrow" style="margin-bottom:14px;">Equipment card · status pulse + 2×2 metric grid</p>
+  <div style="background:#FFF;border:1px solid #C7C9FF;border-radius:16px;padding:18px;box-shadow:var(--shadow-card);max-width:380px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="position:relative;width:8px;height:8px;">
+          <div class="pulse-halo" style="position:absolute;inset:0;border-radius:50%;background:#059669;opacity:0.4;"></div>
+          <div style="position:absolute;inset:0;border-radius:50%;background:#059669;"></div>
+        </div>
+        <div style="width:32px;height:32px;border-radius:10px;background:rgba(31,63,254,0.05);border:1px solid #C7C9FF;display:flex;align-items:center;justify-content:center;color:#6671FF;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M2 12h20M12 2v20M5 5l14 14M19 5L5 19"/></svg>
+        </div>
+        <span style="font-weight:600;font-size:14px;color:#1D1D21;">Chiller 1</span>
+      </div>
+      <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(5,150,105,0.1);color:#059669;border:1px solid rgba(5,150,105,0.25);">RUNNING</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div><div style="font-size:9px;color:#808087;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">Avg kW</div><div style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;">487.2</div></div>
+      <div><div style="font-size:9px;color:#808087;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">Run %</div><div style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;">94%</div></div>
+      <div><div style="font-size:9px;color:#808087;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">kW/TR</div><div style="font-size:18px;font-weight:700;color:#10b981;font-variant-numeric:tabular-nums;">0.612</div></div>
+      <div><div style="font-size:9px;color:#808087;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">Load</div><div style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;">62.4%</div></div>
+    </div>
+  </div>
+</body></html>

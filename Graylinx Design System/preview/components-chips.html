@@ -1,0 +1,91 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Quick-prompt chips</title><link rel="stylesheet" href="_card.css">
+<style>
+  .chip {
+    --c: #1F3FFE;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #3B3B42;
+    background: #FFFFFF;
+    border: 1px solid #E1E3FF;
+    border-radius: 9999px;
+    padding: 7px 14px 7px 9px;
+    cursor: pointer;
+    transition:
+      border-color 160ms var(--ease-spring),
+      color 160ms var(--ease-spring),
+      transform 160ms var(--ease-spring),
+      box-shadow 220ms var(--ease-spring),
+      background 160ms var(--ease-spring);
+    font-family: var(--font-body);
+    box-shadow: 0 1px 0 rgba(31,63,254,0.04);
+  }
+  .chip__glyph {
+    width: 22px; height: 22px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #EFF0FF 0%, #FFFFFF 100%);
+    border: 1px solid #E1E3FF;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #6671FF;
+    transition: inherit;
+    flex-shrink: 0;
+  }
+  .chip:hover {
+    border-color: rgba(31,63,254,0.4);
+    color: #1D1D21;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(31,63,254,0.10);
+  }
+  .chip:hover .chip__glyph {
+    background: linear-gradient(135deg, #1F3FFE 0%, #3D52FE 100%);
+    color: #FFF;
+    border-color: transparent;
+  }
+  .chip:active { transform: translateY(0); }
+  .chip.is-active {
+    border-color: var(--c);
+    color: var(--c);
+    background: rgba(31,63,254,0.05);
+  }
+  .chip.is-active .chip__glyph {
+    background: linear-gradient(135deg, #1F3FFE 0%, #3D52FE 100%);
+    color: #FFF;
+    border-color: transparent;
+  }
+  .legend { display:flex; gap:14px; margin-top:14px; font-size:11px; color:var(--text-muted); }
+  .legend > span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { width:10px; height:10px; border-radius:9999px; }
+</style></head>
+<body>
+  <p class="eyebrow" style="margin-bottom:14px;">Quick-prompt chips · pill · glyph-led · hover lifts &amp; brightens</p>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+    <button class="chip is-active">
+      <span class="chip__glyph"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+      Analyze chiller efficiency
+    </button>
+    <button class="chip">
+      <span class="chip__glyph"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+      Why is kW/TR outside optimal range?
+    </button>
+    <button class="chip">
+      <span class="chip__glyph"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="7" height="18" x="3" y="3" rx="1"/><rect width="7" height="18" x="14" y="3" rx="1"/></svg></span>
+      Compare CH1 vs CH2 performance
+    </button>
+    <button class="chip">
+      <span class="chip__glyph"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+      Any anomalies right now?
+    </button>
+    <button class="chip">
+      <span class="chip__glyph"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+      Maintenance recommendations
+    </button>
+  </div>
+  <div class="legend">
+    <span><i style="background:rgba(31,63,254,0.5);"></i>Active</span>
+    <span><i style="background:#E1E3FF;"></i>Resting</span>
+    <span><i style="background:linear-gradient(135deg,#1F3FFE,#3D52FE);"></i>Hover</span>
+  </div>
+</body></html>

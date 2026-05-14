@@ -1,4 +1,4 @@
-# THERMYNX — Architecture Diagrams
+# Graylinx — Architecture Diagrams
 
 Diagrams-as-code in [Mermaid](https://mermaid.js.org/). Render to HD PNG/SVG at any resolution from these `.mmd` source files.
 
@@ -6,7 +6,7 @@ Diagrams-as-code in [Mermaid](https://mermaid.js.org/). Render to HD PNG/SVG at 
 
 | File | Type | What it shows |
 |------|------|---------------|
-| `01-system-context.mmd` | flowchart | **C4 L1** — actors + THERMYNX + external systems (MySQL · Postgres · Redis · Ollama) |
+| `01-system-context.mmd` | flowchart | **C4 L1** — actors + Graylinx + external systems (MySQL · Postgres · Redis · Ollama) |
 | `02-container-view.mmd` | flowchart | **C4 L2** — backend layered architecture (transport · middleware · service · domain · infra) |
 | `03-sequence-uc1-analyzer.mmd` | sequence | **UC1** — analyzer flow end-to-end (browser → API → MySQL → Ollama → SSE back) |
 | `04-sequence-agent.mmd` | sequence | **Agentic Investigator** — ReAct tool-loop with `compute_efficiency` → `detect_anomalies` → `compare_equipment` → final report |
@@ -69,7 +69,7 @@ Change `'dark'` to `'forest'`, `'neutral'`, `'default'`, or `'base'` for other b
 
 ## Updating diagrams
 
-These files are the **source of truth** for THERMYNX architecture visuals. When the architecture changes:
+These files are the **source of truth** for Graylinx architecture visuals. When the architecture changes:
 
 1. Edit the relevant `.mmd` file
 2. Re-render with `mmdc` (or just commit — GitHub re-renders inline previews automatically)

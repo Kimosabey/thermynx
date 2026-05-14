@@ -1,5 +1,5 @@
 """
-THERMYNX -- Full End-to-End Test Suite
+Graylinx -- Full End-to-End Test Suite
 Covers every feature, module, and API across all 4 POC phases.
 
 Usage:
@@ -814,7 +814,7 @@ def print_summary():
                 print(f"  {R}[{sec}]{X} {msg}")
 
     if failed == 0:
-        print(f"\n  {G}{B}All checks passed -- THERMYNX is working end-to-end.{X}\n")
+        print(f"\n  {G}{B}All checks passed -- Graylinx is working end-to-end.{X}\n")
     else:
         print(f"\n  {R}{B}{failed} check(s) failed -- see details above.{X}\n")
 
@@ -824,7 +824,7 @@ def print_summary():
 # ═════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="THERMYNX End-to-End Test Suite")
+    parser = argparse.ArgumentParser(description="Graylinx End-to-End Test Suite")
     parser.add_argument("--base",  default="http://localhost:8000")
     parser.add_argument("--quick", action="store_true",
                         help="Skip long LLM calls (analyze, agent, reports)")
@@ -834,7 +834,7 @@ if __name__ == "__main__":
     QUICK = args.quick
 
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"\n{B}THERMYNX End-to-End Test Suite{X}")
+    print(f"\n{B}Graylinx End-to-End Test Suite{X}")
     print(f"Target : {BASE}")
     print(f"Started: {ts}")
     if QUICK:

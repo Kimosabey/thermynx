@@ -1,4 +1,4 @@
-# THERMYNX — Environment Variables Reference
+# Graylinx — Environment Variables Reference
 
 Copy `.env.example` to `backend/.env` and fill in required values before starting.
 

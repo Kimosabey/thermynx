@@ -273,11 +273,11 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
               >
                 <Text fontFamily="heading" fontWeight={800} fontSize="15px"
                   color="white" letterSpacing="-0.02em" lineHeight="1.1">
-                  THERMYNX
+                  Graylinx
                 </Text>
                 <Text fontSize="9px" color="rgba(255,255,255,0.35)"
                   letterSpacing="0.14em" textTransform="uppercase" mt="1px">
-                  by Graylinx
+                  HVAC intelligence
                 </Text>
               </MotionBox>
             )}

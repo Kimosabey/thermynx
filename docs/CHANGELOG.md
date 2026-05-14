@@ -1,4 +1,4 @@
-# THERMYNX — Changelog
+# Graylinx — Changelog
 
 All notable changes to this project. Format: `[version] — date — description`.
 

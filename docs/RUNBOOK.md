@@ -1,4 +1,4 @@
-# THERMYNX — Operations Runbook
+# Graylinx — Operations Runbook
 
 > First time? → [`GETTING_STARTED.md`](./GETTING_STARTED.md)
 > API reference? → [`API_REFERENCE.md`](./API_REFERENCE.md)
@@ -71,8 +71,8 @@ docker compose ps
 Expected output:
 ```
 NAME                    IMAGE                        STATUS
-thermynx-postgres-1     pgvector/pgvector:pg16       Up (healthy)
-thermynx-redis-1        redis:7-alpine               Up (healthy)
+Graylinx-postgres-1     pgvector/pgvector:pg16       Up (healthy)
+Graylinx-redis-1        redis:7-alpine               Up (healthy)
 ```
 
 If either shows `starting` wait another 5 seconds and run `docker compose ps` again.

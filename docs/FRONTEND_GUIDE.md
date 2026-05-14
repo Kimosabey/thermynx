@@ -1,4 +1,4 @@
-# THERMYNX — Frontend Guide
+# Graylinx — Frontend Guide
 
 **Stack:** React 18 + Vite 5 + Chakra UI 2 + Recharts 3 + Framer Motion 11
 

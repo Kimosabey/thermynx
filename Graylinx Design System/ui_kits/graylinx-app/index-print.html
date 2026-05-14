@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1280, initial-scale=1" />
+    <title>Graylinx · UI Kit · Print</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <style>
+      /* ── Print page model — A4 landscape, 1cm margin ─────────── */
+      @page { size: A4 landscape; margin: 1cm; }
+
+      html, body {
+        background: #FFFFFF;
+        color-scheme: light;
+      }
+
+      /* Each screen on its own page */
+      .print-page {
+        background: var(--bg-canvas);
+        break-after: page;
+        page-break-after: always;
+        break-inside: avoid;
+        padding: 0;
+        width: 100%;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .print-page:last-child { break-after: auto; page-break-after: auto; }
+
+      /* Page header */
+      .print-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 24px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .print-brand { display: inline-flex; align-items: center; gap: 12px; }
+      .print-mark {
+        width: 32px; height: 32px; border-radius: 8px;
+        background: #1F3FFE;
+        display: inline-flex; align-items: center; justify-content: center;
+        box-shadow: 0 2px 6px rgba(31,63,254,0.30);
+      }
+      .print-mark img { width: 22px; filter: brightness(0) invert(1); }
+      .print-brand-name {
+        display: block;
+        font-family: var(--font-heading);
+        font-weight: 800; font-size: 15px;
+        letter-spacing: -0.02em; color: #1D1D21; line-height: 1.1;
+      }
+      .print-brand-sub {
+        display: block;
+        font-size: 10px; letter-spacing: 0.10em; text-transform: uppercase;
+        color: var(--text-muted); margin-top: 2px; font-weight: 600;
+      }
+      .print-pagenum {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+      }
+      .print-body { flex: 1; }
+
+      /* ── Defensive print rules ───────────────────────────────── */
+      @media print {
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        html, body { background: #FFFFFF; }
+        /* Kill all animations + hover-state transforms in print */
+        *, *::before, *::after {
+          animation: none !important;
+          transition: none !important;
+        }
+        /* Hide any nav drawer/toggle remnants if they slip in */
+        .app-shell { display: block !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- React + Babel (pinned) -->
+    <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+    <!-- Component layer (same as live) -->
+    <script type="text/babel" src="Icon.jsx"></script>
+    <script type="text/babel" src="atoms.jsx"></script>
+    <script type="text/babel" src="layout.jsx"></script>
+    <script type="text/babel" src="mock.jsx"></script>
+    <script type="text/babel" src="screens/Dashboard.jsx"></script>
+    <script type="text/babel" src="screens/Analyzer.jsx"></script>
+    <script type="text/babel" src="screens/Anomalies.jsx"></script>
+    <script type="text/babel" src="screens/Agents.jsx"></script>
+    <script type="text/babel" src="App-print.jsx"></script>
+  </body>
+</html>

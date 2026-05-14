@@ -1,4 +1,4 @@
-# THERMYNX — AI Operations Intelligence Platform
+# Graylinx — AI Operations Intelligence Platform
 
 AI-powered HVAC analytics for Unicharm facility. Turns raw chiller telemetry into explainable, actionable intelligence via a locally-hosted LLM.
 
@@ -110,7 +110,7 @@ All 6 checks must pass before tagging a release.
 ## Project structure
 
 ```
-thermynx/
+repo-root/
 ├── backend/
 │   ├── app/
 │   │   ├── api/v1/         # versioned route handlers

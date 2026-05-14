@@ -1,6 +1,6 @@
-# THERMYNX — Data Dictionary
+# Graylinx — Data Dictionary
 
-Quick reference to the `unicharm` MySQL tables THERMYNX reads. **Read-only, no writes ever.**
+Quick reference to the `unicharm` MySQL tables Graylinx reads. **Read-only, no writes ever.**
 
 **Full table/column layouts (MySQL + Postgres `thermynx_app`):** [DATABASE_SCHEMA_REFERENCE.md](./DATABASE_SCHEMA_REFERENCE.md)
 
@@ -60,11 +60,11 @@ Cooling tower fan metrics (see [`unicharm_db_ddl.md`](../unicharm_db_ddl.md) for
 | `slot_time` | UTC ts | bucket end |
 | `is_running` | 0 / 1 | any fan energized |
 | `fan1_kw`, `fan2_kw`, `fan3_kw` | kW | per-fan power (DDL) |
-| `kw` | kW | total fan power (sum of fans) — **primary field THERMYNX reads** |
+| `kw` | kW | total fan power (sum of fans) — **primary field Graylinx reads** |
 | `kwh`, `cumulative_kwh` | kWh | interval + cumulative energy |
 | `run_hours` | h | fan running hours aggregate |
 
-**Not present on normalized towers today:** ambient wet-bulb / cell count. THERMYNX cooling-tower SQL uses only `slot_time`, `is_running`, `kw`, `kwh`, `cumulative_kwh`, `run_hours`. Staging hints use kW + duty; wet-bulb–aware rules activate only if future normalization adds `wet_bulb_c` or `wet_bulb_temp` on these rows.
+**Not present on normalized towers today:** ambient wet-bulb / cell count. Graylinx cooling-tower SQL uses only `slot_time`, `is_running`, `kw`, `kwh`, `cumulative_kwh`, `run_hours`. Staging hints use kW + duty; wet-bulb–aware rules activate only if future normalization adds `wet_bulb_c` or `wet_bulb_temp` on these rows.
 
 ### `condenser_pump_0102_normalized` / `condenser_pump_03_normalized`
 
@@ -85,7 +85,7 @@ Pump metrics.
 - `*_metric` — raw vendor exports (varying schemas, unstable)
 - `*_om_p` — operations parameters (also raw)
 
-These feed normalization upstream. THERMYNX uses **only** the normalized tables — anything else is a bug.
+These feed normalization upstream. Graylinx uses **only** the normalized tables — anything else is a bug.
 
 ## Efficiency benchmarks (used in prompts)
 
@@ -153,6 +153,6 @@ if z > 3:
     persist_anomaly(...)
 ```
 
-## Where THERMYNX writes
+## Where Graylinx writes
 
-THERMYNX **never** writes back to `unicharm`. All writes go to the separate Postgres `thermynx_app` DB (audit, threads, anomalies, rollups, embeddings) — see [`ARCHITECTURE.md` §6](./ARCHITECTURE.md#6-database-erd--thermynx_app) for the ERD.
+Graylinx **never** writes back to `unicharm`. All writes go to the separate Postgres `thermynx_app` DB (audit, threads, anomalies, rollups, embeddings) — see [`ARCHITECTURE.md` §6](./ARCHITECTURE.md#6-database-erd--thermynx_app) for the ERD.

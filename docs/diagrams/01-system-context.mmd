@@ -7,7 +7,7 @@ flowchart TB
         Maint["Maintenance Lead"]
     end
 
-    subgraph Thermynx["🟦 THERMYNX Platform"]
+    subgraph Graylinx["🟦 Graylinx Platform"]
         SPA["React + TypeScript SPA<br/>Vite · Chakra UI · TanStack Query"]
         API["FastAPI Backend<br/>asyncio · /api/v1/*<br/>SSE streaming · Agentic loop"]
         PG[("PostgreSQL<br/>thermynx_app<br/>users · threads · audit<br/>rollups · pgvector · agent_runs")]
@@ -34,7 +34,7 @@ flowchart TB
     classDef mysql fill:#3b1e1e,stroke:#ef4444,color:#fff
     classDef llm fill:#3730a3,stroke:#818cf8,color:#fff
 
-    class Thermynx platform
+    class Graylinx platform
     class External external
     class Users users
     class PG pg

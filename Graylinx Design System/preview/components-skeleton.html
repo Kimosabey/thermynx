@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Skeleton</title><link rel="stylesheet" href="_card.css">
+<style>
+  @keyframes shimmer { 0%{transform:translateX(-100%);} 100%{transform:translateX(100%);} }
+  .bar { position:relative; background:#EFF0FF; border-radius:6px; overflow:hidden; }
+  .bar::after { content:''; position:absolute; top:0; bottom:0; left:0; width:60%; background:linear-gradient(90deg,transparent,rgba(199,201,255,0.85),transparent); animation: shimmer 1.6s ease-in-out infinite; }
+</style></head>
+<body>
+  <p class="eyebrow" style="margin-bottom:14px;">SkeletonCard · KPI · chart · list</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+    <div class="card-surface" style="padding:18px;">
+      <div class="bar" style="height:10px;width:55%;margin-bottom:14px;"></div>
+      <div class="bar" style="height:24px;width:38%;margin-bottom:10px;"></div>
+      <div class="bar" style="height:10px;width:70%;"></div>
+    </div>
+    <div class="card-surface" style="padding:18px;">
+      <div class="bar" style="height:11px;width:45%;margin-bottom:16px;"></div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:60px;">
+        <div class="bar" style="flex:1;height:65%;border-radius:3px 3px 0 0;"></div>
+        <div class="bar" style="flex:1;height:80%;border-radius:3px 3px 0 0;"></div>
+        <div class="bar" style="flex:1;height:55%;border-radius:3px 3px 0 0;"></div>
+        <div class="bar" style="flex:1;height:90%;border-radius:3px 3px 0 0;"></div>
+        <div class="bar" style="flex:1;height:70%;border-radius:3px 3px 0 0;"></div>
+        <div class="bar" style="flex:1;height:85%;border-radius:3px 3px 0 0;"></div>
+        <div class="bar" style="flex:1;height:60%;border-radius:3px 3px 0 0;"></div>
+        <div class="bar" style="flex:1;height:75%;border-radius:3px 3px 0 0;"></div>
+      </div>
+    </div>
+    <div class="card-surface" style="padding:18px;">
+      <div class="bar" style="height:11px;width:40%;margin-bottom:16px;"></div>
+      <div style="display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:center;gap:10px;"><div class="bar" style="height:8px;width:8px;border-radius:9999px;"></div><div class="bar" style="height:10px;flex:1;"></div></div>
+        <div style="display:flex;align-items:center;gap:10px;"><div class="bar" style="height:8px;width:8px;border-radius:9999px;"></div><div class="bar" style="height:10px;flex:1;"></div></div>
+        <div style="display:flex;align-items:center;gap:10px;"><div class="bar" style="height:8px;width:8px;border-radius:9999px;"></div><div class="bar" style="height:10px;flex:1;"></div></div>
+      </div>
+    </div>
+  </div>
+</body></html>

@@ -1,6 +1,6 @@
-# THERMYNX — Documentation
+# Graylinx — Documentation
 
-All documentation for the THERMYNX HVAC AI Operations Intelligence Platform.
+All documentation for the Graylinx HVAC AI Operations Intelligence Platform.
 The product roadmap lives one level up: [`../BUILD_PLAN.md`](../BUILD_PLAN.md).
 
 ---

@@ -1,4 +1,4 @@
-# THERMYNX — Tech Stack Assessment
+# Graylinx — Tech Stack Assessment
 
 > Honest end-to-end review of framework and architecture decisions.
 > Written: 2026-05-09

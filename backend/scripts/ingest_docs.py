@@ -145,7 +145,7 @@ async def insert_chunks(
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 async def ingest(docs_dir: Path, clear: bool):
-    print(f"\nTHERMYNX Document Ingestion — nomic-embed-text ({EMBED_DIM}d)")
+    print(f"\nGraylinx Document Ingestion — nomic-embed-text ({EMBED_DIM}d)")
     print(f"Source: {docs_dir}")
     print(f"Target: {settings.POSTGRES_URL.split('@')[-1]}\n")
 

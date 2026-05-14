@@ -1,6 +1,6 @@
-# THERMYNX — Architecture Reference
+# Graylinx — Architecture Reference
 
-Visual architecture and system flows for THERMYNX. Every diagram below is **rendered live** on GitHub (and any Mermaid-aware viewer). Source `.mmd` files live in [`diagrams/`](./diagrams/) — see [diagrams/README.md](./diagrams/README.md) for HD export instructions.
+Visual architecture and system flows for Graylinx. Every diagram below is **rendered live** on GitHub (and any Mermaid-aware viewer). Source `.mmd` files live in [`diagrams/`](./diagrams/) — see [diagrams/README.md](./diagrams/README.md) for HD export instructions.
 
 > **Reading order:** §1 system context → §2 backend layers → §3–§5 sequence flows → §6 ERD → §7 deployment → §8 data flow.
 
@@ -8,7 +8,7 @@ Visual architecture and system flows for THERMYNX. Every diagram below is **rend
 
 ## 1. System Context (C4 — Level 1)
 
-Who uses THERMYNX, what THERMYNX is, and what it talks to. The two external systems (MySQL `unicharm` and the Ollama server) are reached over Tailscale.
+Who uses Graylinx, what Graylinx is, and what it talks to. The two external systems (MySQL `unicharm` and the Ollama server) are reached over Tailscale.
 
 ```mermaid
 %%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '16px'}}}%%
@@ -20,7 +20,7 @@ flowchart TB
         Maint["Maintenance Lead"]
     end
 
-    subgraph Thermynx["🟦 THERMYNX Platform"]
+    subgraph Graylinx["🟦 Graylinx Platform"]
         SPA["React + TypeScript SPA<br/>Vite · Chakra UI · TanStack Query"]
         API["FastAPI Backend<br/>asyncio · /api/v1/*<br/>SSE streaming · Agentic loop"]
         PG[("PostgreSQL<br/>thermynx_app<br/>users · threads · audit<br/>rollups · pgvector · agent_runs")]
@@ -47,7 +47,7 @@ flowchart TB
     classDef mysql fill:#3b1e1e,stroke:#ef4444,color:#fff
     classDef llm fill:#3730a3,stroke:#818cf8,color:#fff
 
-    class Thermynx platform
+    class Graylinx platform
     class External external
     class Users users
     class PG pg
@@ -274,7 +274,7 @@ sequenceDiagram
 
 ## 6. Database ERD — `thermynx_app`
 
-The Postgres schema THERMYNX owns. `unicharm` MySQL is read-only and not shown here. ULIDs everywhere for time-sortable IDs. `embeddings` table appears in Phase 4.
+The Postgres schema Graylinx owns. `unicharm` MySQL is read-only and not shown here. ULIDs everywhere for time-sortable IDs. `embeddings` table appears in Phase 4.
 
 ```mermaid
 %%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '13px'}}}%%

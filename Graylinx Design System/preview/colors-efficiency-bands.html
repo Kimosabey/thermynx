@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Efficiency bands</title><link rel="stylesheet" href="_card.css"></head>
+<body>
+  <p class="eyebrow" style="margin-bottom:14px;">kW/TR efficiency bands · used in dashboards &amp; charts</p>
+  <div style="background:#FFFFFF;border:1px solid var(--border-subtle);border-radius:14px;padding:18px;box-shadow:var(--shadow-card);">
+    <div style="position:relative;height:36px;display:flex;border-radius:8px;overflow:hidden;">
+      <div style="flex:65;background:#10b981;display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;letter-spacing:0.04em;">&lt; 0.65 · GOOD</div>
+      <div style="flex:20;background:#f59e0b;display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;letter-spacing:0.04em;">0.65–0.85 · WARN</div>
+      <div style="flex:15;background:#ef4444;display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;letter-spacing:0.04em;">≥ 0.85 · BAD</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:10px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);">
+      <span>0.50</span><span>0.65</span><span>0.85</span><span>1.00</span>
+    </div>
+  </div>
+  <p class="muted" style="font-size:11px;margin-top:12px;line-height:1.6;">Three thresholds. Used for KPI accent color, reference lines on the Recharts kW/TR area, and badges. <span class="mono">band-color()</span> in code.</p>
+</body></html>

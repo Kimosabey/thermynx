@@ -12,8 +12,6 @@ const MotionBox = motion.create(Box);
  *   <Chip accentColor="#10b981" active onClick={...}>...</Chip>
  */
 export default function Chip({ children, onClick, active = false, accentColor, ...props }) {
-  const accent = accentColor || "accent.primary";
-
   return (
     <MotionBox
       as="button"
@@ -34,14 +32,14 @@ export default function Chip({ children, onClick, active = false, accentColor, .
       cursor="pointer"
       textAlign="left"
       fontFamily="body"
-      transition="all 0.15s"
       _hover={{
         bg: "accent.glow",
         borderColor: accentColor || "accent.primary",
         color: accentColor || "accent.primary",
       }}
-      sx={
-        accentColor
+      sx={{
+        transition: "all 0.15s",
+        ...(accentColor
           ? {
               "&:hover": {
                 background: `${accentColor}18`,
@@ -49,8 +47,8 @@ export default function Chip({ children, onClick, active = false, accentColor, .
                 color: accentColor,
               },
             }
-          : {}
-      }
+          : {}),
+      }}
       {...props}
     >
       {children}
