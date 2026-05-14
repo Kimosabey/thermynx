@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str = "http://100.125.103.28:11434"
     OLLAMA_DEFAULT_MODEL: str = "qwen2.5:14b"
 
+    # CORS — comma-separated list of allowed origins.
+    # Dev default: Vite + CRA local ports. Production: set to the deployed domain.
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+
     BACKEND_PORT: int = 8000
 
     # Phase 3 cost analytics — flat blended tariff (₹/kWh), POC default
