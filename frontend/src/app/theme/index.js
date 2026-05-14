@@ -32,40 +32,40 @@ const neutral = {
 // ── Semantic tokens ──────────────────────────────────────────────────────────
 const semanticTokens = {
   colors: {
-    // Backgrounds
-    "bg.canvas":   { default: "#EFF0FF" },            // page bg — brand-tinted white
-    "bg.surface":  { default: "#FFFFFF" },             // card surface
-    "bg.elevated": { default: "#EFF0FF" },             // hover / secondary bg
-    "bg.sidebar":  { default: "#000F64" },             // always dark ultra-navy
-    "bg.overlay":  { default: "rgba(0,15,100,0.72)" },
+    // Backgrounds (light → dark)
+    "bg.canvas":   { default: "#EFF0FF",            _dark: "#0A0E1F" },
+    "bg.surface":  { default: "#FFFFFF",             _dark: "#131933" },
+    "bg.elevated": { default: "#EFF0FF",             _dark: "#1B2249" },
+    "bg.sidebar":  { default: "#06091A",             _dark: "#06091A" }, // always dark
+    "bg.overlay":  { default: "rgba(0,15,100,0.72)", _dark: "rgba(0,0,0,0.72)" },
 
     // Borders
-    "border.subtle": { default: "#C7C9FF" },           // soft brand tint
-    "border.strong": { default: "#989DFF" },           // stronger brand
-    "border.brand":  { default: "rgba(31,63,254,0.3)" },
+    "border.subtle": { default: "#C7C9FF",              _dark: "rgba(255,255,255,0.08)" },
+    "border.strong": { default: "#989DFF",              _dark: "rgba(255,255,255,0.18)" },
+    "border.brand":  { default: "rgba(31,63,254,0.3)", _dark: "rgba(31,63,254,0.45)" },
 
-    // Text
-    "text.primary":   { default: "#1D1D21" },          // 15.5:1 on canvas — AAA
-    "text.secondary": { default: "#3B3B42" },
-    "text.muted":     { default: "#808087" },          // 4.6:1 on canvas — AA
-    "text.faint":     { default: "#A5A5AA" },
-    "text.inverse":   { default: "#FFFFFF" },
-    "text.brand":     { default: "#1F3FFE" },
+    // Text hierarchy
+    "text.primary":   { default: "#1D1D21",  _dark: "#F1F1F4" },
+    "text.secondary": { default: "#3B3B42",  _dark: "#CCCCD4" },
+    "text.muted":     { default: "#808087",  _dark: "#8E8E9A" },
+    "text.faint":     { default: "#A5A5AA",  _dark: "#5C5C6A" },
+    "text.inverse":   { default: "#FFFFFF",  _dark: "#1D1D21" },
+    "text.brand":     { default: "#1F3FFE",  _dark: "#6671FF" },
 
     // Brand accents
-    "accent.primary":   { default: "#1F3FFE" },
-    "accent.secondary": { default: "#0123B4" },
-    "accent.cyan":      { default: "#6671FF" },
-    "accent.glow":      { default: "rgba(31,63,254,0.1)" },
-    "accent.glowHover": { default: "rgba(31,63,254,0.18)" },
+    "accent.primary":   { default: "#1F3FFE",              _dark: "#6671FF" },
+    "accent.secondary": { default: "#0123B4",              _dark: "#3D52FE" },
+    "accent.cyan":      { default: "#6671FF",              _dark: "#989DFF" },
+    "accent.glow":      { default: "rgba(31,63,254,0.1)",  _dark: "rgba(102,113,255,0.12)" },
+    "accent.glowHover": { default: "rgba(31,63,254,0.18)", _dark: "rgba(102,113,255,0.22)" },
 
-    // Status (WCAG AA on white/canvas)
-    "status.good": { default: "#059669" },
-    "status.warn": { default: "#D97706" },
-    "status.bad":  { default: "#DC2626" },
-    "status.info": { default: "#1F3FFE" },
+    // Status (data-only — never UI chrome)
+    "status.good": { default: "#059669", _dark: "#34d399" },
+    "status.warn": { default: "#D97706", _dark: "#fbbf24" },
+    "status.bad":  { default: "#DC2626", _dark: "#f87171" },
+    "status.info": { default: "#1F3FFE", _dark: "#6671FF" },
 
-    // Sidebar-specific (always dark navy bg)
+    // Sidebar-specific (always dark — unchanged in both modes)
     "sidebar.text":        { default: "rgba(255,255,255,0.88)" },
     "sidebar.muted":       { default: "rgba(255,255,255,0.45)" },
     "sidebar.activeBg":    { default: "rgba(31,63,254,0.22)" },
@@ -272,6 +272,9 @@ const theme = extendTheme({
     xl:    "0 16px 40px rgba(31,63,254,0.12)",
     brand: "0 4px 20px rgba(31,63,254,0.32)",
     card:  "0 1px 3px rgba(29,29,33,0.06), 0 4px 16px rgba(31,63,254,0.04)",
+    // Dark mode equivalents (black-based, no brand tint per design system)
+    "card-dark":  "0 1px 3px rgba(0,0,0,0.45), 0 4px 16px rgba(0,0,0,0.30)",
+    "hover-dark": "0 8px 32px rgba(0,0,0,0.50)",
   },
 });
 

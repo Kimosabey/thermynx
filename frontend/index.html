@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="THERMYNX AI Operations Intelligence Platform — Unicharm Facility HVAC Analytics" />
-    <meta name="theme-color" content="#0511F2" />
+    <meta name="theme-color" content="#1F3FFE" />
     <title>THERMYNX — AI Operations Intelligence</title>
 
-    <!-- Inter + Plus Jakarta Sans from Google Fonts -->
+    <!-- Inter · Plus Jakarta Sans · JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
 
@@ -19,20 +19,26 @@
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
       :root {
-        --brand-primary:   #0511F2;
-        --brand-secondary: #0433BF;
-        --brand-dark:      #032CA6;
-        --brand-cobalt:    #0455BF;
-        --brand-black:     #0D0D0D;
-        color-scheme: light;
+        /* Canonical brand palette v2 */
+        --brand-50:   #EFF0FF;
+        --brand-100:  #C7C9FF;
+        --brand-200:  #989DFF;
+        --brand-300:  #6671FF;
+        --brand-500:  #1F3FFE;
+        --brand-600:  #0123B4;
+        --brand-700:  #000F64;
+        /* Neutral */
+        --neutral-50:  #F1F1F1;
+        --neutral-900: #1D1D21;
+        color-scheme: light dark;
       }
 
       html { scroll-behavior: smooth; }
 
       body {
-        font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-        background: #F4F7FF;
-        color: #0D0D0D;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: #EFF0FF;
+        color: #1D1D21;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
@@ -41,7 +47,7 @@
 
       /* WCAG 2.2 — visible focus rings */
       :focus-visible {
-        outline: 2px solid #0511F2;
+        outline: 2px solid #1F3FFE;
         outline-offset: 2px;
         border-radius: 4px;
       }
@@ -50,17 +56,17 @@
       ::-webkit-scrollbar { width: 5px; height: 5px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb {
-        background: rgba(5,17,242,0.2);
+        background: rgba(31,63,254,0.20);
         border-radius: 10px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: rgba(5,17,242,0.4);
+        background: rgba(31,63,254,0.40);
       }
 
       /* Selection */
       ::selection {
-        background: rgba(5,17,242,0.15);
-        color: #032CA6;
+        background: rgba(31,63,254,0.15);
+        color: #000F64;
       }
 
       #root { min-height: 100vh; }
