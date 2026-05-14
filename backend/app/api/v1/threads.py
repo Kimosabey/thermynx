@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,15 +46,36 @@ async def create_thread(body: ThreadCreate | None = None, pg: AsyncSession = Dep
 
 
 @router.get("/threads")
-async def list_threads(limit: int = 50, pg: AsyncSession = Depends(get_pg)):
-    limit = min(max(limit, 1), 100)
-    res = await pg.execute(select(Thread).order_by(Thread.updated_at.desc()).limit(limit))
+async def list_threads(
+    limit: int = Query(default=20, ge=1, le=100),
+    page:  int = Query(default=1,  ge=1),
+    pg: AsyncSession = Depends(get_pg),
+):
+    """List conversation threads, newest first. Paginated."""
+    from sqlalchemy import func
+    offset = (page - 1) * limit
+
+    total_row = await pg.execute(select(func.count()).select_from(Thread))
+    total = total_row.scalar() or 0
+
+    res = await pg.execute(
+        select(Thread)
+        .order_by(Thread.updated_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
     rows = res.scalars().all()
+
     return {
         "threads": [
             ThreadOut(id=t.id, title=t.title, created_at=t.created_at, updated_at=t.updated_at)
             for t in rows
-        ]
+        ],
+        "total":    total,
+        "page":     page,
+        "limit":    limit,
+        "pages":    max(1, -(-total // limit)),
+        "has_next": offset + limit < total,
     }
 
 

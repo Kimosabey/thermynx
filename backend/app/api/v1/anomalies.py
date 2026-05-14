@@ -51,14 +51,32 @@ async def live_anomalies(
 @router.get("/anomalies/history")
 async def anomaly_history(
     limit: int = Query(default=50, ge=1, le=200),
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     equipment_id: str | None = None,
+    severity: str | None = Query(default=None, description="Filter: warning | critical"),
     pg: AsyncSession = Depends(get_pg),
 ):
-    """Persisted anomalies from Postgres (written by background scan job)."""
-    where  = "WHERE equipment_id = :eq_id" if equipment_id else ""
-    params = {"limit": limit}
+    """
+    Persisted anomalies from Postgres (written by background scan job).
+    Paginated — use page + limit to walk through history.
+    """
+    conditions = []
+    params: dict = {}
+
     if equipment_id:
+        conditions.append("equipment_id = :eq_id")
         params["eq_id"] = equipment_id
+    if severity:
+        conditions.append("severity = :severity")
+        params["severity"] = severity
+
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    offset = (page - 1) * limit
+    params.update({"limit": limit, "offset": offset})
+
+    # total count (same filters, no pagination)
+    count_row = await pg.execute(text(f"SELECT COUNT(*) FROM anomalies {where}"), params)
+    total = count_row.scalar() or 0
 
     rows = await pg.execute(
         text(f"""
@@ -67,7 +85,7 @@ async def anomaly_history(
             FROM anomalies
             {where}
             ORDER BY created_at DESC
-            LIMIT :limit
+            LIMIT :limit OFFSET :offset
         """),
         params,
     )
@@ -75,4 +93,12 @@ async def anomaly_history(
     for r in results:
         if hasattr(r.get("created_at"), "isoformat"):
             r["created_at"] = r["created_at"].isoformat()
-    return {"anomalies": results, "total": len(results)}
+
+    return {
+        "anomalies":  results,
+        "total":      total,
+        "page":       page,
+        "limit":      limit,
+        "pages":      max(1, -(-total // limit)),   # ceiling division
+        "has_next":   offset + limit < total,
+    }
