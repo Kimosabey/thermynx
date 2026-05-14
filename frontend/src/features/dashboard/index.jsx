@@ -211,7 +211,7 @@ export default function Dashboard() {
               <Box
                 as="button"
                 aria-label="Refresh dashboard"
-                onClick={loadData}
+                onClick={refetch}
                 w="34px" h="34px"
                 borderRadius="10px"
                 bg="bg.surface"
