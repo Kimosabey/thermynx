@@ -4,8 +4,11 @@ import {
 } from "@chakra-ui/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { FileText } from "lucide-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import Eyebrow from "../../shared/ui/Eyebrow";
 import PeriodSelect, { HOURS_OPTIONS_STANDARD } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 
@@ -49,14 +52,13 @@ export default function ReportsPage() {
       <PageHeader
         title="Report Builder"
         subtitle="KPI rollup + persisted anomalies + LLM executive summary — export as markdown"
+        icon={<PageHeaderIcon icon={<FileText size={20} strokeWidth={1.85} />} />}
         mb={6}
       />
 
       <Flex gap={3} mb={6} flexWrap="wrap" align="flex-end">
         <Box>
-          <Text fontSize="10px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
-            Window
-          </Text>
+          <Eyebrow mb={2}>Window</Eyebrow>
           <PeriodSelect value={hours} onChange={setHours} options={HOURS_OPTIONS_STANDARD} width="160px" />
         </Box>
         <Button size="sm" onClick={generate} isDisabled={loading}>

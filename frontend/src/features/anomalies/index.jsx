@@ -1,9 +1,13 @@
 ﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Badge, Button } from "@chakra-ui/react";
 import { CheckCircleIcon } from "@chakra-ui/icons";
+import { TriangleAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import Eyebrow from "../../shared/ui/Eyebrow";
+import ZScorePill from "../../shared/ui/ZScorePill";
 import PeriodSelect, { HOURS_OPTIONS_ANOMALY } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
@@ -20,22 +24,6 @@ const SEVERITY_META = {
   critical: { color: "#ef4444", bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.25)", label: "CRITICAL" },
   warning:  { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.25)", label: "WARNING" },
 };
-
-function ZScorePill({ z }) {
-  const abs = Math.abs(z);
-  const color = abs >= 4.5 ? "#ef4444" : abs >= 3.5 ? "#f97316" : "#f59e0b";
-  return (
-    <Box
-      display="inline-flex" alignItems="center" gap={1}
-      bg={`${color}18`} border="1px solid" borderColor={`${color}40`}
-      borderRadius="full" px={2} py="2px"
-    >
-      <Text fontSize="10px" fontWeight={700} color={color} sx={{ fontVariantNumeric: "tabular-nums" }}>
-        {z > 0 ? "+" : ""}{z.toFixed(1)}σ
-      </Text>
-    </Box>
-  );
-}
 
 function AnomalyCard({ anomaly }) {
   const meta = SEVERITY_META[anomaly.severity] ?? SEVERITY_META.warning;
@@ -56,7 +44,7 @@ function AnomalyCard({ anomaly }) {
             </Text>
           </Box>
           <Flex gap={2} align="center">
-            <ZScorePill z={anomaly.z_score} />
+            <ZScorePill value={anomaly.z_score} />
             <Badge
               fontSize="9px" px={2} py="2px" borderRadius="full"
               bg={meta.bg} color={meta.color} border="1px solid" borderColor={meta.border}
@@ -69,19 +57,19 @@ function AnomalyCard({ anomaly }) {
 
         <Flex gap={4} mb={3}>
           <Box>
-            <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>Value</Text>
+            <Eyebrow mb={1}>Value</Eyebrow>
             <Text fontSize="lg" fontWeight={700} color={meta.color} sx={{ fontVariantNumeric: "tabular-nums" }}>
               {anomaly.value?.toFixed(3) ?? "—"}
             </Text>
           </Box>
           <Box>
-            <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>Baseline</Text>
+            <Eyebrow mb={1}>Baseline</Eyebrow>
             <Text fontSize="lg" fontWeight={700} color="text.primary" sx={{ fontVariantNumeric: "tabular-nums" }}>
               {anomaly.baseline_mean?.toFixed(3) ?? "—"}
             </Text>
           </Box>
           <Box>
-            <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>Std Dev</Text>
+            <Eyebrow mb={1}>Std Dev</Eyebrow>
             <Text fontSize="lg" fontWeight={700} color="text.muted" sx={{ fontVariantNumeric: "tabular-nums" }}>
               ±{anomaly.baseline_std?.toFixed(3) ?? "—"}
             </Text>
@@ -140,6 +128,7 @@ export default function AnomaliesPage() {
     <PageShell>
       <PageHeader
         title="Anomaly Detector"
+        icon={<PageHeaderIcon icon={<TriangleAlert size={20} strokeWidth={1.85} />} />}
         subtitle={
           <>
             Statistical z-score detection · auto-scan every 5 min

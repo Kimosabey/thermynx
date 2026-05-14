@@ -1,10 +1,13 @@
 ﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Badge } from "@chakra-ui/react";
+import { Wrench as WrenchIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PeriodSelect from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import Eyebrow from "../../shared/ui/Eyebrow";
 import StatusPulse from "../../shared/ui/StatusPulse";
 import { SkeletonKpiCard } from "../../shared/ui/SkeletonCard";
 
@@ -48,21 +51,21 @@ function HealthCard({ asset }) {
 
         <Grid templateColumns="repeat(2, 1fr)" gap={3} mb={3}>
           <Box>
-            <Text fontSize="9px" color="text.muted" textTransform="uppercase" fontWeight={700}>Run hours</Text>
+            <Eyebrow>Run hours</Eyebrow>
             <Text fontSize="sm" fontWeight={600}>{asset.run_hours?.toFixed(2) ?? "—"}</Text>
           </Box>
           <Box>
-            <Text fontSize="9px" color="text.muted" textTransform="uppercase" fontWeight={700}>Buckets</Text>
+            <Eyebrow>Buckets</Eyebrow>
             <Text fontSize="sm" fontWeight={600}>{asset.record_count}</Text>
           </Box>
           {asset.type === "chiller" && (
             <>
               <Box>
-                <Text fontSize="9px" color="text.muted" textTransform="uppercase" fontWeight={700}>Avg kW/TR</Text>
+                <Eyebrow>Avg kW/TR</Eyebrow>
                 <Text fontSize="sm" fontWeight={600}>{asset.avg_kw_per_tr?.toFixed(3) ?? "—"}</Text>
               </Box>
               <Box>
-                <Text fontSize="9px" color="text.muted" textTransform="uppercase" fontWeight={700}>CHW ΔT</Text>
+                <Eyebrow>CHW ΔT</Eyebrow>
                 <Text fontSize="sm" fontWeight={600}>{asset.avg_chw_delta_t?.toFixed(2) ?? "—"} °C</Text>
               </Box>
             </>
@@ -107,6 +110,7 @@ export default function MaintenancePage() {
     <PageShell>
       <PageHeader
         title="Predictive Maintenance"
+        icon={<PageHeaderIcon icon={<WrenchIcon size={20} strokeWidth={1.85} />} />}
         subtitle="Run-hours from telemetry buckets · efficiency-based degradation · composite health 0–100"
         actions={<PeriodSelect value={hours} onChange={setHours} />}
       />
@@ -120,9 +124,7 @@ export default function MaintenancePage() {
         }
       </MotionGrid>
 
-      <Text fontSize="10px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.1em" mb={4}>
-        Cooling tower staging hints
-      </Text>
+      <Eyebrow mb={4}>Cooling tower staging hints</Eyebrow>
       <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
         {towerHints.map((h) => (
           <GlassCard key={h.equipment_id}>

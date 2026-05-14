@@ -10,6 +10,8 @@ import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
+import Eyebrow from "../../shared/ui/Eyebrow";
+import Chip from "../../shared/ui/Chip";
 import AgentRunner, { useAgentStream } from "./AgentRunner";
 
 const MotionBox = motion.create(Box);
@@ -274,10 +276,7 @@ export default function AgentHub() {
             {mode?.hasEquipment && (
               <Flex gap={3} mb={4} flexWrap="wrap">
                 <Box flex="1" minW="160px">
-                  <Text fontSize="9px" fontWeight={700} color="text.muted"
-                    textTransform="uppercase" letterSpacing="0.12em" mb={1}>
-                    Equipment (optional)
-                  </Text>
+                  <Eyebrow mb={1}>Equipment (optional)</Eyebrow>
                   <Select
                     placeholder="All equipment"
                     value={selectedEq}
@@ -297,10 +296,7 @@ export default function AgentHub() {
                   </Select>
                 </Box>
                 <Box>
-                  <Text fontSize="9px" fontWeight={700} color="text.muted"
-                    textTransform="uppercase" letterSpacing="0.12em" mb={1}>
-                    Window
-                  </Text>
+                  <Eyebrow mb={1}>Window</Eyebrow>
                   <Select
                     value={hours}
                     onChange={(e) => setHours(Number(e.target.value))}
@@ -320,18 +316,7 @@ export default function AgentHub() {
             {/* Preset chips */}
             <Flex flexWrap="wrap" gap={2} mb={4}>
               {mode?.presets.map((p, i) => (
-                <MotionBox key={i} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}>
-                  <Box
-                    as="button" onClick={() => setGoal(p)}
-                    fontSize="xs" color="text.muted"
-                    bg="bg.surface" border="1px solid" borderColor="border.subtle"
-                    borderRadius="full" px={3} py="5px"
-                    _hover={{ borderColor: mode?.color, color: mode?.color, bg: mode?.bg }}
-                    transition="all 0.15s" textAlign="left"
-                  >
-                    {p}
-                  </Box>
-                </MotionBox>
+                <Chip key={i} accentColor={mode?.color} onClick={() => setGoal(p)}>{p}</Chip>
               ))}
             </Flex>
 

@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Select, Grid } from "@chakra-ui/react";
-import { Trophy } from "lucide-react";
+import { Trophy, Columns2 } from "lucide-react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
@@ -10,6 +10,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine,
 } from "recharts";
 import GlassCard from "../../shared/ui/GlassCard";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import Eyebrow from "../../shared/ui/Eyebrow";
 import StatusPulse from "../../shared/ui/StatusPulse";
 import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 
@@ -112,6 +114,7 @@ export default function ComparePage() {
       <PageHeader
         title="Comparison View"
         subtitle="Side-by-side equipment analysis — overlay chart + delta statistics"
+        icon={<PageHeaderIcon icon={<Columns2 size={20} strokeWidth={1.85} />} />}
         actions={
           <Flex gap={3} flexWrap="wrap" align="center" w={{ base: "100%", xl: "auto" }} maxW="100%">
             <Select size="sm" value={eqA} onChange={(e) => setEqA(e.target.value)}
@@ -200,7 +203,7 @@ export default function ComparePage() {
               <Box minW={{ base: "520px", md: "auto" }}>
             {/* Header row */}
             <Grid templateColumns="minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)" gap={2} pb={3} mb={1} borderBottom="1px solid" borderColor="border.subtle">
-              <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.12em" fontWeight={700}>Metric</Text>
+              <Eyebrow>Metric</Eyebrow>
               <Flex align="center" gap={2} justifyContent="center">
                 <Box w={2} h={2} borderRadius="full" bg={COLORS.a} />
                 <Text fontSize="xs" fontWeight={700} color={COLORS.a}>{data.a.name}</Text>

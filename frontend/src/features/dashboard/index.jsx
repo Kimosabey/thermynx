@@ -1,5 +1,6 @@
 ﻿import { useState, useCallback } from "react";
 import { Box, Flex, Grid, Text, Badge } from "@chakra-ui/react";
+import { LayoutDashboard } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   RefreshCw,
@@ -18,6 +19,8 @@ import GlassCard from "../../shared/ui/GlassCard";
 import KpiCard from "../../shared/ui/KpiCard";
 import StatusPulse from "../../shared/ui/StatusPulse";
 import ErrorAlert from "../../shared/ui/ErrorAlert";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import Eyebrow from "../../shared/ui/Eyebrow";
 import useApi from "../../shared/hooks/useApi";
 import { SkeletonKpiCard, SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 
@@ -162,6 +165,7 @@ export default function Dashboard() {
       <PageHeader
         title="Operations Dashboard"
         subtitle={`Unicharm HVAC Plant · Last ${SUMMARY_HOURS} hours`}
+        icon={<PageHeaderIcon icon={<LayoutDashboard size={20} strokeWidth={1.85} />} />}
         actions={
           <>
             <Flex
@@ -307,12 +311,7 @@ export default function Dashboard() {
       </MotionGrid>
 
       {/* Equipment Grid */}
-      <Text
-        fontSize="10px" fontWeight={700} color="text.muted"
-        textTransform="uppercase" letterSpacing="0.1em" mb={4}
-      >
-        Equipment Overview
-      </Text>
+      <Eyebrow mb={4}>Equipment Overview</Eyebrow>
 
       <MotionGrid
         variants={stagger}

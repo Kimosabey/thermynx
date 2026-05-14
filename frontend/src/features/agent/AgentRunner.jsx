@@ -13,6 +13,8 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import GlassCard from "../../shared/ui/GlassCard";
+import Eyebrow from "../../shared/ui/Eyebrow";
+import TraceStepDS from "../../shared/ui/TraceStep";
 
 const MotionBox = motion.create(Box);
 
@@ -251,21 +253,29 @@ export default function AgentRunner({ trace, output, running, done, meta, error,
     >
       <Grid templateColumns={{ base: "minmax(0, 1fr)", lg: "minmax(0, 280px) minmax(0, 1fr)" }} gap={4} alignItems="flex-start" w="100%" minW={0}>
 
-        {/* Left: trace */}
+        {/* Left: reasoning trace */}
         <Box>
-          <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase"
-            letterSpacing="0.12em" mb={3}>
-            Reasoning trace
-          </Text>
-          <Box maxH="500px" overflowY="auto" pr={1}>
-            {trace.map((f, i) => <TraceStep key={i} frame={f} index={i} />)}
-            {running && trace.length > 0 && (
-              <Flex align="center" gap={2} px={3} py={2}>
-                <ThinkingDots />
-                <Text fontSize="xs" color="text.muted">thinking…</Text>
-              </Flex>
+          <Eyebrow mb={3}>Reasoning Trace</Eyebrow>
+          <Box maxH="500px" overflowY="auto" pr={1} position="relative" pl="22px">
+            {/* Vertical rail */}
+            {trace.length > 0 && (
+              <Box
+                position="absolute" left="8px" top="14px" bottom="14px" w="2px"
+                borderRadius="full"
+                bg={`linear-gradient(180deg, #1F3FFE 0%, #1F3FFE ${running ? "67%" : "100%"}, rgba(199,201,255,0.3) ${running ? "67%" : "100%"}, rgba(199,201,255,0.3) 100%)`}
+              />
             )}
-            {running && trace.length === 0 && (
+
+            {trace.map((f, i) => (
+              <TraceStepDS key={i} frame={f} status="done" />
+            ))}
+            {running && (
+              <TraceStepDS
+                frame={{ type: "tool_call", tool: "__thinking__", runningLabel: "Thinking…", step: trace.length + 1 }}
+                status="running"
+              />
+            )}
+            {!running && trace.length === 0 && (
               <Flex align="center" gap={2} px={3} py={2}>
                 <Spinner size="xs" color="brand.500" />
                 <Text fontSize="xs" color="text.muted">starting…</Text>
@@ -292,14 +302,16 @@ export default function AgentRunner({ trace, output, running, done, meta, error,
             <HStack spacing={2}>
               {meta && (
                 <>
-                  <Badge fontSize="9px" bg="rgba(0,196,244,0.1)" color="brand.400"
-                    border="1px solid rgba(0,196,244,0.2)" borderRadius="6px" px={2}>
+                  <Box px={2} py="3px" borderRadius="6px" fontSize="9px" fontWeight={700}
+                    bg="rgba(31,63,254,0.1)" color="accent.primary"
+                    border="1px solid rgba(31,63,254,0.2)">
                     {meta.model}
-                  </Badge>
-                  <Badge fontSize="9px" bg="bg.surface" color="text.muted"
-                    border="1px solid" borderColor="border.subtle" borderRadius="6px" px={2}>
+                  </Box>
+                  <Box px={2} py="3px" borderRadius="6px" fontSize="9px" fontWeight={600}
+                    bg="bg.surface" color="text.muted"
+                    border="1px solid" borderColor="border.subtle">
                     {meta.steps} steps · {(meta.total_ms / 1000).toFixed(1)}s
-                  </Badge>
+                  </Box>
                 </>
               )}
               {running && (

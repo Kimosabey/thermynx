@@ -1,10 +1,13 @@
 ﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Badge } from "@chakra-ui/react";
+import { Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PeriodSelect from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import Eyebrow from "../../shared/ui/Eyebrow";
 import StatusPulse from "../../shared/ui/StatusPulse";
 import { SkeletonKpiCard } from "../../shared/ui/SkeletonCard";
 
@@ -131,9 +134,7 @@ function EfficiencyCard({ result }) {
             { label: "Samples", value: result.record_count, unit: "" },
           ].map((s, i) => (
             <Box key={i}>
-              <Text fontSize="9px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={1}>
-                {s.label}
-              </Text>
+              <Eyebrow mb={1}>{s.label}</Eyebrow>
               <Text fontSize="sm" fontWeight={600} color="text.primary" sx={{ fontVariantNumeric: "tabular-nums" }}>
                 {s.value ?? "—"}
               </Text>
@@ -147,9 +148,7 @@ function EfficiencyCard({ result }) {
             bg="rgba(239,68,68,0.06)" border="1px solid rgba(239,68,68,0.15)"
             borderRadius="10px" p={3}
           >
-            <Text fontSize="9px" fontWeight={700} color="red.400" textTransform="uppercase" letterSpacing="0.1em" mb={2}>
-              Loss Drivers
-            </Text>
+            <Eyebrow mb={2} color="red.400">Loss Drivers</Eyebrow>
             {result.loss_drivers.map((d, i) => (
               <Flex key={i} gap={2} mb={i < result.loss_drivers.length - 1 ? 2 : 0}>
                 <Text color="red.400" mt="1px" flexShrink={0}>›</Text>
@@ -192,15 +191,14 @@ export default function EfficiencyPage() {
     <PageShell>
       <PageHeader
         title="Efficiency Benchmarker"
+        icon={<PageHeaderIcon icon={<Zap size={20} strokeWidth={1.85} />} />}
         subtitle="kW/TR analysis vs design + industry benchmarks · loss driver attribution"
         actions={<PeriodSelect value={hours} onChange={setHours} />}
       />
 
       {/* Benchmark legend */}
       <GlassCard mb={6} p={4}>
-        <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.12em" mb={3}>
-          kW/TR Benchmark Scale
-        </Text>
+        <Eyebrow mb={3}>kW/TR Benchmark Scale</Eyebrow>
         <Flex gap={3} flexWrap="wrap">
           {[
             { label: "Excellent", range: "< 0.55", color: "#10b981" },

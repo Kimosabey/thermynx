@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Select, Grid, Badge } from "@chakra-ui/react";
+import { TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
@@ -9,6 +10,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine,
 } from "recharts";
 import GlassCard from "../../shared/ui/GlassCard";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import Eyebrow from "../../shared/ui/Eyebrow";
 import { SkeletonKpiCard } from "../../shared/ui/SkeletonCard";
 
 const MotionBox  = motion.create(Box);
@@ -117,6 +120,7 @@ export default function ForecastPage() {
     <PageShell>
       <PageHeader
         title="Energy Forecaster"
+        icon={<PageHeaderIcon icon={<TrendingUp size={20} strokeWidth={1.85} />} />}
         subtitle={`Hour-of-day statistical profile · next ${horizon}h prediction with confidence interval`}
         actions={
           <Flex gap={3} flexWrap="wrap">
@@ -167,7 +171,7 @@ export default function ForecastPage() {
           ].map((s, i) => (
             <MotionBox key={i} variants={fadeUp}>
               <GlassCard p={4}>
-                <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.1em" mb={2}>{s.l}</Text>
+                <Eyebrow mb={2}>{s.l}</Eyebrow>
                 <Flex align="baseline" gap={1}>
                   <Text fontSize="xl" fontWeight={700} color="accent.cyan" sx={{ fontVariantNumeric: "tabular-nums" }}>{s.v ?? "—"}</Text>
                   {s.u && <Text fontSize="xs" color="text.muted">{s.u}</Text>}
@@ -188,7 +192,7 @@ export default function ForecastPage() {
       {/* Legend */}
       {!loading && (
         <GlassCard mt={4} p={4}>
-          <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.12em" mb={3}>How this works</Text>
+          <Eyebrow mb={3}>How this works</Eyebrow>
           <Flex gap={6} flexWrap="wrap">
             <Text fontSize="xs" color="text.muted">
               <Text as="span" color="text.primary" fontWeight={600}>Purple line</Text> — predicted value (mean of that hour-of-day over 7-day history)

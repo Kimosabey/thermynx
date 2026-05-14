@@ -8,6 +8,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import Eyebrow from "../../shared/ui/Eyebrow";
+import Chip from "../../shared/ui/Chip";
 import PeriodSelect, { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import TimeseriesChart from "./TimeseriesChart";
@@ -225,25 +228,21 @@ export default function AIAnalyzer() {
         subtitle="Ask anything about your HVAC plant — powered by local AI"
         mb={6}
         icon={
-          <Box
-            w="38px" h="38px" borderRadius="10px" flexShrink={0}
-            bg="linear-gradient(135deg, #00c4f4, #7c3aed)"
-            display="flex" alignItems="center" justifyContent="center"
-            boxShadow="0 0 20px rgba(0,196,244,0.25)"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </Box>
+          <PageHeaderIcon
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            }
+            gradient="linear-gradient(135deg, #00c4f4, #7c3aed)"
+          />
         }
       />
 
       {/* Equipment + Time + Thread */}
       <Flex gap={3} mb={5} flexWrap="wrap">
         <Box flex="1" minW="180px">
-          <Text fontSize="10px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
-            Equipment
-          </Text>
+          <Eyebrow mb={2}>Equipment</Eyebrow>
           <Select
             placeholder="All equipment"
             value={selectedEq}
@@ -264,16 +263,12 @@ export default function AIAnalyzer() {
         </Box>
 
         <Box>
-          <Text fontSize="10px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
-            Time window
-          </Text>
+          <Eyebrow mb={2}>Time window</Eyebrow>
           <PeriodSelect value={hours} onChange={setHours} width="140px" />
         </Box>
 
         <Box flex="1" minW="220px">
-          <Text fontSize="10px" fontWeight={700} color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
-            Conversation thread
-          </Text>
+          <Eyebrow mb={2}>Conversation thread</Eyebrow>
           <Flex gap={2} flexWrap="wrap">
             <Select
               placeholder="Memory off"
@@ -317,20 +312,7 @@ export default function AIAnalyzer() {
       {/* Quick prompts */}
       <Flex flexWrap="wrap" gap={2} mb={5}>
         {QUICK_PROMPTS.map((p, i) => (
-          <MotionBox key={i} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}>
-            <Box
-              as="button"
-              onClick={() => setQuestion(p)}
-              fontSize="xs" color="text.muted"
-              bg="bg.surface" border="1px solid" borderColor="border.subtle"
-              borderRadius="full" px={3} py="6px"
-              _hover={{ borderColor: "accent.cyan", color: "accent.cyan", bg: "accent.glow" }}
-              transition="all 0.15s"
-              textAlign="left"
-            >
-              {p}
-            </Box>
-          </MotionBox>
+          <Chip key={i} onClick={() => setQuestion(p)}>{p}</Chip>
         ))}
       </Flex>
 

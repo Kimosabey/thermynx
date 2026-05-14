@@ -1,8 +1,11 @@
 ﻿import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Table, Thead, Tbody, Tr, Th, Td } from "@chakra-ui/react";
 import { motion } from "framer-motion";
+import { IndianRupee } from "lucide-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import Eyebrow from "../../shared/ui/Eyebrow";
 import PeriodSelect from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 
@@ -28,6 +31,7 @@ export default function CostPage() {
       <PageHeader
         title="Cost Analytics"
         subtitle="Electrical energy from bucketed kW × flat ₹/kWh · ₹/TR-h on chillers"
+        icon={<PageHeaderIcon icon={<IndianRupee size={20} strokeWidth={1.85} />} />}
         actions={<PeriodSelect value={hours} onChange={setHours} />}
       />
 
@@ -39,7 +43,7 @@ export default function CostPage() {
         ].map((k) => (
           <MotionBox key={k.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <GlassCard>
-              <Text fontSize="10px" color="text.muted" textTransform="uppercase" letterSpacing="0.1em" fontWeight={700} mb={2}>{k.label}</Text>
+              <Eyebrow mb={2}>{k.label}</Eyebrow>
               <Text fontSize="2xl" fontWeight={800} color={k.accent} sx={{ fontVariantNumeric: "tabular-nums" }}>{loading ? "…" : k.value}</Text>
             </GlassCard>
           </MotionBox>

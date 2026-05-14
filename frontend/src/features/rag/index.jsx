@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Box, Flex, Text, Grid, Badge, Textarea, Button, Spinner } from "@chakra-ui/react";
-import { Upload, Trash2, FileText, CheckCircle, AlertCircle, X } from "lucide-react";
+import { Upload, Trash2, FileText, CheckCircle, AlertCircle, X, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import Eyebrow from "../../shared/ui/Eyebrow";
 import GlassCard from "../../shared/ui/GlassCard";
 import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 
@@ -195,10 +197,7 @@ function UploadSection({ onIngestComplete }) {
 
   return (
     <GlassCard p={4} mb={6}>
-      <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase"
-        letterSpacing="0.12em" mb={3}>
-        Upload Documents
-      </Text>
+      <Eyebrow mb={3}>Upload Documents</Eyebrow>
 
       {/* Drop zone */}
       <Box
@@ -324,6 +323,7 @@ export default function RAGPage() {
       <PageHeader
         title="Knowledge Base"
         subtitle="Upload equipment manuals, ASHRAE guides, or incident reports — ground AI answers in your documents"
+        icon={<PageHeaderIcon icon={<BookOpen size={20} strokeWidth={1.85} />} />}
         actions={status && <StatusBadge ready={status.ready} />}
       />
 
@@ -339,10 +339,7 @@ export default function RAGPage() {
 
       {status?.sources?.length > 0 && (
         <Box mb={6}>
-          <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase"
-            letterSpacing="0.12em" mb={3}>
-            Ingested sources — {status.total_chunks} chunks total
-          </Text>
+          <Eyebrow mb={3}>Ingested sources — {status.total_chunks} chunks total</Eyebrow>
           <Grid templateColumns={{ base:"1fr", md:"repeat(2,1fr)", lg:"repeat(3,1fr)" }} gap={3}>
             {status.sources.map(s => (
               <SourceCard key={s.source_id} source={s} onDelete={handleSourceDeleted} />
@@ -353,10 +350,7 @@ export default function RAGPage() {
 
       {/* Search */}
       <GlassCard p={4} mb={5}>
-        <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase"
-          letterSpacing="0.12em" mb={3}>
-          Semantic search
-        </Text>
+        <Eyebrow mb={3}>Semantic search</Eyebrow>
         <Textarea
           value={query}
           onChange={e => setQuery(e.target.value)}
@@ -389,10 +383,7 @@ export default function RAGPage() {
 
       {results.length > 0 && (
         <Box>
-          <Text fontSize="9px" fontWeight={700} color="text.muted" textTransform="uppercase"
-            letterSpacing="0.12em" mb={3}>
-            {results.length} results for "{query}"
-          </Text>
+          <Eyebrow mb={3}>{results.length} results for "{query}"</Eyebrow>
           <Flex flexDir="column" gap={3}>
             {results.map((r, i) => (
               <ResultCard key={`${r.source_id}-${r.chunk_idx}`} result={r} index={i} />
