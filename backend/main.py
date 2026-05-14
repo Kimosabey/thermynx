@@ -40,25 +40,6 @@ async def lifespan(_app: FastAPI):
     async with pg_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # ── 2b. Column-width migrations (idempotent ALTER TABLE statements) ───────────────
-    # Required when the table already exists with narrower columns from an older boot.
-    _migrations = [
-        # analysis_audit.id was VARCHAR(26) — UUIDs are 36 chars
-        "ALTER TABLE analysis_audit ALTER COLUMN id TYPE VARCHAR(36)",
-        # request_id carries the full UUID from X-Request-Id header
-        "ALTER TABLE analysis_audit ALTER COLUMN request_id TYPE VARCHAR(64)",
-        # threads and messages ids
-        "ALTER TABLE threads ALTER COLUMN id TYPE VARCHAR(36)",
-        "ALTER TABLE messages ALTER COLUMN id TYPE VARCHAR(36)",
-        "ALTER TABLE messages ALTER COLUMN thread_id TYPE VARCHAR(36)",
-    ]
-    for stmt in _migrations:
-        try:
-            async with pg_engine.begin() as conn:
-                await conn.execute(_sql(stmt))
-        except Exception:
-            pass  # column already correct width or table doesn't exist yet
-
     log.info("postgres_metadata_ready")
 
     # ── 3. Create IVFFlat index (own transaction, only if pgvector is enabled) ────────
@@ -97,7 +78,7 @@ app = FastAPI(
 
 
 @app.exception_handler(Exception)
-async def unhandled_exception_handler(request: Request, exc: Exception):
+async def unhandled_exception_handler(request: Request, _exc: Exception):
     rid = getattr(request.state, "request_id", None)
     log.exception(
         "unhandled_exception method=%s path=%s request_id=%s",

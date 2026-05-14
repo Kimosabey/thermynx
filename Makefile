@@ -1,4 +1,4 @@
-.PHONY: dev deps stop reset logs
+.PHONY: dev deps stop reset logs migrate migrate-create migrate-stamp
 
 # Start stateful deps (Postgres + Redis) in background
 deps:
@@ -32,3 +32,19 @@ reset:
 
 logs:
 	docker compose logs -f
+
+# ── Database migrations (Alembic) ─────────────────────────────────────────────
+
+# Apply all pending migrations
+migrate:
+	cd backend && alembic upgrade head
+
+# Create a new migration (auto-generates from models diff)
+# Usage: make migrate-create MSG="add foo column"
+migrate-create:
+	cd backend && alembic revision --autogenerate -m "$(MSG)"
+
+# Stamp an existing DB as up-to-date without running migrations
+# Run this once on a DB that was created by create_all before Alembic was added
+migrate-stamp:
+	cd backend && alembic stamp head
