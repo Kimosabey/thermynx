@@ -33,9 +33,9 @@ Commands you run every single day — memorise these.
 
 ```bash
 # ── Start ─────────────────────────────────────────────────────────────────────
-docker compose up -d                    # start Postgres + Redis in background
-cd backend && uvicorn main:app --reload --port 8000   # Terminal 1: backend
-cd frontend && npm run dev              # Terminal 2: frontend
+docker compose up -d                                   # start Postgres + Redis in background
+cd backend && ../.venv/Scripts/uvicorn main:app --reload --port 8000   # Terminal 1: backend
+cd frontend && npm run dev                             # Terminal 2: frontend
 
 # ── Stop ──────────────────────────────────────────────────────────────────────
 Ctrl+C                                  # stop backend or frontend (in their terminal)
@@ -81,8 +81,17 @@ If either shows `starting` wait another 5 seconds and run `docker compose ps` ag
 
 ### Step 2 — Start the backend (Terminal 1)
 
+> **Important:** always use the venv's uvicorn, not the system Python.
+> All packages (python-multipart, pypdf, alembic, etc.) are installed in `.venv`, not globally.
+
 ```bash
 cd backend
+../.venv/Scripts/uvicorn main:app --reload --port 8000
+```
+
+If you prefer to activate the venv first (then you can just type `uvicorn`):
+```powershell
+../.venv/Scripts/Activate.ps1
 uvicorn main:app --reload --port 8000
 ```
 
