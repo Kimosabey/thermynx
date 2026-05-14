@@ -1,0 +1,59 @@
+import { Box } from "@chakra-ui/react";
+import { motion } from "framer-motion";
+
+const MotionBox = motion.create(Box);
+
+/**
+ * Quick-prompt chip — pill-shaped button for preset questions.
+ * Accent color animates on hover/active.
+ *
+ * Usage:
+ *   <Chip onClick={() => setGoal(text)}>{text}</Chip>
+ *   <Chip accentColor="#10b981" active onClick={...}>...</Chip>
+ */
+export default function Chip({ children, onClick, active = false, accentColor, ...props }) {
+  const accent = accentColor || "accent.primary";
+
+  return (
+    <MotionBox
+      as="button"
+      onClick={onClick}
+      whileHover={{ y: -1 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ duration: 0.15 }}
+      fontSize="11px"
+      fontWeight={500}
+      lineHeight={1.4}
+      px="12px"
+      py="6px"
+      borderRadius="full"
+      border="1px solid"
+      bg={active ? "accent.glow" : "bg.surface"}
+      borderColor={active ? "accent.primary" : "border.subtle"}
+      color={active ? "accent.primary" : "text.muted"}
+      cursor="pointer"
+      textAlign="left"
+      fontFamily="body"
+      transition="all 0.15s"
+      _hover={{
+        bg: "accent.glow",
+        borderColor: accentColor || "accent.primary",
+        color: accentColor || "accent.primary",
+      }}
+      sx={
+        accentColor
+          ? {
+              "&:hover": {
+                background: `${accentColor}18`,
+                borderColor: accentColor,
+                color: accentColor,
+              },
+            }
+          : {}
+      }
+      {...props}
+    >
+      {children}
+    </MotionBox>
+  );
+}
