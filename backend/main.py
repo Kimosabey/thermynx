@@ -14,6 +14,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.api.router import router
 from app.config import settings
 from app.db.session import pg_engine, Base
+from app.services import cache as cache_svc
 from app.log import get_logger
 
 log = get_logger("app")
@@ -22,6 +23,9 @@ log = get_logger("app")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     from sqlalchemy import text as _sql
+
+    # ── 0. Redis (non-fatal — caching degrades gracefully if Redis is down) ──────────
+    cache_svc.init_redis(settings.REDIS_URL)
 
     # ── 1. Try to enable pgvector (own transaction — failure must not abort startup) ──
     _pgvector_ok = False

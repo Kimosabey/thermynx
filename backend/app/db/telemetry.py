@@ -12,6 +12,22 @@ from sqlalchemy import text
 
 from app.config import settings
 
+
+def check_data_freshness(latest: datetime | None) -> str | None:
+    """
+    Returns a warning string if the most recent row is stale.
+    Only fires in wall_clock mode — in latest_in_db mode staleness is expected.
+    """
+    if settings.TELEMETRY_TIME_ANCHOR != "wall_clock":
+        return None
+    if latest is None:
+        return "No telemetry data found in the database."
+    delta_min = int((datetime.utcnow() - latest).total_seconds() / 60)
+    if delta_min > 30:
+        return f"Last telemetry update was {delta_min} min ago — readings may be stale."
+    return None
+
+
 NORMALIZED_TABLES = {
     "chiller_1":        "chiller_1_normalized",
     "chiller_2":        "chiller_2_normalized",

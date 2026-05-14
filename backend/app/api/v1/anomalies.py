@@ -1,7 +1,9 @@
 from dataclasses import asdict
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+
 from app.db.session import get_db, get_pg
 from app.db.telemetry import (
     fetch_chiller_data,
@@ -11,8 +13,11 @@ from app.db.telemetry import (
 )
 from app.domain.equipment import EQUIPMENT_CATALOG
 from app.analytics.anomaly import detect_anomalies, CHILLER_METRICS, TOWER_PUMP_METRICS
+from app.services import cache as cache_svc
 
 router = APIRouter()
+
+_LIVE_TTL = 30   # 30 s — live anomaly scan is expensive, limit repeat queries
 
 
 @router.get("/anomalies/live")
@@ -20,24 +25,27 @@ async def live_anomalies(
     hours: int = Query(default=1, ge=1, le=8760),
     db: AsyncSession = Depends(get_db),
 ):
-    """Run anomaly detection on-demand against the last N hours."""
-    all_events = []
-    for eq in EQUIPMENT_CATALOG:
-        if eq["type"] == "chiller":
-            rows     = await fetch_chiller_data(db, eq["table"], hours=hours)
-            baseline = await fetch_chiller_data(db, eq["table"], hours=72)
-            metrics  = CHILLER_METRICS
-        else:
-            cols     = COOLING_TOWER_COLS if eq["type"] == "cooling_tower" else PUMP_COLS
-            rows     = await fetch_equipment_data(db, eq["table"], cols, hours=hours)
-            baseline = await fetch_equipment_data(db, eq["table"], cols, hours=72)
-            metrics  = TOWER_PUMP_METRICS
+    """On-demand anomaly detection. Cached 30 s to avoid hammering MySQL."""
+    async def _fetch():
+        all_events = []
+        for eq in EQUIPMENT_CATALOG:
+            if eq["type"] == "chiller":
+                rows     = await fetch_chiller_data(db, eq["table"], hours=hours)
+                baseline = await fetch_chiller_data(db, eq["table"], hours=72)
+                metrics  = CHILLER_METRICS
+            else:
+                cols     = COOLING_TOWER_COLS if eq["type"] == "cooling_tower" else PUMP_COLS
+                rows     = await fetch_equipment_data(db, eq["table"], cols, hours=hours)
+                baseline = await fetch_equipment_data(db, eq["table"], cols, hours=72)
+                metrics  = TOWER_PUMP_METRICS
 
-        events = detect_anomalies(eq["id"], rows, metrics, baseline_rows=baseline)
-        all_events.extend([{**asdict(e), "equipment_name": eq["name"]} for e in events])
+            events = detect_anomalies(eq["id"], rows, metrics, baseline_rows=baseline)
+            all_events.extend([{**asdict(e), "equipment_name": eq["name"]} for e in events])
 
-    all_events.sort(key=lambda e: abs(e["z_score"]), reverse=True)
-    return {"anomalies": all_events, "total": len(all_events), "hours": hours}
+        all_events.sort(key=lambda e: abs(e["z_score"]), reverse=True)
+        return {"anomalies": all_events, "total": len(all_events), "hours": hours}
+
+    return await cache_svc.get_or_set(f"anomalies:live:h={hours}", _LIVE_TTL, _fetch)
 
 
 @router.get("/anomalies/history")
@@ -46,8 +54,12 @@ async def anomaly_history(
     equipment_id: str | None = None,
     pg: AsyncSession = Depends(get_pg),
 ):
-    """Return persisted anomalies from Postgres (written by the background job)."""
-    where = "WHERE equipment_id = :eq_id" if equipment_id else ""
+    """Persisted anomalies from Postgres (written by background scan job)."""
+    where  = "WHERE equipment_id = :eq_id" if equipment_id else ""
+    params = {"limit": limit}
+    if equipment_id:
+        params["eq_id"] = equipment_id
+
     rows = await pg.execute(
         text(f"""
             SELECT id, equipment_id, metric, started_at, value,
@@ -57,7 +69,7 @@ async def anomaly_history(
             ORDER BY created_at DESC
             LIMIT :limit
         """),
-        {"limit": limit, "eq_id": equipment_id} if equipment_id else {"limit": limit},
+        params,
     )
     results = [dict(r._mapping) for r in rows]
     for r in results:
