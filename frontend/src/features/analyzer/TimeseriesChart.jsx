@@ -25,7 +25,7 @@ function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
     <Box bg="white" border="1px solid #E0E7FF" borderRadius="10px" px={3} py={2}
-      boxShadow="0 4px 20px rgba(5,17,242,0.1)" fontSize="xs">
+      boxShadow="0 4px 20px rgba(31,63,254,0.1)" fontSize="xs">
       <Text fontWeight={600} color="#64748B" mb={1}>{fmt(label)}</Text>
       {payload.map((p) => (
         <Flex key={p.name} gap={2} align="center">
@@ -86,11 +86,11 @@ export default function TimeseriesChart({ data, equipmentName, loading }) {
           <ComposedChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
             <defs>
               <linearGradient id="kwTrGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="#0511F2" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#0511F2" stopOpacity={0} />
+                <stop offset="5%"  stopColor="#1F3FFE" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#1F3FFE" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(5,17,242,0.06)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,63,254,0.06)" />
             <XAxis dataKey="slot_time" tickFormatter={fmt} tick={{ fontSize: 10, fill: "#334155" }}
               axisLine={false} tickLine={false} interval="preserveStartEnd" />
             <YAxis yAxisId="kw" orientation="right" tick={{ fontSize: 10, fill: "#334155" }}
@@ -105,7 +105,7 @@ export default function TimeseriesChart({ data, equipmentName, loading }) {
                 <ReferenceLine yAxisId="eff" y={BAND_GOOD} stroke="#10b981" strokeDasharray="5 3" strokeOpacity={0.35} />
                 <ReferenceLine yAxisId="eff" y={BAND_POOR} stroke="#ef4444" strokeDasharray="5 3" strokeOpacity={0.35} />
                 <Area yAxisId="eff" type="monotoneX" dataKey="kw_per_tr" name="kW/TR"
-                  stroke="#0511F2" strokeWidth={2} fill="url(#kwTrGrad)"
+                  stroke="#1F3FFE" strokeWidth={2} fill="url(#kwTrGrad)"
                   dot={false} isAnimationActive animationDuration={800} />
               </>
             )}

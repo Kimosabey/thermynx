@@ -82,16 +82,16 @@ function NavItem({ label, to, Icon, collapsed, onNavigate }) {
               mx="8px"
               borderRadius="12px"
               justifyContent={collapsed ? "center" : "flex-start"}
-              bg={isActive ? "rgba(5,17,242,0.18)" : "transparent"}
+              bg={isActive ? "rgba(31,63,254,0.18)" : "transparent"}
               border="1px solid"
-              borderColor={isActive ? "rgba(5,17,242,0.3)" : "transparent"}
+              borderColor={isActive ? "rgba(31,63,254,0.3)" : "transparent"}
               color={isActive ? "#93A8FF" : "rgba(255,255,255,0.55)"}
               position="relative"
               overflow="hidden"
               _hover={{
-                bg: isActive ? "rgba(5,17,242,0.22)" : "rgba(255,255,255,0.07)",
+                bg: isActive ? "rgba(31,63,254,0.22)" : "rgba(255,255,255,0.07)",
                 color: "rgba(255,255,255,0.92)",
-                borderColor: isActive ? "rgba(5,17,242,0.4)" : "rgba(255,255,255,0.08)",
+                borderColor: isActive ? "rgba(31,63,254,0.4)" : "rgba(255,255,255,0.08)",
               }}
               transition="all 0.16s ease"
             >
@@ -99,7 +99,7 @@ function NavItem({ label, to, Icon, collapsed, onNavigate }) {
               {isActive && (
                 <Box position="absolute" left={0} top="20%" bottom="20%"
                   w="3px" bg="brand.500" borderRadius="full"
-                  boxShadow="0 0 10px rgba(5,17,242,0.8)" />
+                  boxShadow="0 0 10px rgba(31,63,254,0.8)" />
               )}
 
               {/* Icon */}
@@ -177,7 +177,7 @@ function ThemeToggle({ collapsed }) {
         bg="rgba(31,63,254,0.35)"
         border="1px solid rgba(31,63,254,0.55)"
         borderRadius="full"
-        boxShadow="0 4px 12px rgba(5,17,242,0.4)"
+        boxShadow="0 4px 12px rgba(31,63,254,0.4)"
         transition="left 0.22s cubic-bezier(0.25,0.46,0.45,0.94)"
         pointerEvents="none"
       />
@@ -244,7 +244,7 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
         borderRight="1px solid rgba(255,255,255,0.06)"
         overflow="hidden"
         // Subtle inner glow on right edge
-        boxShadow="inset -1px 0 0 rgba(5,17,242,0.15), 4px 0 24px rgba(5,17,242,0.06)"
+        boxShadow="inset -1px 0 0 rgba(31,63,254,0.15), 4px 0 24px rgba(31,63,254,0.06)"
       >
         {/* Logo area */}
         <Flex
@@ -261,7 +261,7 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
             bg="white"
             display="flex" alignItems="center" justifyContent="center"
             overflow="hidden"
-            boxShadow="0 0 0 1px rgba(5,17,242,0.2), 0 4px 12px rgba(5,17,242,0.25)"
+            boxShadow="0 0 0 1px rgba(31,63,254,0.2), 0 4px 12px rgba(31,63,254,0.25)"
           >
             <Image src={logo} alt="Graylinx" w="28px" objectFit="contain" />
           </Box>
@@ -288,7 +288,7 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
         <Box flex={1} overflowY="auto" overflowX="hidden" py={2}
           sx={{
             "&::-webkit-scrollbar": { width: "3px" },
-            "&::-webkit-scrollbar-thumb": { bg: "rgba(5,17,242,0.3)", borderRadius: "full" },
+            "&::-webkit-scrollbar-thumb": { bg: "rgba(31,63,254,0.3)", borderRadius: "full" },
           }}>
           <MotionBox variants={navListVariants} initial="initial" animate="animate">
             {NAV_GROUPS.map((group, gi) => (

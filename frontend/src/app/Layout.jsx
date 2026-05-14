@@ -30,7 +30,7 @@ export default function Layout() {
             align="center" gap={3}
             bg="bg.surface"
             position="sticky" top={0} zIndex={5}
-            boxShadow="0 1px 0 rgba(5,17,242,0.06)"
+            boxShadow="0 1px 0 rgba(31,63,254,0.06)"
           >
             <IconButton
               aria-label="Open navigation menu"

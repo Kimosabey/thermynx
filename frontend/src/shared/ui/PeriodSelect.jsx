@@ -11,7 +11,7 @@ export const surfaceSelectProps = {
   _hover: { borderColor: "border.strong" },
   _focusVisible: {
     borderColor: "accent.primary",
-    boxShadow: "0 0 0 3px rgba(5,17,242,0.12)",
+    boxShadow: "0 0 0 3px rgba(31,63,254,0.12)",
   },
 };
 

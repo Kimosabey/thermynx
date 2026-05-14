@@ -59,16 +59,16 @@ function TraceStep({ frame, index }) {
         <Box
           as="button" w="full" textAlign="left"
           onClick={() => setExpanded(!expanded)}
-          bg="rgba(5,17,242,0.05)"
-          border="1px solid rgba(5,17,242,0.15)"
+          bg="rgba(31,63,254,0.05)"
+          border="1px solid rgba(31,63,254,0.15)"
           borderRadius="10px" px={3} py={2}
-          _hover={{ bg: "rgba(5,17,242,0.09)", borderColor: "rgba(5,17,242,0.25)" }}
+          _hover={{ bg: "rgba(31,63,254,0.09)", borderColor: "rgba(31,63,254,0.25)" }}
           transition="all 0.15s"
         >
           <Flex align="center" gap={2}>
             <Box color="accent.primary" flexShrink={0}><MetaIcon size={ICON_SIZE} strokeWidth={2} /></Box>
             <Text fontSize="xs" fontWeight={600} color="accent.primary">{meta.label}</Text>
-            <Badge fontSize="9px" bg="rgba(5,17,242,0.1)" color="accent.primary" borderRadius="4px" px={1}>
+            <Badge fontSize="9px" bg="rgba(31,63,254,0.1)" color="accent.primary" borderRadius="4px" px={1}>
               step {frame.step}
             </Badge>
             <Text ml="auto" fontSize="10px" color="text.muted">{expanded ? "▲" : "▼"}</Text>
@@ -155,7 +155,7 @@ function MarkdownOutput({ content }) {
       "ul,ol":  { pl: 5, mb: 3 },
       li:       { mb: 1, color: "text.primary", fontSize: "sm" },
       strong:   { color: "text.primary", fontWeight: 700 },
-      code:     { bg: "rgba(5,17,242,0.06)", px: "5px", py: "2px", borderRadius: "5px", fontSize: "0.82em", color: "accent.primary", fontFamily: "mono" },
+      code:     { bg: "rgba(31,63,254,0.06)", px: "5px", py: "2px", borderRadius: "5px", fontSize: "0.82em", color: "accent.primary", fontFamily: "mono" },
       pre:      { bg: "#F4F7FF", border: "1px solid", borderColor: "border.subtle", p: 4, borderRadius: "10px", overflowX: "auto", mb: 3, fontSize: "xs" },
       table:    { width: "100%", borderCollapse: "collapse", mb: 3, fontSize: "sm" },
       "th,td":  { border: "1px solid", borderColor: "border.subtle", px: 3, py: "6px" },
