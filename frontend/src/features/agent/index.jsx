@@ -4,9 +4,10 @@ import {
   Badge, HStack,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ScanSearch, Zap, CalendarCheck, Microscope, Wrench, Bot } from "lucide-react";
+import { ScanSearch, Zap, CalendarCheck, Microscope, Wrench, Bot, Check } from "lucide-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import AgentRunner, { useAgentStream } from "./AgentRunner";
@@ -18,9 +19,11 @@ const MODES = [
     id:       "investigator",
     label:    "Investigator",
     Icon: ScanSearch,
-    color: "#0511F2",
-    bg: "rgba(5,17,242,0.07)",
-    border: "rgba(5,17,242,0.2)",
+    color:  "#1F3FFE",
+    cDeep:  "#0123B4",
+    cShadow:"rgba(31,63,254,0.32)",
+    bg: "rgba(31,63,254,0.07)",
+    border: "rgba(31,63,254,0.22)",
     tagline:  "Deep-dive into any equipment issue autonomously",
     placeholder: "e.g. Something feels off with Chiller 1. Investigate recent performance.",
     presets: [
@@ -35,9 +38,11 @@ const MODES = [
     id:       "optimizer",
     label:    "Optimizer",
     Icon: Zap,
-    color:    "#10b981",
-    bg:       "rgba(16,185,129,0.08)",
-    border:   "rgba(16,185,129,0.2)",
+    color:  "#10b981",
+    cDeep:  "#047857",
+    cShadow:"rgba(16,185,129,0.32)",
+    bg:     "rgba(16,185,129,0.08)",
+    border: "rgba(16,185,129,0.22)",
     tagline:  "Find actionable ways to cut energy consumption today",
     placeholder: "e.g. How can I reduce energy consumption at the plant today?",
     presets: [
@@ -52,9 +57,11 @@ const MODES = [
     id:       "brief",
     label:    "Daily Brief",
     Icon: CalendarCheck,
-    color:    "#7c3aed",
-    bg:       "rgba(124,58,237,0.08)",
-    border:   "rgba(124,58,237,0.2)",
+    color:  "#7c3aed",
+    cDeep:  "#5b21b6",
+    cShadow:"rgba(124,58,237,0.32)",
+    bg:     "rgba(124,58,237,0.08)",
+    border: "rgba(124,58,237,0.22)",
     tagline:  "Start-of-shift plant status briefing — no input required",
     placeholder: "Optional: focus area (e.g. overnight performance, energy spike at 2AM)",
     presets: [
@@ -68,9 +75,11 @@ const MODES = [
     id:       "root_cause",
     label:    "Root Cause",
     Icon: Microscope,
-    color:    "#f59e0b",
-    bg:       "rgba(245,158,11,0.08)",
-    border:   "rgba(245,158,11,0.2)",
+    color:  "#f59e0b",
+    cDeep:  "#b45309",
+    cShadow:"rgba(245,158,11,0.34)",
+    bg:     "rgba(245,158,11,0.08)",
+    border: "rgba(245,158,11,0.22)",
     tagline:  "Diagnose the root cause of a specific fault or anomaly",
     placeholder: "e.g. Chiller 1 kW/TR spiked to 0.95 at 14:30. What caused it?",
     presets: [
@@ -85,9 +94,11 @@ const MODES = [
     id:       "maintenance",
     label:    "Maintenance",
     Icon: Wrench,
-    color:    "#f97316",
-    bg:       "rgba(249,115,22,0.08)",
-    border:   "rgba(249,115,22,0.2)",
+    color:  "#f97316",
+    cDeep:  "#c2410c",
+    cShadow:"rgba(249,115,22,0.34)",
+    bg:     "rgba(249,115,22,0.08)",
+    border: "rgba(249,115,22,0.22)",
     tagline:  "AI-generated maintenance plan based on current equipment data",
     placeholder: "e.g. Plan maintenance priorities for this week based on current equipment health",
     presets: [
@@ -107,36 +118,62 @@ function ModeIcon({ mode, size = 18 }) {
 }
 
 function ModeCard({ mode, selected, onClick }) {
+  const Icon = mode?.Icon;
   return (
-    <MotionBox whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.15 }}>
+    <MotionBox
+      whileHover={{ y: -2, boxShadow: `0 8px 24px ${mode.color}1F` }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.15 }}
+      position="relative"
+    >
       <Box
         as="button"
         w="full"
         textAlign="left"
         onClick={onClick}
-        bg={selected ? mode.bg : "bg.surface"}
+        bg={selected ? `linear-gradient(180deg, ${mode.color}14 0%, var(--chakra-colors-bg-surface) 70%)` : "bg.surface"}
         border="1px solid"
-        borderColor={selected ? mode.border : "border.subtle"}
-        borderRadius="14px"
+        borderColor={selected ? "transparent" : "border.subtle"}
+        borderRadius="16px"
         p={4}
-        _hover={{ borderColor: mode.border, bg: mode.bg }}
-        transition="all 0.15s"
+        pb="14px"
+        _hover={{ borderColor: "transparent" }}
+        transition="all 0.18s cubic-bezier(0.25,0.46,0.45,0.94)"
         position="relative"
+        isolation="isolate"
+        boxShadow={selected ? `0 1px 2px rgba(31,63,254,0.04)` : "card"}
       >
+        {/* Gradient icon tile */}
+        <Box
+          w="36px" h="36px" borderRadius="11px" mb={3}
+          display="flex" alignItems="center" justifyContent="center"
+          background={`linear-gradient(135deg, ${mode.color} 0%, ${mode.cDeep} 100%)`}
+          boxShadow={`0 6px 14px ${mode.cShadow}`}
+          color="white"
+          flexShrink={0}
+        >
+          {Icon && <Icon size={17} strokeWidth={2} />}
+        </Box>
+
+        {/* Checkmark when selected */}
         {selected && (
           <Box
-            position="absolute" top={0} left={0} right={0} h="2px"
-            bg={mode.color} borderRadius="14px 14px 0 0"
-            boxShadow={`0 0 12px ${mode.color}60`}
-          />
+            position="absolute" top="14px" right="14px"
+            w="18px" h="18px" borderRadius="full"
+            bg={mode.color}
+            display="flex" alignItems="center" justifyContent="center"
+          >
+            <Check size={10} strokeWidth={3} color="white" />
+          </Box>
         )}
-        <Flex align="center" gap={3} mb={2}>
-          <Box><ModeIcon mode={mode} /></Box>
-          <Text fontWeight={700} fontSize="sm" color={selected ? mode.color : "text.primary"}>
-            {mode.label}
-          </Text>
-        </Flex>
-        <Text fontSize="xs" color="text.muted" lineHeight={1.5}>{mode.tagline}</Text>
+
+        <Text fontWeight={700} fontSize="13px" color="text.primary"
+          letterSpacing="-0.01em" lineHeight={1.2} mb={1}>
+          {mode.label}
+        </Text>
+        <Text fontSize="11px" color="text.muted" lineHeight={1.45}>
+          {mode.tagline}
+        </Text>
       </Box>
     </MotionBox>
   );
@@ -184,15 +221,10 @@ export default function AgentHub() {
           </>
         }
         icon={
-          <Box
-            w="40px" h="40px" borderRadius="12px" flexShrink={0}
-            bgGradient="linear(135deg, brand.500, brand.700)"
-            display="flex" alignItems="center" justifyContent="center"
-            boxShadow="0 4px 20px rgba(5,17,242,0.3)"
-            color="white"
-          >
-            <Bot size={20} strokeWidth={1.85} />
-          </Box>
+          <PageHeaderIcon
+            icon={<Bot size={20} strokeWidth={1.85} />}
+            gradient={`linear-gradient(135deg, ${mode.color}, ${mode.cDeep})`}
+          />
         }
         mb={6}
       />
