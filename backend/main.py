@@ -16,7 +16,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.router import router
 from app.config import settings
-from app.db.session import pg_engine, Base
+from app.db.session import pg_engine, mysql_engine, Base
 from app.errors import AppError
 from app.limiter import limiter
 from app.services import cache as cache_svc
@@ -51,6 +51,16 @@ async def lifespan(_app: FastAPI):
 
     log.info("postgres_metadata_ready")
 
+    # ── 2b. Legacy repair: embeddings.embedding was TEXT; IVFFlat requires vector(768)
+    if _pgvector_ok:
+        try:
+            from app.db.embeddings_schema import ensure_embeddings_embedding_is_vector
+
+            async with pg_engine.begin() as conn:
+                await ensure_embeddings_embedding_is_vector(conn)
+        except Exception as e:
+            log.warning("embeddings_vector_column_fix_failed err=%s", e)
+
     # ── 3. Create IVFFlat index (own transaction, only if pgvector is enabled) ────────
     if _pgvector_ok:
         try:
@@ -60,6 +70,7 @@ async def lifespan(_app: FastAPI):
                     "ON embeddings USING ivfflat (embedding vector_cosine_ops) "
                     "WITH (lists=50)"
                 ))
+            log.info("ivfflat_index_ready")
         except Exception as e:
             log.warning("ivfflat_index_skipped err=%s", e)
 
@@ -84,9 +95,19 @@ async def lifespan(_app: FastAPI):
         except asyncio.CancelledError:
             pass
 
+    # Close pools before the event loop tears down (avoids aiomysql __del__ noise on --reload)
+    try:
+        await mysql_engine.dispose()
+    except Exception:
+        pass
+    try:
+        await pg_engine.dispose()
+    except Exception:
+        pass
+
 
 app = FastAPI(
-    title="Graylinx AI Operations Intelligence",
+    title="THERMYNX AI Operations Intelligence",
     description="AI-powered HVAC operations platform for Unicharm facility",
     version="0.1.0",
     lifespan=lifespan,
@@ -166,7 +187,7 @@ app.include_router(router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    return {"service": "Graylinx API", "version": "0.1.0", "status": "running"}
+    return {"service": "THERMYNX API", "version": "0.1.0", "status": "running"}
 
 
 @app.get("/healthz")

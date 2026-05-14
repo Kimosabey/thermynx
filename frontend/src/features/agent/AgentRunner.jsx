@@ -239,7 +239,7 @@ export function useAgentStream() {
   return { trace, output, running, done, meta, error, start, stop };
 }
 
-export default function AgentRunner({ trace, output, running, done, meta, error, onStop }) {
+export default function AgentRunner({ trace, output, running, done, meta, error }) {
   const bottomRef = useRef(null);
 
   if (!running && !output && !error) return null;
@@ -251,16 +251,28 @@ export default function AgentRunner({ trace, output, running, done, meta, error,
       transition={{ duration: 0.25 }}
       mt={5}
     >
-      <Grid templateColumns={{ base: "minmax(0, 1fr)", lg: "minmax(0, 280px) minmax(0, 1fr)" }} gap={4} alignItems="flex-start" w="100%" minW={0}>
+      <Grid
+        templateColumns={{
+          base: "minmax(0, 1fr)",
+          md: "minmax(0, 1fr)",
+          lg: "minmax(300px, 0.4fr) minmax(0, 1fr)",
+          xl: "minmax(340px, 0.38fr) minmax(0, 1fr)",
+        }}
+        gap={{ base: 4, lg: 5 }}
+        alignItems="stretch"
+        w="100%"
+        minW={0}
+      >
 
         {/* Left: reasoning trace */}
-        <Box>
+        <Box minW={0}>
           <Eyebrow mb={3}>Reasoning Trace</Eyebrow>
-          <Box maxH="500px" overflowY="auto" pr={1} position="relative" pl="22px">
-            {/* Vertical rail */}
+          <GlassCard p={4} maxH={{ base: "none", lg: "min(62vh, 560px)" }} overflowY="auto">
+          <Box position="relative" pl="24px" pr={1}>
+            {/* Vertical rail — gutter matches TraceStep dot offset (-22px) */}
             {trace.length > 0 && (
               <Box
-                position="absolute" left="8px" top="14px" bottom="14px" w="2px"
+                position="absolute" left="8px" top="16px" bottom="16px" w="2px"
                 borderRadius="full"
                 bg={`linear-gradient(180deg, #1F3FFE 0%, #1F3FFE ${running ? "67%" : "100%"}, rgba(199,201,255,0.3) ${running ? "67%" : "100%"}, rgba(199,201,255,0.3) 100%)`}
               />
@@ -282,10 +294,11 @@ export default function AgentRunner({ trace, output, running, done, meta, error,
               </Flex>
             )}
           </Box>
+          </GlassCard>
         </Box>
 
         {/* Right: output */}
-        <GlassCard p={0} overflow="hidden" glow={done}>
+        <GlassCard p={0} overflow="hidden" glow={done} minW={0} minH={{ base: "280px", lg: "min(62vh, 560px)" }}>
           <Flex
             px={5} py={3} bg="bg.elevated"
             borderBottom="1px solid" borderColor="border.subtle"
@@ -313,14 +326,6 @@ export default function AgentRunner({ trace, output, running, done, meta, error,
                     {meta.steps} steps · {(meta.total_ms / 1000).toFixed(1)}s
                   </Box>
                 </>
-              )}
-              {running && (
-                <Box as="button" onClick={onStop}
-                  fontSize="xs" color="red.400" px={2} py={1} borderRadius="6px"
-                  border="1px solid rgba(239,68,68,0.3)" bg="rgba(239,68,68,0.08)"
-                  _hover={{ bg: "rgba(239,68,68,0.15)" }} transition="all 0.15s">
-                  Stop
-                </Box>
               )}
             </HStack>
           </Flex>

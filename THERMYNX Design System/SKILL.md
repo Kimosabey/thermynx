@@ -1,6 +1,6 @@
 ---
-name: Graylinx-design
-description: Use this skill to generate well-branded interfaces and assets for Graylinx — HVAC intelligence and operations UX — either for production or throwaway prototypes/mocks. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for prototyping HVAC operations intelligence interfaces.
+name: thermynx-design
+description: Use this skill to generate well-branded interfaces and assets for THERMYNX (by Graylinx), either for production or throwaway prototypes/mocks. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for prototyping HVAC operations intelligence interfaces.
 user-invocable: true
 ---
 
@@ -10,7 +10,7 @@ Key files:
 - `README.md` — full content fundamentals, visual foundations, iconography
 - `colors_and_type.css` — every CSS custom property (drop into any project as a single import)
 - `assets/logo.png` — Graylinx wordmark + glyph
-- `ui_kits/graylinx-app/` — pixel-faithful recreation of the product (sidebar shell, dashboard, AI analyzer, anomalies, agents) — open `index.html` to see it; lift atoms/screens as starting points
+- `ui_kits/thermynx-app/` — pixel-faithful recreation of the product (sidebar shell, dashboard, AI analyzer, anomalies, agents) — open `index.html` to see it; lift atoms/screens as starting points
 - `preview/` — small HTML cards showing every token and component in isolation
 
 If creating visual artifacts (slides, mocks, throwaway prototypes), copy the assets you need into your output and create static HTML files for the user to view. Always link or inline `colors_and_type.css` so tokens are available.

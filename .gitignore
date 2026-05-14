@@ -10,6 +10,13 @@ dist/
 build/
 .pytest_cache/
 *.log
+backend/logs.txt
+
+# Archives / stray exports (use THERMYNX Design System folder, not zipped dupes)
+THERMYNX Design System.zip
+
+# Ad-hoc dev scratch (avoid committing one-off probes)
+scratch/
 
 # Environment
 .env

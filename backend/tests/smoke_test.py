@@ -210,7 +210,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default="http://localhost:8000", help="Backend base URL")
     args = parser.parse_args()
-    print(f"\n{BOLD}Graylinx Phase 1+ Smoke Test{RESET}")
+    print(f"\n{BOLD}THERMYNX Phase 1+ Smoke Test{RESET}")
     print(f"Target: {args.base}\n")
     ok_result = run(args.base)
     sys.exit(0 if ok_result else 1)

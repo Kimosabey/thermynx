@@ -19,14 +19,14 @@ function PrintApp() {
         <section
           key={i}
           className="print-page"
-          data-screen-label={`Graylinx · ${s.title}`}
+          data-screen-label={`THERMYNX · ${s.title}`}
         >
           <header className="print-header">
             <div className="print-brand">
               <span className="print-mark"><img src="../../assets/logo.png" alt="" /></span>
               <span>
-                <span className="print-brand-name">Graylinx</span>
-                <span className="print-brand-sub">HVAC intelligence · {s.title}</span>
+                <span className="print-brand-name">THERMYNX</span>
+                <span className="print-brand-sub">by Graylinx · {s.title}</span>
               </span>
             </div>
             <div className="print-pagenum">{String(i + 1).padStart(2, '0')} / {String(screens.length).padStart(2, '0')}</div>

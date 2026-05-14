@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from "react";
+﻿import { useState, useCallback, useEffect, useRef } from "react";
 import { Box, Flex, Grid, Text, Badge } from "@chakra-ui/react";
 import { LayoutDashboard } from "lucide-react";
 import { motion } from "framer-motion";
@@ -154,6 +154,35 @@ export default function Dashboard() {
     setSpinning(false);
   }, [refetchHealth, refetchSummary]);
 
+  /** Back/forward cache + tab return: remount may not run (bfcache); refetch without spinner. */
+  const refreshAfterHiddenMs = 800;
+  const hiddenAtRef = useRef(null);
+
+  const silentRefetch = useCallback(() => {
+    void Promise.all([refetchHealth(), refetchSummary()]);
+  }, [refetchHealth, refetchSummary]);
+
+  useEffect(() => {
+    const onPageShow = (e) => {
+      if (e.persisted) silentRefetch();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAtRef.current = Date.now();
+        return;
+      }
+      const t = hiddenAtRef.current;
+      if (t != null && Date.now() - t >= refreshAfterHiddenMs) silentRefetch();
+      hiddenAtRef.current = null;
+    };
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [silentRefetch]);
+
   const s               = summaryData?.summary || {};
   const telemetryWindow = summaryData?.telemetry_window ?? null;
   const freshnessWarn   = summaryData?.freshness_warning ?? null;
@@ -237,6 +266,23 @@ export default function Dashboard() {
 
       <ErrorAlert error={error} />
       <ErrorAlert error={freshnessWarn} mb={4} />
+      {summaryData?.empty_hint && (
+        <Flex
+          mb={5}
+          align="flex-start"
+          gap={3}
+          bg="rgba(31,63,254,0.08)"
+          border="1px solid"
+          borderColor="rgba(31,63,254,0.22)"
+          borderRadius="12px"
+          px={4}
+          py={3}
+        >
+          <Text fontSize="sm" color="accent.primary" flex={1} lineHeight={1.65} fontWeight={500}>
+            {summaryData.empty_hint}
+          </Text>
+        </Flex>
+      )}
 
       {telemetryWindow?.anchor === "latest_in_db" && telemetryWindow?.until_utc && (
         <Text fontSize="xs" color="text.muted" mb={5} lineHeight="tall">

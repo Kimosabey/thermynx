@@ -1,5 +1,5 @@
 /**
- * Graylinx Design System — Brand v2
+ * THERMYNX Design System — Graylinx Brand v2
  * Palette: colorpallete.txt (Figma export 2026-05-09)
  * WCAG 2.2 verified: primary blue #1F3FFE passes AAA (9:1) with white text
  */

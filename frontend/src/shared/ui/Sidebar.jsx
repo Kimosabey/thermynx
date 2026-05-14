@@ -82,24 +82,24 @@ function NavItem({ label, to, Icon, collapsed, onNavigate }) {
               mx="8px"
               borderRadius="12px"
               justifyContent={collapsed ? "center" : "flex-start"}
-              bg={isActive ? "rgba(31,63,254,0.18)" : "transparent"}
+              bg={isActive ? "rgba(31,63,254,0.14)" : "transparent"}
               border="1px solid"
-              borderColor={isActive ? "rgba(31,63,254,0.3)" : "transparent"}
-              color={isActive ? "#93A8FF" : "rgba(255,255,255,0.55)"}
+              borderColor={isActive ? "rgba(31,63,254,0.22)" : "transparent"}
+              color={isActive ? "#AEBBFF" : "rgba(255,255,255,0.55)"}
               position="relative"
               overflow="hidden"
               _hover={{
-                bg: isActive ? "rgba(31,63,254,0.22)" : "rgba(255,255,255,0.07)",
+                bg: isActive ? "rgba(31,63,254,0.18)" : "rgba(255,255,255,0.07)",
                 color: "rgba(255,255,255,0.92)",
-                borderColor: isActive ? "rgba(31,63,254,0.4)" : "rgba(255,255,255,0.08)",
+                borderColor: isActive ? "rgba(31,63,254,0.32)" : "rgba(255,255,255,0.08)",
               }}
               transition="all 0.16s ease"
             >
               {/* Active indicator */}
               {isActive && (
-                <Box position="absolute" left={0} top="20%" bottom="20%"
-                  w="3px" bg="brand.500" borderRadius="full"
-                  boxShadow="0 0 10px rgba(31,63,254,0.8)" />
+                <Box position="absolute" left={0} top="22%" bottom="22%"
+                  w="2px" bg="brand.500" borderRadius="full"
+                  boxShadow="0 0 8px rgba(31,63,254,0.45)" />
               )}
 
               {/* Icon */}

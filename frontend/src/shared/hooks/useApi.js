@@ -38,7 +38,10 @@ export default function useApi(url, { enabled = true, ttl, onSuccess } = {}) {
     const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
     try {
-      const res = await fetch(url, { signal: controller.signal });
+      const res = await fetch(url, {
+        signal: controller.signal,
+        cache: "no-store",
+      });
 
       if (!res.ok) {
         let detail = `HTTP ${res.status}`;

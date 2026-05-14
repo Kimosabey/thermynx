@@ -1,8 +1,8 @@
-# Graylinx — HVAC intelligence design system
+# THERMYNX × Graylinx — Design System
 
-A design system for **Graylinx** — an AI Operations Intelligence Platform for HVAC plant analytics. Today it is deployed at a Unicharm manufacturing facility, where it monitors chillers, cooling towers, condenser pumps, and runs AI-assisted root-cause / efficiency / maintenance agents on top of plant telemetry.
+A design system for **THERMYNX**, an AI Operations Intelligence Platform built by **Graylinx** for HVAC plant analytics. Today THERMYNX is deployed at a Unicharm manufacturing facility, where it monitors chillers, cooling towers, condenser pumps, and runs AI-assisted root-cause / efficiency / maintenance agents on top of plant telemetry.
 
-**Graylinx** is the product wordmark. The sidebar lockup is **Graylinx** with the strapline **HVAC intelligence** (logo + primary name + short descriptor).
+THERMYNX is the **product**. Graylinx is the **parent brand** — the wordmark and trademark live on every login page and in the sidebar footer ("THERMYNX · by Graylinx").
 
 ---
 
@@ -25,7 +25,7 @@ No Figma file, no slide template, and no marketing site were provided — so thi
 | `SKILL.md` | Cross-compatible skill manifest for Claude Code |
 | `assets/` | Brand assets (logo PNG; logo SVG and product wordmarks generated from copy) |
 | `preview/` | Static HTML cards that populate the Design System tab (one card per concept) |
-| `ui_kits/graylinx-app/` | UI kit recreation of the Graylinx product surface (sidebar shell + dashboard + AI Analyzer + Anomaly Detector + AI Agents) |
+| `ui_kits/thermynx-app/` | UI kit recreation of the THERMYNX product (sidebar shell + dashboard + AI Analyzer + Anomaly Detector + AI Agents) |
 
 ---
 
@@ -64,7 +64,7 @@ No Figma file, no slide template, and no marketing site were provided — so thi
 ## VISUAL FOUNDATIONS
 
 ### Color
-- **Two themes — light and dark.** Toggle by setting `data-theme="light"` or `data-theme="dark"` on the root `<html>` element. Light is the default. The brand color stays the same in both modes; what flips is surfaces (`#EFF0FF` ↔ `#0A0E1F`), text (`#1D1D21` ↔ `#F1F1F4`), and borders (faint lavender ↔ translucent white). The sidebar is dark in **both** themes by design. In the Graylinx app kit there's a segmented `Light / Dark` toggle in the sidebar footer; preference is persisted to `localStorage` under `graylinx-theme`.
+- **Two themes — light and dark.** Toggle by setting `data-theme="light"` or `data-theme="dark"` on the root `<html>` element. Light is the default. The brand color stays the same in both modes; what flips is surfaces (`#EFF0FF` ↔ `#0A0E1F`), text (`#1D1D21` ↔ `#F1F1F4`), and borders (faint lavender ↔ translucent white). The sidebar is dark in **both** themes by design. In the THERMYNX app kit there's a segmented `Light / Dark` toggle in the sidebar footer; preference is persisted to `localStorage` under `thermynx-theme`.
 - **One brand color, used decisively.** Electric blue **`#1F3FFE`** (`--accent-primary`) drives every primary action, active nav state, link, focus ring, chart line, and shadow tint. The whole product feels like one hue.
 - **Two blues in the wild.** The Chakra theme says `#1F3FFE`; `index.html` and `rgba(5,17,242,…)` everywhere say `#0511F2`. They're visually almost identical (deep electric blue). Treat `#1F3FFE` as canonical (Brand v2 in Figma) and `#0511F2` as the legacy in-code value still found in many `rgba()` calls. **All shadows are tinted with `rgba(31,63,254, …)` or `rgba(5,17,242, …)` — never plain black.**
 - **Neutrals are warm-cool grays**, not pure gray. `#1D1D21` for primary text, `#3B3B42` secondary, `#808087` muted.
@@ -190,5 +190,5 @@ Stroke width should be set to `1.65–2` on every call to match the in-app look.
 - `SKILL.md` — skill manifest
 - `assets/logo.png` — Graylinx wordmark (PNG)
 - `preview/` — Design System tab cards
-- `ui_kits/graylinx-app/` — product UI kit (sidebar shell, dashboard, AI Analyzer, Anomaly Detector, AI Agents). Open `index.html` and click sidebar items to navigate.
-- `ui_kits/graylinx-app/README.md` — kit-specific docs: file map, mocked-vs-real callouts, click-through behaviour
+- `ui_kits/thermynx-app/` — product UI kit (sidebar shell, dashboard, AI Analyzer, Anomaly Detector, AI Agents). Open `index.html` and click sidebar items to navigate.
+- `ui_kits/thermynx-app/README.md` — kit-specific docs: file map, mocked-vs-real callouts, click-through behaviour

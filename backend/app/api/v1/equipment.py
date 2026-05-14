@@ -18,7 +18,7 @@ from app.log import get_logger
 router = APIRouter()
 log = get_logger("api.equipment")
 
-_SUMMARY_TTL = 60   # seconds — dashboard refreshes at most once per minute
+_SUMMARY_TTL = 20   # seconds — balance DB load vs dashboard freshness
 
 
 @router.get("/equipment")
@@ -31,7 +31,7 @@ async def equipment_summary(
     hours: int = Query(default=24, ge=1, le=8760),
     db: AsyncSession = Depends(get_db),
 ):
-    """Aggregated stats for all equipment. Cached 60 s in Redis."""
+    """Aggregated stats for all equipment. Cached briefly in Redis."""
     cache_key = f"equipment:summary:h={hours}"
 
     async def _fetch():
@@ -43,6 +43,27 @@ async def equipment_summary(
 
         row_counts  = {k: len(v) for k, v in context.items() if isinstance(v, list)}
         zero_tables = [k for k, n in row_counts.items() if n == 0]
+        total_rows = sum(row_counts.values())
+
+        empty_hint: str | None = None
+        if total_rows == 0:
+            if plant_latest is None:
+                empty_hint = (
+                    "MySQL is reachable, but no rows were found in the normalized HVAC tables this app queries "
+                    "(e.g. chiller_1_normalized). Import or point the DB at a telemetry source that populates those tables."
+                )
+            elif settings.TELEMETRY_TIME_ANCHOR == "wall_clock":
+                empty_hint = (
+                    f"Latest telemetry in the database is around {plant_latest.isoformat(timespec='seconds')} UTC, "
+                    f"but summaries use the last {hours}h from *now* (wall clock). That window can be empty for static or old dumps. "
+                    "Set TELEMETRY_TIME_ANCHOR=latest_in_db in backend/.env and restart the API so the window anchors to the newest rows."
+                )
+            else:
+                empty_hint = (
+                    f"No rows in the last {hours} hours before the newest sample. Try a longer window (e.g. env VITE_EQUIPMENT_SUMMARY_HOURS) "
+                    "or verify slot_time coverage in the normalized tables."
+                )
+
         log.info(
             "equipment_summary anchor=%s hours=%s plant_newest_utc=%s row_counts=%s",
             settings.TELEMETRY_TIME_ANCHOR, hours,
@@ -57,6 +78,8 @@ async def equipment_summary(
         return {
             "summary": summary,
             "hours":   hours,
+            "empty_hint": empty_hint,
+            "row_counts": row_counts,
             "freshness_warning": check_data_freshness(plant_latest),
             "telemetry_window": {
                 "anchor":    settings.TELEMETRY_TIME_ANCHOR,

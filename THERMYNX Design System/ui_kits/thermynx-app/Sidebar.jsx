@@ -200,11 +200,11 @@ function Sidebar({ activeRoute, onNavigate, collapsed, onToggleCollapse, theme, 
             <div style={{
               fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15,
               color: '#FFF', letterSpacing: '-0.02em', lineHeight: 1.1,
-            }}>Graylinx</div>
+            }}>THERMYNX</div>
             <div style={{
               fontSize: 9, color: 'rgba(255,255,255,0.35)',
               letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 1,
-            }}>HVAC intelligence</div>
+            }}>by Graylinx</div>
           </div>
         )}
       </div>

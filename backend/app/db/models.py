@@ -96,7 +96,11 @@ class Embedding(Base):
     source_id: Mapped[str] = mapped_column(String(128))    # filename
     chunk_idx: Mapped[int] = mapped_column(Integer)
     content: Mapped[str] = mapped_column(Text)
-    # 768-dim nomic-embed-text vector; stored as TEXT if pgvector unavailable
-    embedding: Mapped[str | None] = mapped_column(Text)    # overridden at runtime
+
+    if _VECTOR_DIM is not None:
+        embedding: Mapped[list[float] | None] = mapped_column(_VECTOR_DIM, nullable=True)
+    else:
+        embedding: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     equipment_tags: Mapped[str | None] = mapped_column(String(256))  # "chiller_1,chiller_2"
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

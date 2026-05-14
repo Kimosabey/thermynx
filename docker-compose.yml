@@ -29,6 +29,18 @@ services:
       timeout: 3s
       retries: 5
 
+  # Web UI — browse keys / TTL / pub-sub ( http://localhost:8081 )
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: "local:redis:6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   # ── Observability stack (optional — start with: docker compose --profile obs up -d) ──
 
   prometheus:

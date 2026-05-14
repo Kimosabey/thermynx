@@ -1,10 +1,12 @@
 .PHONY: dev deps stop reset logs obs obs-stop worker migrate migrate-create migrate-stamp
 
-# Start stateful deps (Postgres + Redis) in background
+# Start stateful deps (Postgres + Redis + Redis Commander UI)
 deps:
 	docker compose up -d
 	@echo "Waiting for Postgres..."
 	@docker compose exec postgres pg_isready -U thermynx -d thermynx_app -q || sleep 3
+	@echo ""
+	@echo "Redis UI →  http://localhost:8081  (Redis Commander)"
 
 # Backend in one terminal  →  make backend
 backend:
@@ -18,6 +20,7 @@ frontend:
 dev:
 	@echo ""
 	@echo "  Start deps (once):   make deps"
+	@echo "    → Postgres · Redis · http://localhost:8081 (Redis UI)"
 	@echo "  Terminal 1 backend:  make backend"
 	@echo "  Terminal 2 frontend: make frontend"
 	@echo ""

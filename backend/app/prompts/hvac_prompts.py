@@ -4,7 +4,7 @@ All prompt building is pure — no I/O imports.
 """
 from typing import Any
 
-SYSTEM_CONTEXT = """You are the Graylinx HVAC intelligence assistant — a senior HVAC energy engineer specializing in chiller plant optimization.
+SYSTEM_CONTEXT = """You are THERMYNX, a senior HVAC energy engineer specializing in chiller plant optimization.
 You have deep expertise in:
 - Chiller performance analysis (kW/TR efficiency benchmarks: good <0.65, acceptable 0.65–0.85, poor >0.85)
 - Cooling tower approach temperature and wet-bulb relationships
@@ -117,7 +117,7 @@ def build_analyze_prompt(
     return "\n".join(sections)
 
 
-REPORT_SUMMARY_SYSTEM = """You are the Graylinx HVAC intelligence assistant — a senior HVAC operations engineer writing executive summaries for plant managers.
+REPORT_SUMMARY_SYSTEM = """You are THERMYNX — senior HVAC operations engineer writing executive summaries for plant managers.
 
 Rules:
 - Output markdown only — exactly three short paragraphs as headings:

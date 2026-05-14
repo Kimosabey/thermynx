@@ -1,4 +1,4 @@
-# Graylinx App — UI Kit
+# THERMYNX App — UI Kit
 
 A pixel-faithful recreation of the in-app product surface: dark sidebar shell + four core operator screens (Dashboard, AI Analyzer, Anomalies, AI Agents), with click-through navigation and mocked telemetry.
 

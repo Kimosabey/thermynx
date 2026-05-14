@@ -135,15 +135,15 @@ function ModeCard({ mode, selected, onClick }) {
         onClick={onClick}
         bg={selected ? `linear-gradient(180deg, ${mode.color}14 0%, var(--chakra-colors-bg-surface) 70%)` : "bg.surface"}
         border="1px solid"
-        borderColor={selected ? "transparent" : "border.subtle"}
+        borderColor={selected ? `${mode.color}55` : "border.subtle"}
         borderRadius="16px"
         p={4}
         pb="14px"
-        _hover={{ borderColor: "transparent" }}
+        _hover={{ borderColor: selected ? `${mode.color}70` : "rgba(31,63,254,0.12)" }}
         transition="all 0.18s cubic-bezier(0.25,0.46,0.45,0.94)"
         position="relative"
         isolation="isolate"
-        boxShadow={selected ? `0 1px 2px rgba(31,63,254,0.04)` : "card"}
+        boxShadow={selected ? `0 0 0 1px ${mode.color}33, 0 8px 24px ${mode.color}18` : "card"}
       >
         {/* Gradient icon tile */}
         <Box
@@ -213,7 +213,7 @@ export default function AgentHub() {
   }
 
   return (
-    <PageShell>
+    <PageShell maxW="1240px">
       <PageHeader
         title="AI Agents"
         subtitle={
@@ -264,11 +264,19 @@ export default function AgentHub() {
         >
           <GlassCard p={5}>
             {/* Mode header */}
-            <Flex align="center" gap={3} mb={4}>
-              <Text fontSize="2xl">{mode?.icon}</Text>
-              <Box>
+            <Flex align="flex-start" gap={3} mb={4}>
+              <Box
+                w="40px" h="40px" borderRadius="12px" flexShrink={0}
+                display="flex" alignItems="center" justifyContent="center"
+                bg={`linear-gradient(135deg, ${mode?.color} 0%, ${mode?.cDeep} 100%)`}
+                boxShadow={`0 6px 16px ${mode?.cShadow ?? "rgba(31,63,254,0.25)"}`}
+                color="white"
+              >
+                <ModeIcon mode={mode} size={20} />
+              </Box>
+              <Box minW={0}>
                 <Text fontWeight={700} fontSize="sm" color={mode?.color}>{mode?.label}</Text>
-                <Text fontSize="xs" color="text.muted">{mode?.tagline}</Text>
+                <Text fontSize="xs" color="text.muted" lineHeight={1.45}>{mode?.tagline}</Text>
               </Box>
             </Flex>
 
@@ -383,7 +391,6 @@ export default function AgentHub() {
         done={done}
         meta={meta}
         error={error}
-        onStop={stop}
       />
     </PageShell>
   );

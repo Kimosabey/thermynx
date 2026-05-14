@@ -113,7 +113,7 @@ export default function TraceStep({ frame, status = "done" }) {
         cursor={hasExpandable ? "pointer" : "default"}
         _hover={hasExpandable ? { opacity: 0.9 } : {}}
       >
-        <Flex align="center" gap="10px">
+        <Flex align="flex-start" gap="10px" flexWrap="wrap">
           {/* Tool icon */}
           <Box
             w="22px" h="22px" borderRadius="7px" flexShrink={0}
@@ -123,17 +123,21 @@ export default function TraceStep({ frame, status = "done" }) {
             <MetaIcon size={13} strokeWidth={2} />
           </Box>
 
-          {/* Label */}
-          {status === "running"
-            ? <ShimmerLabel>{frame.runningLabel ?? `${meta.label}…`}</ShimmerLabel>
-            : <Text fontSize="12px" fontWeight={status === "pending" ? 500 : 600}
-                color={status === "pending" ? "text.faint" : "text.primary"}>
-                {frame.type === "tool_result" ? `${meta.label} result` : meta.label}
-              </Text>
-          }
+          {/* Label — grows/wraps; avoids crunching beside step badge */}
+          <Box flex="1" minW="0">
+            {status === "running"
+              ? <ShimmerLabel>{frame.runningLabel ?? `${meta.label}…`}</ShimmerLabel>
+              : <Text fontSize="12px" fontWeight={status === "pending" ? 500 : 600}
+                  color={status === "pending" ? "text.faint" : "text.primary"}
+                  lineHeight={1.35}
+                >
+                  {frame.type === "tool_result" ? `${meta.label} result` : meta.label}
+                </Text>
+            }
+          </Box>
 
           {/* Right meta */}
-          <Flex ml="auto" align="center" gap={2} flexShrink={0}>
+          <Flex align="center" gap={2} flexShrink={0} ml={{ base: 0, sm: "auto" }} w={{ base: "100%", sm: "auto" }} justify={{ base: "flex-end", sm: "flex-end" }} pl={{ base: "32px", sm: 0 }}>
             {frame.step != null && (
               <Box
                 px="6px" py="2px" borderRadius="5px" fontSize="9px" fontWeight={700}

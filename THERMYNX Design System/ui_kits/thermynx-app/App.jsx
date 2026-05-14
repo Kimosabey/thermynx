@@ -2,12 +2,12 @@
 
 function useTheme() {
   const [theme, setTheme] = React.useState(() => {
-    try { return localStorage.getItem('graylinx-theme') || 'light'; }
+    try { return localStorage.getItem('thermynx-theme') || 'light'; }
     catch { return 'light'; }
   });
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    try { localStorage.setItem('graylinx-theme', theme); } catch {}
+    try { localStorage.setItem('thermynx-theme', theme); } catch {}
   }, [theme]);
   return [theme, setTheme];
 }
@@ -34,7 +34,7 @@ function App() {
   }
 
   return (
-    <div data-screen-label={`Graylinx · ${route} · ${theme}`} className="app-shell">
+    <div data-screen-label={`THERMYNX · ${route} · ${theme}`} className="app-shell">
       <Sidebar
         activeRoute={route}
         onNavigate={setRoute}
