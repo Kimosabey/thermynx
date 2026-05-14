@@ -81,7 +81,7 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
             run_id,
             getattr(request.state, "request_id", None),
         )
-        yield f"data: {json.dumps({'type':'error','detail':str(e)})}\n\n"
+        yield f"data: {json.dumps({'type':'error','detail':'Agent run failed.','request_id':getattr(request.state,'request_id',None)})}\n\n"
         status = "error"
 
     # Update run row

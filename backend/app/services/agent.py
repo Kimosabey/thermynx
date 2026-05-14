@@ -108,7 +108,7 @@ async def run_agent(
             response = await chat(messages, tools=TOOL_SCHEMAS, model=model)
         except Exception as e:
             log.exception("agent_chat_failed run_id=%s mode=%s step=%s", run_id, mode, step)
-            yield _sse({"type": "error", "detail": f"LLM error: {e}"})
+            yield _sse({"type": "error", "detail": "LLM request failed. Check server logs for details."})
             return
 
         msg = response.get("message", {})

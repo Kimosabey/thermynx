@@ -120,7 +120,7 @@ async def _sse_stream(
             audit_id,
             getattr(request.state, "request_id", None),
         )
-        yield f"data: {json.dumps({'type': 'error', 'detail': str(e)})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'detail': 'Analysis failed.', 'request_id': getattr(request.state, 'request_id', None)})}\n\n"
         status = "error"
 
     total_ms = int(time.time() * 1000) - start_ms
