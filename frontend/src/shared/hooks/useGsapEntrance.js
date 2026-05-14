@@ -9,27 +9,29 @@ import { gsap } from "gsap";
  *   <Box ref={ref}> <Card /> <Card /> <Card /> </Box>
  *
  * Options:
- *   stagger   — seconds between each child  (default 0.07)
- *   y         — start offset in px          (default 18)
- *   duration  — per-child tween duration    (default 0.45)
- *   delay     — initial delay before start  (default 0)
- *   selector  — child selector string       (default "> *")
+ *   stagger  — seconds between each child  (default 0.07)
+ *   y        — start offset in px          (default 18)
+ *   duration — per-child tween duration    (default 0.45)
+ *   delay    — initial delay before start  (default 0)
  */
 export default function useGsapEntrance({
   stagger  = 0.07,
   y        = 18,
   duration = 0.45,
   delay    = 0,
-  selector = "> *",
 } = {}) {
   const ref = useRef(null);
 
   useEffect(() => {
     if (!ref.current) return;
 
+    // Pass DOM elements directly — avoids querySelectorAll rejecting "> *"
+    const children = Array.from(ref.current.children);
+    if (!children.length) return;
+
     const ctx = gsap.context(() => {
       gsap.fromTo(
-        selector,
+        children,
         { opacity: 0, y },
         {
           opacity: 1,
@@ -44,7 +46,7 @@ export default function useGsapEntrance({
     }, ref.current);
 
     return () => ctx.revert();
-  }, [stagger, y, duration, delay, selector]);
+  }, [stagger, y, duration, delay]);
 
   return ref;
 }
