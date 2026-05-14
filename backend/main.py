@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.router import router
 from app.config import settings
@@ -87,6 +88,9 @@ app = FastAPI(
 # ── Rate limiting (slowapi) ───────────────────────────────────────────────────
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# ── Prometheus metrics at /metrics ────────────────────────────────────────────
+Instrumentator().instrument(app).expose(app)
 
 
 @app.exception_handler(AppError)
