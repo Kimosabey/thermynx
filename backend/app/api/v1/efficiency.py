@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -8,6 +8,7 @@ from app.db.telemetry import fetch_chiller_data
 from app.domain.equipment import get_by_id, EQUIPMENT_CATALOG
 from app.analytics.efficiency import analyze_chiller_efficiency
 from app.services import cache as cache_svc
+from app.limiter import limiter
 
 router = APIRouter()
 
@@ -15,7 +16,9 @@ _TTL = 120   # 2 minutes — efficiency bands change slowly
 
 
 @router.get("/efficiency/{equipment_id}")
+@limiter.limit("60/minute")
 async def get_efficiency(
+    request: Request,
     equipment_id: str,
     hours: int = Query(default=24, ge=1, le=8760),
     db: AsyncSession = Depends(get_db),
@@ -34,7 +37,9 @@ async def get_efficiency(
 
 
 @router.get("/efficiency")
+@limiter.limit("60/minute")
 async def get_all_efficiency(
+    request: Request,
     hours: int = Query(default=24, ge=1, le=8760),
     db: AsyncSession = Depends(get_db),
 ):

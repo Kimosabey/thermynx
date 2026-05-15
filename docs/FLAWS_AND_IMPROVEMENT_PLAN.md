@@ -28,14 +28,33 @@ Graylinx is a **fully-functional POC** covering Phases 1–4 of the BUILD_PLAN. 
 - Read/write DB isolation (MySQL read-only, Postgres for app writes)
 - Clean architecture layering — pure domain functions, no I/O in analytics/
 
-**What does not work for production:**
-- **No rate limiting** — uncapped `/analyze` and `/agent/run` calls can saturate the Ollama GPU
-- **No observability** — no metrics, no distributed tracing, no alerting
-- **Brittle error handling** — Ollama down = hard 500, MySQL down = hard 500, no fallbacks
-- **In-process job scheduler** — APScheduler crashes on restart, losing anomaly scan history
-- **No database migration tooling** — manual ALTER TABLE in lifespan is fragile
-- **RAG is read-only from the UI** — no upload endpoint, no admin ingestion workflow
-- **Redis is wired but unused** — configured, never actually queried for caching
+**What still does not work for production (remaining gaps — see reconciliation below):**
+- **Operational depth** — distributed tracing still limited despite baseline Prometheus `/metrics`; alerting/Grafana+Loki stacks are optional / not turnkey for every deployment
+- **Brittle degradation paths** — Ollama/MySQL failures may still surface as opaque 500s where `AppError` is not wired
+- **Auth / tenancy** — still intentionally omitted for POC; no RBAC if exposed beyond the LAN
+- **Analytics & UX backlog** — pagination on some lists, centralized frontend API client with retry, benchmark/config externalization remain open items in later sections of this doc
+
+---
+
+## 1A. Status reconciliation (2026-05-14)
+
+The following backlog items **were remediated in code since the original 2026-05-09 snapshot.** Treat earlier sections as history; rely on these rows for done vs open.
+
+| ID | Previous concern | Current status |
+|----|------------------|----------------|
+| P0-1 | CORS locked to literals | **`resolve`:** `backend/main.py` reads `settings.CORS_ORIGINS` comma-separated origins; **`backend/app/config.py`** documents production override. |
+| P0-3 | Stack traces in JSON | **`resolve`:** unhandled exceptions return `{ "detail": "Internal server error", "request_id": ... }`; full trace server-side only. |
+| P0-4 | No max length on LLM inputs | **`resolve`:** `AnalyzeRequest.question` and `AgentRequest.goal` use `max_length=2000` (and `min_length=3`). |
+| P1-1 | Redis unused | **`resolve`:** `app/services/cache.py` + TTL caching on `/equipment/summary`, efficiency, anomalies live, cost, etc. |
+| P1-2 | APScheduler in-process jobs | **`resolve`:** `arq` worker in `backend/app/jobs/worker.py` + `Makefile` **`make worker`**; in-process cron also starts from `lifespan`. APScheduler dependency **removed**. |
+| P1-3 | No Alembic | **`mostly resolve`:** `backend/alembic/` revisions `0001`–`0002` (+ index migration); **`make migrate`** / **`make migrate-create`**. **`startup`:** `alembic upgrade head` invoked from **`main.py`** so dev/prod parity. |
+| P1-4 | RAG no HTTP ingest | **`resolve`:** `POST /api/v1/rag/ingest` in `backend/app/api/v1/rag.py` (+ CLI still available). |
+| P1-5 | No rate limiting | **`partial`:** `slowapi` + **10/minute** on `/analyze` and `/agent/run`; **60/minute** on hot telemetry JSON routes (equipment summary/list, efficiency, anomalies live/history, cost). |
+| P1-6 | No tool timeouts | **`resolve`:** `asyncio.wait_for(..., timeout=30.0)` around `execute_tool` in **`backend/app/services/agent.py`**. |
+| P1-7 / P1-8 | Generic errors / no FE hook pattern | **`partial`:** **`app/errors.py`** + `AppError` handler; **`useApi`** + **`ErrorAlert`** on Dashboard — not every page uniformly migrated. |
+| P2-7 observability baseline | **`partial`:** Prometheus **Instrumentator** on app + **`/metrics`**; full Grafana+Loki compose profile still elective. |
+
+**Still intentionally open:** P2 pagination breadth, P2 seasonal forecast, TypeScript migration, PDF reports, multi-tenancy — see Sections 5–8.
 
 ---
 
@@ -493,4 +512,4 @@ These are high-signal fixes that can be shipped in a single focused session:
 
 ---
 
-*Document last updated: 2026-05-09. Update this file after each sprint to reflect resolved items.*
+*Document last updated: 2026-05-14. Update this file after each sprint to reflect resolved items.*

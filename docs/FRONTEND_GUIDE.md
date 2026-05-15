@@ -61,7 +61,7 @@ All routes are defined in `App.jsx`. The pattern is `/feature-name`.
 ### Dashboard (`/dashboard`)
 **What it shows:** Live KPI cards (kW, TR, load%, temps) for all equipment. Equipment status tiles (RUNNING / STANDBY). Database and Ollama connectivity status.
 
-**API calls:** `GET /equipment/summary?hours=24`
+**API calls:** `GET /api/v1/equipment/summary?hours=24` (relative URL; Vite `server.proxy` forwards `/api` → FastAPI `http://localhost:8000`)
 
 **Notable UX:** Animated number counters on load (Framer Motion). `StatusPulse` dot (green = running, grey = standby).
 

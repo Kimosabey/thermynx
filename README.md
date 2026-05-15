@@ -2,7 +2,7 @@
 
 AI-powered HVAC analytics for Unicharm facility. Turns raw chiller telemetry into explainable, actionable intelligence via a locally-hosted LLM.
 
-> **Status:** POC active — Phase 1 ✅ · Phase 2 ✅ · Phase 3 agents ✅ (maintenance/cost/reports pending)
+> **Status:** POC active — Phase 1–4 feature pages ✅ (dashboard, analyzer, efficiency, anomalies, agents, forecast, compare, cost, maintenance, reports, RAG). Production hardening (auth, enterprise monitoring) is out of scope for the current POC.
 
 ---
 

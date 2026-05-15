@@ -3,12 +3,23 @@ Agent tool registry — schemas (for Ollama) + async executors.
 All executors return JSON-serializable dicts, kept small for LLM context.
 """
 import decimal
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, date
 from typing import Any
 
 from app.domain.equipment import EQUIPMENT_CATALOG, get_by_id
 from app.log import get_logger
+
+
+@dataclass(frozen=True)
+class ToolContext:
+    """Injectable context for agent tools (reserved for shared sessions and tenant data)."""
+
+
+def _equipment_error(equipment_id: str | None = None, msg: str | None = None) -> dict[str, Any]:
+    if msg:
+        return {"error": msg}
+    return {"error": f"Unknown or invalid equipment: {equipment_id}"}
 
 
 def _sanitize(obj: Any) -> Any:
@@ -129,17 +140,16 @@ TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
-            "name": "retrieve_manual",
+            "name": "search_knowledge_base",
             "description": (
-                "Search equipment manuals, ASHRAE guides, and incident reports for relevant "
-                "information using semantic similarity. Use this when the question involves "
-                "maintenance intervals, fault codes, engineering limits, or specifications."
+                "Semantic search across ingested manuals, ASHRAE guides, and incident notes (RAG). "
+                "Use when the question involves maintenance intervals, fault codes, design limits, or specs."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query":        {"type": "string", "description": "Natural language search query"},
-                    "equipment_id": {"type": "string", "description": "Optional: filter to equipment-specific docs"},
+                    "equipment_id": {"type": "string", "description": "Optional: filter doc chunks tied to equipment"},
                     "top_k":        {"type": "integer", "default": 4},
                 },
                 "required": ["query"],
@@ -167,7 +177,7 @@ async def _exec_compute_efficiency(equipment_id: str, hours: int = 24) -> dict:
 
     eq = get_by_id(equipment_id)
     if not eq or eq["type"] != "chiller":
-        return {"error": f"{equipment_id} is not a chiller"}
+        return _equipment_error(equipment_id, f"{equipment_id} is not a chiller")
 
     async with MySQLSession() as db:
         rows = await fetch_chiller_data(db, eq["table"], hours=hours)
@@ -189,7 +199,7 @@ async def _exec_detect_anomalies(equipment_id: str, hours: int = 1) -> dict:
 
     eq = get_by_id(equipment_id)
     if not eq:
-        return {"error": f"Unknown equipment: {equipment_id}"}
+        return _equipment_error(equipment_id)
 
     async with MySQLSession() as db:
         if eq["type"] == "chiller":
@@ -218,7 +228,7 @@ async def _exec_get_timeseries_summary(equipment_id: str, hours: int = 24) -> di
 
     eq = get_by_id(equipment_id)
     if not eq:
-        return {"error": f"Unknown equipment: {equipment_id}"}
+        return _equipment_error(equipment_id)
 
     async with MySQLSession() as db:
         if eq["type"] == "chiller":
@@ -234,7 +244,6 @@ async def _exec_get_timeseries_summary(equipment_id: str, hours: int = 24) -> di
 async def _exec_compare_equipment(
     equipment_id_a: str, equipment_id_b: str, hours: int = 24
 ) -> dict:
-    import asyncio
     a = await _exec_get_timeseries_summary(equipment_id_a, hours)
     b = await _exec_get_timeseries_summary(equipment_id_b, hours)
 
@@ -275,7 +284,7 @@ async def _exec_get_anomaly_history(
     return {"total": len(results), "anomalies": results}
 
 
-async def _exec_retrieve_manual(
+async def _exec_search_knowledge_base(
     query: str,
     equipment_id: str | None = None,
     top_k: int = 4,
@@ -303,27 +312,55 @@ async def _exec_retrieve_manual(
 # ── Registry ─────────────────────────────────────────────────────────────────
 
 TOOL_EXECUTORS = {
-    "get_equipment_list":     _exec_get_equipment_list,
-    "compute_efficiency":     _exec_compute_efficiency,
-    "detect_anomalies":       _exec_detect_anomalies,
-    "get_timeseries_summary": _exec_get_timeseries_summary,
-    "compare_equipment":      _exec_compare_equipment,
-    "get_anomaly_history":    _exec_get_anomaly_history,
-    "retrieve_manual":        _exec_retrieve_manual,
+    "get_equipment_list":      _exec_get_equipment_list,
+    "compute_efficiency":      _exec_compute_efficiency,
+    "detect_anomalies":        _exec_detect_anomalies,
+    "get_timeseries_summary":  _exec_get_timeseries_summary,
+    "compare_equipment":       _exec_compare_equipment,
+    "get_anomaly_history":     _exec_get_anomaly_history,
+    "search_knowledge_base":   _exec_search_knowledge_base,
+    "retrieve_manual":         _exec_search_knowledge_base,  # backward compat — old model/tool name
 }
 
 
-async def execute_tool(name: str, args: dict) -> dict:
+async def execute_tool(
+    name: str,
+    args: dict,
+    *,
+    ctx: ToolContext | None = None,
+) -> dict:
+    _ = ctx  # reserved for pooled sessions / multi-tenant
     fn = TOOL_EXECUTORS.get(name)
     if not fn:
         log.warning("unknown_tool name=%s", name)
         return {"error": f"Unknown tool: {name}"}
     try:
-        out = await fn(**args)
+        import inspect as ip
+
+        sig = ip.signature(fn)
+        raw = dict(args or {})
+
+        accepts_var_kw = any(
+            p.kind == ip.Parameter.VAR_KEYWORD for p in sig.parameters.values()
+        )
+        if accepts_var_kw:
+            out = await fn(**raw)
+        else:
+            allowed = {
+                pname
+                for pname, param in sig.parameters.items()
+                if param.kind in (ip.Parameter.POSITIONAL_OR_KEYWORD, ip.Parameter.KEYWORD_ONLY)
+            }
+            filtered = {k: v for k, v in raw.items() if k in allowed}
+            out = await fn(**filtered)
+
         log.debug("tool_ok name=%s", name)
         # Sanitize before returning — MySQL returns Decimal for AVG/MAX, which
         # json.dumps in _sse() cannot handle.
         return _sanitize(out)
+    except TypeError as e:
+        log.warning("tool_bad_args name=%s err=%s args=%s", name, e, args)
+        return {"error": f"Invalid arguments for '{name}'. Expected valid parameters — got keys {list((args or {}).keys())}. {e}"}
     except Exception as e:
         log.exception("tool_failed name=%s", name)
         return {"error": str(e)}

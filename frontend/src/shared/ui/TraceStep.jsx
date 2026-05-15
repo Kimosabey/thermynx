@@ -12,7 +12,8 @@ const TOOL_META = {
   get_timeseries_summary: { label: "Timeseries Stats",  Icon: BarChart2 },
   compare_equipment:      { label: "Compare",           Icon: Columns2 },
   get_anomaly_history:    { label: "History",           Icon: History },
-  retrieve_manual:        { label: "Manual Lookup",     Icon: List },
+  retrieve_manual:         { label: "Manual Lookup",     Icon: List },
+  search_knowledge_base:   { label: "Knowledge Search", Icon: ScanSearch },
 };
 
 // Shimmer text for running state (Claude-style sweep)

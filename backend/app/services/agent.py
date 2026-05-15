@@ -16,7 +16,9 @@ from datetime import datetime, date
 from typing import AsyncIterator, Any
 
 from app.llm.ollama import chat, stream_chat_text
-from app.domain.tools import TOOL_SCHEMAS, execute_tool
+from app.errors import AppError, OllamaUnavailableError
+from app.domain.agent_payload import compact_agent_tool_payload
+from app.domain.tools import TOOL_SCHEMAS, ToolContext, execute_tool
 from app.config import settings
 from app.log import get_logger
 
@@ -101,55 +103,84 @@ async def run_agent(
         {"role": "user",   "content": user_msg},
     ]
 
+    agent_ctx = ToolContext()
+
     # ── ReAct loop ────────────────────────────────────────────────────────────
     step = 0
     for _ in range(MAX_STEPS):
         step += 1
         try:
             response = await chat(messages, tools=TOOL_SCHEMAS, model=model)
-        except Exception as e:
+        except OllamaUnavailableError as e:
+            log.warning("agent_ollama_unavailable run_id=%s step=%s", run_id, step)
+            yield _sse({"type": "error", "detail": e.detail})
+            return
+        except AppError as e:
+            log.warning("agent_app_error run_id=%s step=%s status=%s", run_id, step, e.status_code)
+            yield _sse({"type": "error", "detail": e.detail})
+            return
+        except Exception:
             log.exception("agent_chat_failed run_id=%s mode=%s step=%s", run_id, mode, step)
             yield _sse({"type": "error", "detail": "LLM request failed. Check server logs for details."})
             return
 
         msg = response.get("message", {})
 
-        # ── Case 1: model wants to call a tool ───────────────────────────────
+        # ── Case 1: model wants to call tool(s) ───────────────────────────────
         tool_calls = msg.get("tool_calls") or []
         if tool_calls:
-            tc = tool_calls[0]  # one tool at a time
-            fn   = tc.get("function", {})
-            name = fn.get("name", "")
-            args = fn.get("arguments", {})
+            tool_results_for_history: list[tuple[str, dict]] = []
 
-            # arguments may arrive as a string from some Ollama versions
-            if isinstance(args, str):
+            for ti, tc in enumerate(tool_calls):
+                fn   = tc.get("function", {})
+                name = fn.get("name", "")
+                args = fn.get("arguments", {})
+
+                if isinstance(args, str):
+                    try:
+                        args = json.loads(args)
+                    except Exception:
+                        args = {}
+
+                yield _sse({
+                    "type": "tool_call",
+                    "tool": name,
+                    "args": args,
+                    "step": step,
+                    "tool_index": ti,
+                })
+
                 try:
-                    args = json.loads(args)
-                except Exception:
-                    args = {}
+                    raw_result = await asyncio.wait_for(
+                        execute_tool(name, args, ctx=agent_ctx),
+                        timeout=30.0,
+                    )
+                except asyncio.TimeoutError:
+                    log.warning("agent_tool_timeout tool=%s run_id=%s step=%s", name, run_id, step)
+                    raw_result = {"error": f"Tool '{name}' timed out after 30 s — skipping."}
 
-            yield _sse({"type": "tool_call", "tool": name, "args": args, "step": step})
+                compact = compact_agent_tool_payload(name, raw_result)
+                log.debug("agent_tool_result tool=%s step=%s keys=%s", name, step, list(raw_result.keys())[:8])
+                yield _sse({
+                    "type": "tool_result",
+                    "tool": name,
+                    "result": compact,
+                    "step": step,
+                    "tool_index": ti,
+                })
+                tool_results_for_history.append((name, compact))
 
-            try:
-                result = await asyncio.wait_for(execute_tool(name, args), timeout=30.0)
-            except asyncio.TimeoutError:
-                log.warning("agent_tool_timeout tool=%s run_id=%s step=%s", name, run_id, step)
-                result = {"error": f"Tool '{name}' timed out after 30 s — skipping."}
-            log.debug("agent_tool_result tool=%s step=%s keys=%s", name, step, list(result.keys())[:8])
-            yield _sse({"type": "tool_result", "tool": name, "result": result, "step": step})
-
-            # Append assistant tool call + tool result to message history
             messages.append({
                 "role": "assistant",
                 "content": msg.get("content", ""),
-                "tool_calls": [tc],
+                "tool_calls": tool_calls,
             })
-            messages.append({
-                "role": "tool",
-                "content": json.dumps(result, default=str),
-                "name": name,
-            })
+            for name_i, compact_i in tool_results_for_history:
+                messages.append({
+                    "role": "tool",
+                    "content": json.dumps(compact_i, default=str),
+                    "name": name_i,
+                })
             continue  # next iteration
 
         # ── Case 2: model returns text — stream it as the final answer ────────
@@ -165,8 +196,15 @@ async def run_agent(
         else:
             # Edge case: empty content, ask model to summarize
             messages.append({"role": "user", "content": "Summarize your findings in the required format."})
-            async for chunk in stream_chat_text(messages, model=model):
-                yield _sse({"type": "token", "content": chunk})
+            try:
+                async for chunk in stream_chat_text(messages, model=model):
+                    yield _sse({"type": "token", "content": chunk})
+            except OllamaUnavailableError as e:
+                yield _sse({"type": "error", "detail": e.detail})
+                return
+            except AppError as e:
+                yield _sse({"type": "error", "detail": e.detail})
+                return
 
         total_ms = int((time.time() - start) * 1000)
         log.info(

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -13,6 +13,7 @@ from app.db.telemetry import (
 )
 from app.domain.equipment import EQUIPMENT_CATALOG
 from app.services import cache as cache_svc
+from app.limiter import limiter
 from app.log import get_logger
 
 router = APIRouter()
@@ -22,12 +23,15 @@ _SUMMARY_TTL = 20   # seconds — balance DB load vs dashboard freshness
 
 
 @router.get("/equipment")
-async def list_equipment():
+@limiter.limit("60/minute")
+async def list_equipment(request: Request):
     return EQUIPMENT_CATALOG
 
 
 @router.get("/equipment/summary")
+@limiter.limit("60/minute")
 async def equipment_summary(
+    request: Request,
     hours: int = Query(default=24, ge=1, le=8760),
     db: AsyncSession = Depends(get_db),
 ):

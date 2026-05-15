@@ -24,6 +24,7 @@
 15. [Render Architecture Diagrams](#15-render-architecture-diagrams)
 16. [Troubleshooting](#16-troubleshooting)
 17. [Something is on Fire](#17-something-is-on-fire)
+18. [Network & Port Reference](#18-network--port-reference)
 
 ---
 
@@ -42,7 +43,9 @@ Ctrl+C                                  # stop backend or frontend (in their ter
 docker compose down                     # stop Postgres + Redis
 
 # ── Health check ──────────────────────────────────────────────────────────────
+# Clickable: http://localhost:8000/healthz
 curl http://localhost:8000/healthz
+# Clickable: http://localhost:8000/api/v1/health
 curl http://localhost:8000/api/v1/health
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
@@ -104,6 +107,8 @@ INFO  Application startup complete.
 INFO  Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 ```
 
+> **Clickable API:** [http://localhost:8000](http://localhost:8000)
+
 > If you see `pgvector_extension_unavailable` — your Postgres image is wrong.
 > Fix: `docker compose down -v && docker compose up -d` (uses pgvector image).
 
@@ -124,7 +129,7 @@ Expected output:
   ➜  Network: use --host to expose
 ```
 
-Open **http://localhost:5173** in your browser. The Dashboard should load within 2 seconds.
+Open **[http://localhost:5173](http://localhost:5173)** in your browser. The Dashboard should load within 2 seconds.
 
 ---
 
@@ -267,6 +272,8 @@ docker compose logs --tail=100 api
 Alembic manages all schema changes to the Postgres `thermynx_app` database.
 
 > MySQL (`unicharm`) is read-only and customer-owned — **never** run migrations against it.
+
+On **API startup**, `uvicorn main:app` runs `alembic upgrade head` in a subprocess (see `backend/main.py`) so schema revisions apply before `create_all`. You should still run **`make migrate`** in CI/CD before serving traffic, and use the commands below when authoring new revisions.
 
 ---
 
@@ -967,3 +974,41 @@ uvicorn main:app --reload --port 8000
 ```
 
 > If none of the above resolves it, check `docs/FLAWS_AND_IMPROVEMENT_PLAN.md` for known issues, or open a new issue in the repo with the output of steps 2 and 5.
+
+---
+
+## 18. Network & Port Reference
+
+The platform relies on several services communicating over specific ports.
+
+### ── Application Services ──────────────────────────────────────────────────
+
+| Service | Port | Protocol | Scope | URL / Link | Description |
+|---------|------|----------|-------|------------|-------------|
+| **Frontend** | `5173` | HTTP | Local | [http://localhost:5173](http://localhost:5173) | Vite / React application |
+| **Backend (API)** | `8000` | HTTP | Local | [http://localhost:8000](http://localhost:8000) | FastAPI / Uvicorn server |
+| **Ollama API** | `11434` | HTTP | Remote | [http://100.125.103.28:11434](http://100.125.103.28:11434) | LLM Inference (Tailscale) |
+
+### ── Core Infrastructure (Docker) ─────────────────────────────────────────────
+
+| Service | Port | Protocol | Host Mapping | URL / Link | Description |
+|---------|------|----------|--------------|------------|-------------|
+| **PostgreSQL** | `5432` | TCP | `5432:5432` | `localhost:5432` | Application DB (PGVector) |
+| **Redis** | `6379` | TCP | `6379:6379` | `localhost:6379` | Cache & Message Broker |
+| **Redis Commander** | `8081` | HTTP | `8081:8081` | [http://localhost:8081](http://localhost:8081) | Redis GUI |
+| **MySQL** | `3307` | TCP | Remote | `localhost:3307` | Unicharm source database |
+
+### ── Observability Stack (Optional) ───────────────────────────────────────────
+
+*Started via: `docker compose --profile obs up -d`*
+
+| Service | Port | Protocol | Host Mapping | URL / Link | Description |
+|---------|------|----------|--------------|------------|-------------|
+| **Grafana** | `3000` | HTTP | `3000:3000` | [http://localhost:3000](http://localhost:3000) | Dashboards |
+| **Prometheus** | `9090` | HTTP | `9090:9090` | [http://localhost:9090](http://localhost:9090) | Metrics Scraper |
+| **Loki** | `3100` | HTTP | `3100:3100` | [http://localhost:3100](http://localhost:3100) | Log Aggregator |
+| **Promtail** | `9080` | HTTP | Internal | [http://localhost:9080](http://localhost:9080) | Log Shipper |
+| **Loki gRPC** | `9096` | gRPC | Internal | — | Loki internal comms |
+
+> [!TIP]
+> If a port is already in use, you can change it in `backend/.env` for the API, or in `docker-compose.yml` for infrastructure services. Remember to update the frontend's `proxy` settings in `vite.config.js` if the backend port changes.

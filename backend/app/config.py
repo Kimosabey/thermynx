@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     # Dev default: Vite + CRA local ports. Production: set to the deployed domain.
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
+    # Optional API key gate — comma-separated valid keys (empty disables auth).
+    # Send header: X-API-Key: <key>. Exemptions: GET /healthz, /metrics, /docs*, /openapi.json, /api/v1/health
+    API_KEYS: str = ""
+
     BACKEND_PORT: int = 8000
 
     # Phase 3 cost analytics — flat blended tariff (₹/kWh), POC default

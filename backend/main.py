@@ -2,9 +2,12 @@ from app.logging_setup import configure_logging
 
 configure_logging()
 
+import subprocess
+import sys
 import time
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +15,7 @@ from fastapi.responses import JSONResponse
 import asyncio
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.router import router
@@ -24,57 +28,51 @@ from app.log import get_logger
 
 log = get_logger("app")
 
+_BACKEND_DIR = Path(__file__).resolve().parent
+
+
+async def _alembic_upgrade() -> None:
+    """Apply DB migrations in a thread (avoids nested asyncio with Alembic's env)."""
+
+    def _run() -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, "-m", "alembic", "upgrade", "head"],
+            cwd=str(_BACKEND_DIR),
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+
+    try:
+        proc = await asyncio.to_thread(_run)
+    except subprocess.TimeoutExpired:
+        log.warning("alembic_upgrade_timeout")
+        return
+    if proc.returncode != 0:
+        log.warning(
+            "alembic_upgrade_failed code=%s stderr=%s",
+            proc.returncode,
+            (proc.stderr or "").strip()[:2000],
+        )
+    else:
+        log.info("alembic_upgrade_ok")
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    from sqlalchemy import text as _sql
-
     # ── 0. Redis (non-fatal — caching degrades gracefully if Redis is down) ──────────
     cache_svc.init_redis(settings.REDIS_URL)
 
-    # ── 1. Try to enable pgvector (own transaction — failure must not abort startup) ──
-    _pgvector_ok = False
-    try:
-        async with pg_engine.begin() as conn:
-            await conn.execute(_sql("CREATE EXTENSION IF NOT EXISTS vector"))
-            _pgvector_ok = True
-            log.info("pgvector_extension_ready")
-    except Exception as e:
-        log.warning(
-            "pgvector_extension_unavailable — RAG disabled until Postgres image "
-            "includes pgvector. Use image: pgvector/pgvector:pg16 in docker-compose. err=%s", e
-        )
+    # ── 1. Postgres schema version (Alembic: pgvector extension, tables, embeddings index)
+    await _alembic_upgrade()
 
-    # ── 2. Create all ORM tables (always runs, fresh transaction) ─────────────────────
+    # ── 2. Create any tables not yet in migrations (no-op when Alembic is current)
     async with pg_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     log.info("postgres_metadata_ready")
 
-    # ── 2b. Legacy repair: embeddings.embedding was TEXT; IVFFlat requires vector(768)
-    if _pgvector_ok:
-        try:
-            from app.db.embeddings_schema import ensure_embeddings_embedding_is_vector
-
-            async with pg_engine.begin() as conn:
-                await ensure_embeddings_embedding_is_vector(conn)
-        except Exception as e:
-            log.warning("embeddings_vector_column_fix_failed err=%s", e)
-
-    # ── 3. Create IVFFlat index (own transaction, only if pgvector is enabled) ────────
-    if _pgvector_ok:
-        try:
-            async with pg_engine.begin() as conn:
-                await conn.execute(_sql(
-                    "CREATE INDEX IF NOT EXISTS idx_embeddings_vec "
-                    "ON embeddings USING ivfflat (embedding vector_cosine_ops) "
-                    "WITH (lists=50)"
-                ))
-            log.info("ivfflat_index_ready")
-        except Exception as e:
-            log.warning("ivfflat_index_skipped err=%s", e)
-
-    # ── 4. arq worker (in-process for POC; run `make worker` for separate process) ──
+    # ── 3. arq worker (in-process for POC; run `make worker` for separate process) ──
     _worker_task: asyncio.Task | None = None
     try:
         from arq.worker import create_worker
@@ -115,6 +113,7 @@ app = FastAPI(
 
 # ── Rate limiting (slowapi) ───────────────────────────────────────────────────
 app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── Prometheus metrics at /metrics ────────────────────────────────────────────
@@ -156,6 +155,41 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+api_key_valid = frozenset(
+    k.strip() for k in (settings.API_KEYS or "").split(",") if k.strip()
+)
+
+
+@app.middleware("http")
+async def optional_api_key_gate(request: Request, call_next):
+    """Reject API calls missing X-API-Key when API_KEYS env is configured."""
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    path = request.url.path
+    if (
+        path in {"/healthz", "/metrics", "/", "/openapi.json"}
+        or path.startswith("/docs")
+        or path.startswith("/redoc")
+        or path.startswith("/api/v1/health")
+    ):
+        return await call_next(request)
+    if not api_key_valid:
+        return await call_next(request)
+    header = (
+        request.headers.get("x-api-key")
+        or request.headers.get("X-Api-Key")
+        or ""
+    ).strip()
+    auth = request.headers.get("authorization") or ""
+    if auth.lower().startswith("bearer "):
+        bearer = auth[7:].strip()
+        if bearer in api_key_valid:
+            return await call_next(request)
+    if header not in api_key_valid:
+        return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
+    return await call_next(request)
 
 
 @app.middleware("http")

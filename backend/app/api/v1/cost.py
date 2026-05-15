@@ -1,9 +1,10 @@
 from dataclasses import asdict
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analytics.cost import build_plant_cost
+from app.limiter import limiter
 from app.config import settings
 from app.db.session import get_db
 from app.db.telemetry import fetch_bucket_series
@@ -17,7 +18,9 @@ _TTL         = 300   # 5 minutes — cost figures change slowly
 
 
 @router.get("/cost")
+@limiter.limit("60/minute")
 async def get_plant_cost(
+    request: Request,
     hours: int = Query(default=24, ge=1, le=8760),
     tariff_inr_per_kwh: float | None = Query(default=None, ge=0),
     db: AsyncSession = Depends(get_db),

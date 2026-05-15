@@ -1,10 +1,11 @@
 from dataclasses import asdict
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.db.session import get_db, get_pg
+from app.limiter import limiter
 from app.db.telemetry import (
     fetch_chiller_data,
     fetch_equipment_data,
@@ -21,7 +22,9 @@ _LIVE_TTL = 30   # 30 s — live anomaly scan is expensive, limit repeat queries
 
 
 @router.get("/anomalies/live")
+@limiter.limit("60/minute")
 async def live_anomalies(
+    request: Request,
     hours: int = Query(default=1, ge=1, le=8760),
     db: AsyncSession = Depends(get_db),
 ):
@@ -49,7 +52,9 @@ async def live_anomalies(
 
 
 @router.get("/anomalies/history")
+@limiter.limit("60/minute")
 async def anomaly_history(
+    request: Request,
     limit: int = Query(default=50, ge=1, le=200),
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     equipment_id: str | None = None,

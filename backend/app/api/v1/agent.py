@@ -12,6 +12,7 @@ from app.services.agent import run_agent
 from app.limiter import limiter
 from app.config import settings
 from app.log import get_logger
+from app.errors import AppError
 
 router = APIRouter()
 log = get_logger("api.agent")
@@ -76,13 +77,24 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
                     status = "ok"
             except Exception:
                 pass
-    except Exception as e:
+    except AppError as e:
+        rid = getattr(request.state, "request_id", None)
+        log.warning(
+            "agent_run_app_error run_id=%s detail=%s request_id=%s",
+            run_id,
+            e.detail,
+            rid,
+        )
+        yield f"data: {json.dumps({'type':'error','detail':e.detail,'request_id':rid})}\n\n"
+        status = "error"
+    except Exception:
         log.exception(
             "agent_run_stream_error run_id=%s request_id=%s",
             run_id,
             getattr(request.state, "request_id", None),
         )
-        yield f"data: {json.dumps({'type':'error','detail':'Agent run failed.','request_id':getattr(request.state,'request_id',None)})}\n\n"
+        rid = getattr(request.state, "request_id", None)
+        yield f"data: {json.dumps({'type':'error','detail':'Agent run failed.','request_id':rid})}\n\n"
         status = "error"
 
     # Update run row

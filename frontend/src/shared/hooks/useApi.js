@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { apiFetch } from "../api/client";
 
 /**
  * Data-fetching hook with loading state, error handling, 30s timeout,
- * and request deduplication.
+ * and aborted requests discarded using a fetch generation counter (never no-ops mid-flight).
  *
  * Usage:
  *   const { data, isLoading, error, refetch } = useApi("/api/v1/equipment");
@@ -19,26 +20,31 @@ export default function useApi(url, { enabled = true, ttl, onSuccess } = {}) {
   const [data,      setData]      = useState(null);
   const [isLoading, setIsLoading] = useState(!!enabled);
   const [error,     setError]     = useState(null);
-  const abortRef  = useRef(null);
-  const inFlight  = useRef(false);
+  const abortRef     = useRef(null);
+  const fetchGenRef  = useRef(0);
 
   const fetchData = useCallback(async () => {
-    if (!url || inFlight.current) return;
+    if (!url) return;
 
-    inFlight.current = true;
-    setIsLoading(true);
-    setError(null);
+    // New attempt supersedes any in-flight fetch (fixes React Strict Mode + abort race
+    // where `inFlight` previously caused the follow-up fetch to no-op permanently).
+    fetchGenRef.current += 1;
+    const gen = fetchGenRef.current;
 
-    // Cancel any previous in-flight request
     abortRef.current?.abort();
     const controller  = new AbortController();
     abortRef.current  = controller;
+
+    const stillActive = () => gen === fetchGenRef.current;
+
+    setIsLoading(true);
+    setError(null);
 
     // 30-second timeout
     const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         signal: controller.signal,
         cache: "no-store",
       });
@@ -53,22 +59,27 @@ export default function useApi(url, { enabled = true, ttl, onSuccess } = {}) {
       }
 
       const json = await res.json();
-      setData(json);
-      onSuccess?.(json);
+      if (stillActive()) {
+        setData(json);
+        onSuccess?.(json);
+      }
     } catch (e) {
-      if (e.name === "AbortError") return;    // intentional cancel — not an error
-      setError(e.message || "Request failed");
+      if (e.name === "AbortError") return; // intentional cancel — not an error
+      if (stillActive()) setError(e.message || "Request failed");
     } finally {
       clearTimeout(timeoutId);
-      setIsLoading(false);
-      inFlight.current = false;
+      // Only flip loading after the latest attempt; aborted/stale completes must not steal UI state.
+      if (stillActive()) setIsLoading(false);
     }
   }, [url, onSuccess]);
 
   useEffect(() => {
     if (!enabled) return;
     fetchData();
-    return () => abortRef.current?.abort();
+    return () => {
+      fetchGenRef.current += 1;
+      abortRef.current?.abort();
+    };
   }, [enabled, fetchData]);
 
   // Auto-refetch on TTL

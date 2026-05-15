@@ -21,6 +21,7 @@ from app.services.rag import retrieve, format_rag_context
 from app.limiter import limiter
 from app.config import settings
 from app.log import get_logger
+from app.errors import OllamaUnavailableError, TelemetryUnavailableError
 
 router = APIRouter()
 log = get_logger("api.analyzer")
@@ -92,17 +93,42 @@ async def _sse_stream(
         ))
         await pg.commit()
 
+    telemetry_failed = False
+    summary: dict = {}
+    context: dict = {}
     async with MySQLSession() as db:
-        if req.equipment_id:
-            eq = get_by_id(req.equipment_id)
-            if eq and eq["type"] == "chiller":
-                rows = await fetch_chiller_data(db, eq["table"], hours=req.hours)
-                context = {req.equipment_id: rows}
+        try:
+            if req.equipment_id:
+                eq = get_by_id(req.equipment_id)
+                if eq and eq["type"] == "chiller":
+                    rows = await fetch_chiller_data(db, eq["table"], hours=req.hours)
+                    context = {req.equipment_id: rows}
+                else:
+                    context = await fetch_all_hvac_context(db, hours=req.hours)
             else:
                 context = await fetch_all_hvac_context(db, hours=req.hours)
-        else:
-            context = await fetch_all_hvac_context(db, hours=req.hours)
-        summary = await compute_summary(context)
+            summary = await compute_summary(context)
+        except Exception:
+            log.exception(
+                "analyze_mysql_failed audit_id=%s request_id=%s",
+                audit_id,
+                getattr(request.state, "request_id", None),
+            )
+            telemetry_failed = True
+            err = TelemetryUnavailableError()
+            yield f"data: {json.dumps({'type': 'error', 'detail': err.detail, 'request_id': getattr(request.state, 'request_id', None)})}\n\n"
+
+    if telemetry_failed:
+        total_ms = int(time.time() * 1000) - start_ms
+        yield f"data: {json.dumps({'type': 'done', 'audit_id': audit_id, 'model': model, 'total_ms': total_ms})}\n\n"
+        audit.prompt_hash = None
+        audit.response_hash = None
+        audit.tokens_estimated = 0
+        audit.total_ms = total_ms
+        audit.status = "error"
+        await pg.merge(audit)
+        await pg.commit()
+        return
 
     # RAG retrieval — inject relevant doc chunks before the prompt (graceful degradation)
     rag_chunks = await retrieve(pg, req.question, top_k=5, equipment_id=req.equipment_id)
@@ -126,7 +152,15 @@ async def _sse_stream(
             yield f"data: {json.dumps({'type': 'token', 'content': chunk})}\n\n"
         else:
             status = "ok"
-    except Exception as e:
+    except OllamaUnavailableError as e:
+        log.warning(
+            "analyze_ollama_unavailable audit_id=%s request_id=%s",
+            audit_id,
+            getattr(request.state, "request_id", None),
+        )
+        yield f"data: {json.dumps({'type': 'error', 'detail': e.detail, 'request_id': getattr(request.state, 'request_id', None)})}\n\n"
+        status = "error"
+    except Exception:
         log.exception(
             "analyze_stream_error audit_id=%s request_id=%s",
             audit_id,

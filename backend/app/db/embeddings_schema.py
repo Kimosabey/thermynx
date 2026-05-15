@@ -1,4 +1,8 @@
-"""Upgrade legacy `embeddings.embedding` from TEXT to pgvector `vector(768)`."""
+"""Upgrade legacy `embeddings.embedding` from TEXT to pgvector `vector(768)`.
+
+Prefer Alembic revision `0002_embeddings_vector_type` for schema changes at deploy time.
+This module remains for manual repair scripts only.
+"""
 
 from sqlalchemy import text
 
