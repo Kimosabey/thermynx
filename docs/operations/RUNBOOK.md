@@ -1,7 +1,7 @@
 # Graylinx — Operations Runbook
 
 > First time? → [`GETTING_STARTED.md`](./GETTING_STARTED.md)
-> API reference? → [`API_REFERENCE.md`](./API_REFERENCE.md)
+> API reference? → [`API_REFERENCE.md`](../reference/API_REFERENCE.md)
 
 ---
 

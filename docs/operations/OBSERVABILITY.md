@@ -1,6 +1,6 @@
 # Graylinx — Observability Stack
 
-> Reference docs: [RUNBOOK.md](./RUNBOOK.md) · [ENV_REFERENCE.md](./ENV_REFERENCE.md) · [FLAWS_AND_IMPROVEMENT_PLAN.md](./FLAWS_AND_IMPROVEMENT_PLAN.md)
+> Reference docs: [RUNBOOK.md](./RUNBOOK.md) · [ENV_REFERENCE.md](../reference/ENV_REFERENCE.md) · [FLAWS_AND_IMPROVEMENT_PLAN.md](../planning/FLAWS_AND_IMPROVEMENT_PLAN.md)
 
 ---
 
@@ -40,7 +40,7 @@ Even without starting the `obs` profile, the backend already exposes Prometheus 
 
 ### `/metrics` endpoint
 
-**File:** [backend/main.py](../backend/main.py#L119)
+**File:** [backend/main.py](../../backend/main.py#L119)
 
 ```python
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -53,7 +53,7 @@ This auto-instruments every FastAPI route and exposes standard metrics at:
 http://localhost:8000/metrics
 ```
 
-The `/metrics` path is excluded from the optional API key gate (see [backend/main.py](../backend/main.py#L172)).
+The `/metrics` path is excluded from the optional API key gate (see [backend/main.py](../../backend/main.py#L172)).
 
 ### What metrics are exposed
 
@@ -175,7 +175,7 @@ graylinx-promtail-1          grafana/promtail:2.9.0       Up
 
 ### Scrape config
 
-**File:** [monitoring/prometheus.yml](../monitoring/prometheus.yml)
+**File:** [monitoring/prometheus.yml](../../monitoring/prometheus.yml)
 
 ```yaml
 global:
@@ -241,7 +241,7 @@ Docker container logs → /var/run/docker.sock
 
 ### Promtail config
 
-**File:** [monitoring/promtail.yml](../monitoring/promtail.yml)
+**File:** [monitoring/promtail.yml](../../monitoring/promtail.yml)
 
 Promtail watches the Docker socket and auto-labels each log stream with:
 
@@ -305,7 +305,7 @@ Example query:
 
 ### Auto-provisioned datasources
 
-**File:** [monitoring/grafana/provisioning/datasources/datasources.yml](../monitoring/grafana/provisioning/datasources/datasources.yml)
+**File:** [monitoring/grafana/provisioning/datasources/datasources.yml](../../monitoring/grafana/provisioning/datasources/datasources.yml)
 
 On startup Grafana auto-creates two datasources — no manual setup needed:
 
@@ -354,10 +354,10 @@ Dashboard JSON is stored in the `grafana_data` Docker volume. To export a dashbo
 
 | File | Purpose | Key settings |
 |------|---------|-------------|
-| [monitoring/prometheus.yml](../monitoring/prometheus.yml) | Scrape targets | `job_name: thermynx-api`, target `host.docker.internal:8000`, interval 10s |
-| [monitoring/loki.yml](../monitoring/loki.yml) | Loki storage | Filesystem storage at `/tmp/loki`, HTTP port 3100, gRPC port 9096 |
-| [monitoring/promtail.yml](../monitoring/promtail.yml) | Log shipping | Docker socket discovery, pushes to `http://loki:3100/loki/api/v1/push` |
-| [monitoring/grafana/provisioning/datasources/datasources.yml](../monitoring/grafana/provisioning/datasources/datasources.yml) | Grafana datasources | Auto-provisions Prometheus (default) + Loki |
+| [monitoring/prometheus.yml](../../monitoring/prometheus.yml) | Scrape targets | `job_name: thermynx-api`, target `host.docker.internal:8000`, interval 10s |
+| [monitoring/loki.yml](../../monitoring/loki.yml) | Loki storage | Filesystem storage at `/tmp/loki`, HTTP port 3100, gRPC port 9096 |
+| [monitoring/promtail.yml](../../monitoring/promtail.yml) | Log shipping | Docker socket discovery, pushes to `http://loki:3100/loki/api/v1/push` |
+| [monitoring/grafana/provisioning/datasources/datasources.yml](../../monitoring/grafana/provisioning/datasources/datasources.yml) | Grafana datasources | Auto-provisions Prometheus (default) + Loki |
 
 ---
 
@@ -400,8 +400,8 @@ The observability stack is **partially complete**. These items remain open:
 | **Alertmanager deployment + alert rules** | P2 | 1 day | `loki.yml` references `alertmanager_url: http://localhost:9093` but Alertmanager is not in `docker-compose.yml`. Rules needed: anomaly rate > 5/hour, p99 > 5s, Ollama errors > 3/min. |
 | **Backend logs into Loki when running locally** | P2 | 2h | Promtail only ships Docker container logs. When backend runs via `uvicorn --reload` on the host, logs are not shipped. Fix: add a file-based scrape config in `promtail.yml` pointing at a log file, or run the backend in Docker. |
 | **OpenTelemetry distributed tracing** | P3 | 1 day | Trace IDs are not propagated from the backend through to Ollama HTTP calls. Add `opentelemetry-sdk` + `opentelemetry-instrumentation-httpx` to trace the full request path including LLM latency. |
-| **Data freshness warning** (P2-6) | P2 | 3h | When `TELEMETRY_TIME_ANCHOR=wall_clock` and MySQL data is stale by 30+ min, responses should include `data_freshness_warning`. See [FLAWS_AND_IMPROVEMENT_PLAN.md § P2-6](./FLAWS_AND_IMPROVEMENT_PLAN.md#p2-6--no-telemetry-freshness-validation-in-wall_clock-mode). |
-| **Broader AppError adoption** | P1 | 1 day | MySQL/Redis/Ollama failures still surface as generic 500s in some routes. See [AI_ROADMAP_AND_BACKLOG.md § 2.1](./AI_ROADMAP_AND_BACKLOG.md#21-reliability-and-parity). |
+| **Data freshness warning** (P2-6) | P2 | 3h | When `TELEMETRY_TIME_ANCHOR=wall_clock` and MySQL data is stale by 30+ min, responses should include `data_freshness_warning`. See [FLAWS_AND_IMPROVEMENT_PLAN.md § P2-6](../planning/FLAWS_AND_IMPROVEMENT_PLAN.md#p2-6--no-telemetry-freshness-validation-in-wall_clock-mode). |
+| **Broader AppError adoption** | P1 | 1 day | MySQL/Redis/Ollama failures still surface as generic 500s in some routes. See [AI_ROADMAP_AND_BACKLOG.md § 2.1](../planning/AI_ROADMAP_AND_BACKLOG.md#21-reliability-and-parity). |
 
 ---
 

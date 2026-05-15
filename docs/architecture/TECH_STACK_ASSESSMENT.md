@@ -78,4 +78,4 @@ Chakra UI + Recharts + Framer Motion are all fine choices. The UI looks polished
 5. **TypeScript** — migrate frontend; biggest maintenance payoff over time
 6. **Zustand** — shared selected-equipment and time-range state across pages
 
-> The product is well-architected at the backend but the frontend and infrastructure haven't been brought up to the same standard. For a single-facility internal tool at POC stage, it works. For a second customer site or a production SLA, these gaps hit hard. The Phase 5 sprint list in [`FLAWS_AND_IMPROVEMENT_PLAN.md`](./FLAWS_AND_IMPROVEMENT_PLAN.md) addresses them in the right priority order.
+> The product is well-architected at the backend but the frontend and infrastructure haven't been brought up to the same standard. For a single-facility internal tool at POC stage, it works. For a second customer site or a production SLA, these gaps hit hard. The Phase 5 sprint list in [`FLAWS_AND_IMPROVEMENT_PLAN.md`](../planning/FLAWS_AND_IMPROVEMENT_PLAN.md) addresses them in the right priority order.

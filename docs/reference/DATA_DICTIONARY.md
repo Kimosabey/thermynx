@@ -4,7 +4,7 @@ Quick reference to the `unicharm` MySQL tables Graylinx reads. **Read-only, no w
 
 **Full table/column layouts (MySQL + Postgres `thermynx_app`):** [DATABASE_SCHEMA_REFERENCE.md](./DATABASE_SCHEMA_REFERENCE.md)
 
-> Full DDL is in [`../unicharm_db_ddl.md`](../unicharm_db_ddl.md). This file is the curated subset we actually use.
+> Full DDL is in [`../../unicharm_db_ddl.md`](../../unicharm_db_ddl.md). This file is the curated subset we actually use.
 
 ## Source
 
@@ -155,4 +155,4 @@ if z > 3:
 
 ## Where Graylinx writes
 
-Graylinx **never** writes back to `unicharm`. All writes go to the separate Postgres `thermynx_app` DB (audit, threads, anomalies, rollups, embeddings) — see [`ARCHITECTURE.md` §6](./ARCHITECTURE.md#6-database-erd--thermynx_app) for the ERD.
+Graylinx **never** writes back to `unicharm`. All writes go to the separate Postgres `thermynx_app` DB (audit, threads, anomalies, rollups, embeddings) — see [`ARCHITECTURE.md` §6](../architecture/ARCHITECTURE.md#6-database-erd--thermynx_app) for the ERD.

@@ -8,7 +8,7 @@ Single FYI document for **where data lives**, **what columns exist**, and **how 
 
 | Database | Engine | Role | Graylinx access |
 |----------|--------|------|-----------------|
-| **`unicharm`** | MySQL 8 | Facility telemetry (normalized HVAC series + vendor tables) | **Read-only** (`SELECT`). Connection: `mysql+aiomysql://…` via [`backend/app/db/session.py`](../backend/app/db/session.py). |
+| **`unicharm`** | MySQL 8 | Facility telemetry (normalized HVAC series + vendor tables) | **Read-only** (`SELECT`). Connection: `mysql+aiomysql://…` via [`backend/app/db/session.py`](../../backend/app/db/session.py). |
 | **`thermynx_app`** | PostgreSQL 16 | App state (audit, anomalies, agents, threads) | **Read/write**. Connection: `POSTGRES_URL` in `.env`. Tables created by SQLAlchemy `Base.metadata.create_all` at startup. |
 
 > Credentials live in `backend/.env` — never commit real passwords. See [`.env.example`](../../.env.example).
@@ -19,7 +19,7 @@ Single FYI document for **where data lives**, **what columns exist**, and **how 
 
 ### 2.1 Equipment catalog → normalized table map
 
-Defined in [`backend/app/domain/equipment.py`](../backend/app/domain/equipment.py):
+Defined in [`backend/app/domain/equipment.py`](../../backend/app/domain/equipment.py):
 
 | Equipment ID | Logical name | MySQL table |
 |--------------|--------------|-------------|
@@ -30,7 +30,7 @@ Defined in [`backend/app/domain/equipment.py`](../backend/app/domain/equipment.p
 | `condenser_pump_1` | Condenser Pump 1-2 | `condenser_pump_0102_normalized` |
 | `condenser_pump_3` | Condenser Pump 3 | `condenser_pump_03_normalized` |
 
-### 2.2 Column subsets used in code ([`telemetry.py`](../backend/app/db/telemetry.py))
+### 2.2 Column subsets used in code ([`telemetry.py`](../../backend/app/db/telemetry.py))
 
 These are the **`SELECT` lists** the API uses (not every physical column):
 
@@ -168,7 +168,7 @@ The database also contains many facility tables (`building`, `floor`, `zone`, `d
 
 ## 5. PostgreSQL `thermynx_app` — application tables
 
-Created/managed by [`backend/app/db/models.py`](../backend/app/db/models.py). Verified layout (`psql \d`):
+Created/managed by [`backend/app/db/models.py`](../../backend/app/db/models.py). Verified layout (`psql \d`):
 
 ### 5.1 `analysis_audit`
 
@@ -257,8 +257,8 @@ docker compose exec postgres psql -U thermynx -d thermynx_app -c "\dt"
 | Doc | Purpose |
 |-----|---------|
 | [`DATA_DICTIONARY.md`](./DATA_DICTIONARY.md) | Curated metric meanings & SQL patterns |
-| [`RUNBOOK.md`](./RUNBOOK.md) | Ops commands, logs, reset |
-| [`../unicharm_db_ddl.md`](../unicharm_db_ddl.md) | Full MySQL DDL export (large) |
+| [`RUNBOOK.md`](../operations/RUNBOOK.md) | Ops commands, logs, reset |
+| [`../../unicharm_db_ddl.md`](../../unicharm_db_ddl.md) | Full MySQL DDL export (large) |
 
 ---
 

@@ -3,10 +3,10 @@
 The AI agent system uses a **ReAct (Reasoning + Acting)** loop: the LLM reasons about what to do, calls a tool, observes the result, reasons again, and so on until it can write a final answer.
 
 Source files:
-- Loop: [`backend/app/services/agent.py`](../backend/app/services/agent.py)
-- Tools: [`backend/app/domain/tools.py`](../backend/app/domain/tools.py)
-- Prompts: [`backend/app/prompts/hvac_prompts.py`](../backend/app/prompts/hvac_prompts.py)
-- Endpoint: [`backend/app/api/v1/agent.py`](../backend/app/api/v1/agent.py)
+- Loop: [`backend/app/services/agent.py`](../../backend/app/services/agent.py)
+- Tools: [`backend/app/domain/tools.py`](../../backend/app/domain/tools.py)
+- Prompts: [`backend/app/prompts/hvac_prompts.py`](../../backend/app/prompts/hvac_prompts.py)
+- Endpoint: [`backend/app/api/v1/agent.py`](../../backend/app/api/v1/agent.py)
 
 ---
 

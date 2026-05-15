@@ -6,7 +6,7 @@ All analytics live in `backend/app/analytics/` as **pure functions** — no data
 
 ## 1. Efficiency Analysis
 
-**File:** [`backend/app/analytics/efficiency.py`](../backend/app/analytics/efficiency.py)
+**File:** [`backend/app/analytics/efficiency.py`](../../backend/app/analytics/efficiency.py)
 
 ### kW/TR — What It Is
 
@@ -62,7 +62,7 @@ Multiple drivers can be active simultaneously.
 
 ## 2. Anomaly Detection
 
-**File:** [`backend/app/analytics/anomaly.py`](../backend/app/analytics/anomaly.py)
+**File:** [`backend/app/analytics/anomaly.py`](../../backend/app/analytics/anomaly.py)
 
 ### Z-Score Method
 
@@ -120,7 +120,7 @@ The anomaly scan job (`backend/app/jobs/anomaly_scan.py`) runs every 5 minutes v
 
 ## 3. Forecast
 
-**File:** [`backend/app/analytics/forecast.py`](../backend/app/analytics/forecast.py)
+**File:** [`backend/app/analytics/forecast.py`](../../backend/app/analytics/forecast.py)
 
 ### Current Method: Linear Trend Extrapolation
 
@@ -158,7 +158,7 @@ See `FLAWS_AND_IMPROVEMENT_PLAN.md` §P2-2 for the planned upgrade to seasonal d
 
 ## 4. Cost Analysis
 
-**File:** [`backend/app/analytics/cost.py`](../backend/app/analytics/cost.py)
+**File:** [`backend/app/analytics/cost.py`](../../backend/app/analytics/cost.py)
 
 ### Calculation
 
@@ -192,7 +192,7 @@ See `FLAWS_AND_IMPROVEMENT_PLAN.md` §P2-9 for the planned ToU tariff upgrade.
 
 ## 5. Maintenance Analysis
 
-**File:** [`backend/app/analytics/maintenance.py`](../backend/app/analytics/maintenance.py)
+**File:** [`backend/app/analytics/maintenance.py`](../../backend/app/analytics/maintenance.py)
 
 ### Run Hours
 
@@ -228,7 +228,7 @@ Clamped to [0, 100]. Graded: A (≥80), B (60–79), C (40–59), D (<40).
 
 ## 6. Cooling Tower Optimisation
 
-**File:** [`backend/app/analytics/tower_optimizer.py`](../backend/app/analytics/tower_optimizer.py)
+**File:** [`backend/app/analytics/tower_optimizer.py`](../../backend/app/analytics/tower_optimizer.py)
 
 ### Approach Temperature
 

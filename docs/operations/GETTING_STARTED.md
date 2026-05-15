@@ -63,7 +63,7 @@ If you see content streaming → the POC is working end-to-end.
 | MySQL `unicharm` | external, Tailscale-reachable | `:3307` |
 | Ollama | external server (Dell Pro Max Tower), Tailscale | `:11434` |
 
-See [`ARCHITECTURE.md` §7](./ARCHITECTURE.md#7-poc-deployment-topology) for the topology diagram.
+See [`ARCHITECTURE.md` §7](../architecture/ARCHITECTURE.md#7-poc-deployment-topology) for the topology diagram.
 
 ## Common gotchas
 
@@ -80,6 +80,6 @@ For deeper troubleshooting see [`RUNBOOK.md`](./RUNBOOK.md).
 
 ## Next steps
 
-- Review [`../BUILD_PLAN.md` §1A](../BUILD_PLAN.md) for current scope
-- Read [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the system mental model
-- Pick a Phase 1 deliverable from [`../BUILD_PLAN.md` §6](../BUILD_PLAN.md) and ship it
+- Review [`../../BUILD_PLAN.md` §1A](../../BUILD_PLAN.md) for current scope
+- Read [`ARCHITECTURE.md`](../architecture/ARCHITECTURE.md) for the system mental model
+- Pick a Phase 1 deliverable from [`../../BUILD_PLAN.md` §6](../../BUILD_PLAN.md) and ship it
