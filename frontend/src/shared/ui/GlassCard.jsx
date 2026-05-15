@@ -26,7 +26,7 @@ export default function GlassCard({
   hover = true,
   accent = false,
   glow = false,
-  p = 5,
+  p = { base: 4, md: 5 },
   ...props
 }) {
   const isTouch = useIsTouchDevice();

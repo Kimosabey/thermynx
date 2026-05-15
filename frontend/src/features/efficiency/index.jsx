@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Badge } from "@chakra-ui/react";
 import { Zap } from "lucide-react";
 import { motion } from "framer-motion";
@@ -79,7 +79,7 @@ function EfficiencyCard({ result }) {
       <GlassCard>
         {/* Header */}
         <Flex justify="space-between" align="center" mb={4}>
-          <Flex align="center" gap={2}>
+          <Flex align="center" gap={{ base: 2, sm: 3 }}>
             <StatusPulse active={isOn} />
             <Text fontWeight={700} fontSize="sm" color="text.primary">{result.name}</Text>
           </Flex>
@@ -199,7 +199,7 @@ export default function EfficiencyPage() {
       {/* Benchmark legend */}
       <GlassCard mb={6} p={4}>
         <Eyebrow mb={3}>kW/TR Benchmark Scale</Eyebrow>
-        <Flex gap={3} flexWrap="wrap">
+        <Flex gap={{ base: 2, sm: 3 }} flexWrap="wrap" align="center" w={{ base: "100%", xl: "auto" }} maxW="100%">
           {[
             { label: "Excellent", range: "< 0.55", color: "#10b981" },
             { label: "Good",      range: "0.55 – 0.65", color: "#00c4f4" },
@@ -218,7 +218,7 @@ export default function EfficiencyPage() {
         </Flex>
       </GlassCard>
 
-      <MotionGrid variants={stagger} initial="initial" animate="animate" templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={5}>
+      <MotionGrid variants={stagger} initial="initial" animate="animate" templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={{ base: 4, md: 5 }} mb={{ base: 6, md: 8 }}>
         {loading
           ? Array.from({ length: 2 }).map((_, i) => (
               <MotionBox key={i} variants={fadeUp}><SkeletonKpiCard /></MotionBox>

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Badge } from "@chakra-ui/react";
 import { Wrench as WrenchIcon } from "lucide-react";
 import { motion } from "framer-motion";
@@ -115,7 +115,7 @@ export default function MaintenancePage() {
         actions={<PeriodSelect value={hours} onChange={setHours} />}
       />
 
-      <MotionGrid variants={stagger} initial="initial" animate="animate" templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={5} mb={8}>
+      <MotionGrid variants={stagger} initial="initial" animate="animate" templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={{ base: 4, md: 5 }} mb={{ base: 6, md: 8 }}>
         {loading
           ? Array.from({ length: 4 }).map((_, i) => (
               <MotionBox key={i} variants={fadeUp}><SkeletonKpiCard /></MotionBox>
@@ -125,7 +125,7 @@ export default function MaintenancePage() {
       </MotionGrid>
 
       <Eyebrow mb={4}>Cooling tower staging hints</Eyebrow>
-      <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
+      <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={{ base: 3, md: 4 }}>
         {towerHints.map((h) => (
           <GlassCard key={h.equipment_id}>
             <Text fontWeight={700} fontSize="sm" mb={2}>{h.name}</Text>

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Box, Flex, Text, Select, Grid } from "@chakra-ui/react";
 import { Trophy, Columns2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -116,7 +116,7 @@ export default function ComparePage() {
         subtitle="Side-by-side equipment analysis — overlay chart + delta statistics"
         icon={<PageHeaderIcon icon={<Columns2 size={20} strokeWidth={1.85} />} />}
         actions={
-          <Flex gap={3} flexWrap="wrap" align="center" w={{ base: "100%", xl: "auto" }} maxW="100%">
+          <Flex gap={{ base: 2, sm: 3 }} flexWrap="wrap" align="center" w={{ base: "100%", xl: "auto" }} maxW="100%">
             <Select size="sm" value={eqA} onChange={(e) => setEqA(e.target.value)}
               aria-label="Equipment A"
               {...surfaceSelectProps}
@@ -154,7 +154,7 @@ export default function ComparePage() {
       {better && (
         <MotionBox variants={fadeUp} initial="initial" animate="animate" mb={5}>
           <GlassCard p={4} glow>
-            <Flex align="center" gap={3}>
+            <Flex align="center" gap={{ base: 2, sm: 3 }}>
               <Box color="status.good"><Trophy size={18} strokeWidth={2} /></Box>
               <Text fontSize="sm" color="text.primary">
                 <Text as="span" fontWeight={700} color="green.400">{better}</Text>

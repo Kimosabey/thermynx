@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Box, Flex, Grid, Text, Badge } from "@chakra-ui/react";
 import { LayoutDashboard } from "lucide-react";
 import { motion } from "framer-motion";
@@ -65,7 +65,7 @@ function EquipCard({ name, data, type }) {
   return (
     <MotionBox variants={fadeUp} minW={0}>
       <GlassCard p={4} minW={0}>
-        <Flex justify="space-between" align="flex-start" mb={4} gap={2} flexWrap="wrap">
+        <Flex justify="space-between" align="flex-start" mb={{ base: 3, md: 4 }} gap={2} flexWrap="wrap">
           <Flex align="center" gap={2} minW={0} flex="1 1 auto">
             <StatusPulse active={isOn} />
             <Box
@@ -190,7 +190,7 @@ export default function Dashboard() {
   const ollamaOk        = health?.ollama?.connected;
 
   return (
-    <PageShell>
+    <PageShell maxW="100%">
       <PageHeader
         title="Operations Dashboard"
         subtitle={`Unicharm HVAC Plant · Last ${SUMMARY_HOURS} hours`}
@@ -268,9 +268,9 @@ export default function Dashboard() {
       <ErrorAlert error={freshnessWarn} mb={4} />
       {summaryData?.empty_hint && (
         <Flex
-          mb={5}
+          mb={{ base: 4, md: 5 }}
           align="flex-start"
-          gap={3}
+          gap={{ base: 2, md: 3 }}
           bg="rgba(31,63,254,0.08)"
           border="1px solid"
           borderColor="rgba(31,63,254,0.22)"
@@ -304,7 +304,7 @@ export default function Dashboard() {
           xl: "repeat(3, minmax(0, 1fr))",
           "2xl": "repeat(6, minmax(0, 1fr))",
         }}
-        gap={{ base: 3, md: 4 }} mb={6} w="100%" minW={0}
+        gap={{ base: 3, md: 4 }} mb={{ base: 4, md: 6 }} w="100%" minW={0}
       >
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
@@ -369,7 +369,7 @@ export default function Dashboard() {
           lg: "repeat(2, minmax(0, 1fr))",
           xl: "repeat(3, minmax(0, 1fr))",
         }}
-        gap={4}
+        gap={{ base: 3, md: 4 }}
         w="100%"
         minW={0}
       >

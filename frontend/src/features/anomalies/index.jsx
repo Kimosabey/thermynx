@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Box, Flex, Text, Grid, Badge, Button } from "@chakra-ui/react";
 import { CheckCircleIcon } from "@chakra-ui/icons";
 import { TriangleAlert } from "lucide-react";
@@ -55,7 +55,7 @@ function AnomalyCard({ anomaly }) {
           </Flex>
         </Flex>
 
-        <Flex gap={4} mb={3}>
+        <Flex gap={{ base: 3, sm: 4, md: 6 }} mb={3}>
           <Box>
             <Eyebrow mb={1}>Value</Eyebrow>
             <Text fontSize="lg" fontWeight={700} color={meta.color} sx={{ fontVariantNumeric: "tabular-nums" }}>
@@ -168,7 +168,7 @@ export default function AnomaliesPage() {
       </Flex>
 
       {loading ? (
-        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={4}>
+        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={{ base: 3, md: 4 }}>
           {Array.from({ length: 4 }).map((_, i) => (
             <MotionBox key={i} variants={fadeUp} initial="initial" animate="animate">
               <SkeletonEquipCard />
@@ -178,7 +178,7 @@ export default function AnomaliesPage() {
       ) : anomalies.length === 0 ? (
         <EmptyState />
       ) : (
-        <MotionGrid variants={stagger} initial="initial" animate="animate" templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={4}>
+        <MotionGrid variants={stagger} initial="initial" animate="animate" templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={{ base: 3, md: 4 }}>
           {anomalies.map((a, i) => (
             <AnomalyCard key={`${a.equipment_id}-${a.metric}-${a.timestamp}-${i}`} anomaly={a} />
           ))}

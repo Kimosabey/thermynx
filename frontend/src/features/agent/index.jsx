@@ -12,7 +12,8 @@ import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import Chip from "../../shared/ui/Chip";
-import AgentRunner, { useAgentStream } from "./AgentRunner";
+import AgentRunner from "./AgentRunner";
+import { useAgentStream } from "./useAgentStream";
 
 const MotionBox = motion.create(Box);
 

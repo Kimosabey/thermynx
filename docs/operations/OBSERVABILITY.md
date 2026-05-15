@@ -1066,4 +1066,46 @@ Tracking what was done in case you wonder why a file changed:
 
 ---
 
-*Document last updated: 2026-05-15. All five obs items closed; one (full OTel/Tempo) intentionally deferred. Next update: when the Alertmanager receiver moves from stub to real channel.*
+## 24. Observability Stack — Verification Checklist (Test Cases)
+
+Run this checklist to verify the observability stack is fully functional. Mark each item: **[OK]** / **[FAIL]**.
+
+### 24.1 — Infrastructure Health
+- [ ] **Containers Up:** `make obs-status` shows 5 containers `Up`.
+- [ ] **Scrape Targets:** Prometheus [Status → Targets](http://localhost:9090/targets) shows `thermynx-api` as **UP** (green).
+- [ ] **Loki Ready:** [http://localhost:3100/ready](http://localhost:3100/ready) returns `ready`.
+- [ ] **Grafana Alive:** [http://localhost:3000](http://localhost:3000) loads without login.
+
+### 24.2 — Metrics Verification
+- [ ] **Standard HTTP Metrics:** `curl http://localhost:8000/metrics` includes `http_requests_total`.
+- [ ] **Custom Graylinx Metrics:** `make obs-curl-metrics` returns lines for:
+    - `graylinx_telemetry_data_age_seconds`
+    - `graylinx_agent_runs_total`
+    - `graylinx_analyzer_requests_total`
+    - `graylinx_anomalies_detected_total`
+- [ ] **Real-time Updates:** Refresh the API Overview dashboard; the "Request rate" panel should show activity after hitting any `/api/v1/` endpoint.
+
+### 24.3 — Logs & Correlation Verification
+- [ ] **Backend File Logs:** `ls logs/graylinx-api.log` exists and contains JSON records.
+- [ ] **Loki Ingestion:** Grafana → Explore → Loki → `{service="api"}` returns recent log lines.
+- [ ] **Structured Parsing:** In Loki Explore, check that `level` and `logger` are available as labels (not just in the message string).
+- [ ] **Request-ID Correlation:** 
+    1. Make an API call (e.g. `/api/v1/equipment`).
+    2. Note the `X-Request-Id` response header.
+    3. Query Loki: `{service="api"} |= "<request-id>"`.
+    4. **Expected:** Multiple lines appear (middleware start, handler logs, middleware end).
+
+### 24.4 — Alerts Verification
+- [ ] **Alert Rule Loading:** [Prometheus → Alerts](http://localhost:9090/alerts) shows 5 rules in **Inactive** state.
+- [ ] **Pipeline Test:** Run `make obs-test-alert`.
+- [ ] **Alertmanager Receipt:** [Alertmanager UI](http://localhost:9093) shows the `TestAlert` firing.
+- [ ] **Inhibition Rule:** (Optional) Stop the backend (`Ctrl+C`), wait 1m. `BackendDown` should fire and suppress other alerts.
+
+### 24.5 — Dashboard Provisioning
+- [ ] **API Overview:** Dashboard exists and shows "Backend up" tile as Green.
+- [ ] **AI Operations:** Dashboard exists and shows "Agent runs" trend.
+- [ ] **Data Freshness:** The "Telemetry data age" panel shows a value (usually 0s if `wall_clock=false`).
+
+---
+
+*Document last updated: 2026-05-15. Added Verification Checklist section. All five obs items closed; one (full OTel/Tempo) intentionally deferred.*

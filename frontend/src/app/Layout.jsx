@@ -23,7 +23,7 @@ export default function Layout() {
   }, [location.pathname]);
 
   return (
-    <Flex minH="100vh" bg="bg.canvas" align="stretch">
+    <Flex h="100vh" bg="bg.canvas" align="stretch" overflow="hidden">
       <Sidebar overlay={useDrawerNav} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
       <Box

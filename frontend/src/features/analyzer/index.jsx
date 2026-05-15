@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Box, Flex, Text, Textarea, Button, FormControl, FormLabel,
   HStack, Badge, Spinner, Select, Grid,
@@ -228,7 +228,7 @@ export default function AIAnalyzer() {
   const selectedEqObj = equipment.find((e) => e.id === selectedEq);
 
   return (
-    <PageShell maxW="1100px">
+    <PageShell maxW="1400px">
       <PageHeader
         title="AI Analyzer"
         subtitle="Ask anything about your HVAC plant — powered by local AI"
@@ -246,7 +246,7 @@ export default function AIAnalyzer() {
       />
 
       {/* Equipment + Time + Thread */}
-      <Flex gap={3} mb={5} flexWrap="wrap">
+      <Flex gap={{ base: 2, md: 3 }} mb={{ base: 4, md: 5 }} flexWrap="wrap">
         <FormControl flex="1" minW="180px">
           <FormLabel htmlFor="analyzer-equipment" fontSize="10px" letterSpacing="0.10em" textTransform="uppercase" color="text.muted" fontWeight={700} mb={2}>
             Equipment
@@ -324,7 +324,7 @@ export default function AIAnalyzer() {
       </Box>
 
       {/* Quick prompts */}
-      <Flex flexWrap="wrap" gap={2} mb={5}>
+      <Flex flexWrap="wrap" gap={{ base: 1.5, md: 2 }} mb={5}>
         {QUICK_PROMPTS.map((p, i) => (
           <Chip key={i} onClick={() => setQuestion(p)}>{p}</Chip>
         ))}

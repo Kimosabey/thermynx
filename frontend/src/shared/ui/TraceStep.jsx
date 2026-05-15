@@ -169,7 +169,8 @@ export default function TraceStep({ frame, status = "done" }) {
                 mt={2} p={2}
                 bg="bg.elevated" borderRadius="8px"
                 fontSize="10px" fontFamily="mono" color="text.muted"
-                maxH="120px" overflowY="auto"
+                maxH="150px" overflowY="auto" overflowX="auto"
+                whiteSpace="pre-wrap"
                 textAlign="left"
               >
                 {JSON.stringify(expandData, null, 2)}

@@ -95,6 +95,15 @@ const styles = {
       WebkitFontSmoothing: "antialiased",
       MozOsxFontSmoothing: "grayscale",
     },
+    "@keyframes shimmer-text": {
+      "0%":   { backgroundPosition: "200% 0" },
+      "100%": { backgroundPosition: "-200% 0" },
+    },
+    "@keyframes pulse-halo": {
+      "0%":   { boxShadow: "0 0 0 0 rgba(31,63,254,0.4)" },
+      "70%":  { boxShadow: "0 0 0 8px rgba(31,63,254,0)" },
+      "100%": { boxShadow: "0 0 0 0 rgba(31,63,254,0)" },
+    },
     "::selection": {
       bg: "rgba(31,63,254,0.15)",
       color: "#000F64",
