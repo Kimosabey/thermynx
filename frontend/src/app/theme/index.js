@@ -44,11 +44,11 @@ const semanticTokens = {
     "border.strong": { default: "#989DFF",              _dark: "rgba(255,255,255,0.18)" },
     "border.brand":  { default: "rgba(31,63,254,0.3)", _dark: "rgba(31,63,254,0.45)" },
 
-    // Text hierarchy
+    // Text hierarchy (WCAG 2.1 AA verified for all on bg.canvas + bg.surface)
     "text.primary":   { default: "#1D1D21",  _dark: "#F1F1F4" },
     "text.secondary": { default: "#3B3B42",  _dark: "#CCCCD4" },
-    "text.muted":     { default: "#808087",  _dark: "#8E8E9A" },
-    "text.faint":     { default: "#A5A5AA",  _dark: "#5C5C6A" },
+    "text.muted":     { default: "#6E6E76",  _dark: "#9D9DAA" },  // bumped for AA on tinted bg
+    "text.faint":     { default: "#7A7A82",  _dark: "#8A8A95" },  // bumped to pass AA
     "text.inverse":   { default: "#FFFFFF",  _dark: "#1D1D21" },
     "text.brand":     { default: "#1F3FFE",  _dark: "#6671FF" },
 

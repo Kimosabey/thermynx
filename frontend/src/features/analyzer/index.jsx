@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import {
-  Box, Flex, Text, Textarea, Button,
-  HStack, Badge, Spinner, Select, Grid, useToast,
+  Box, Flex, Text, Textarea, Button, FormControl, FormLabel,
+  HStack, Badge, Spinner, Select, Grid,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -13,6 +13,8 @@ import Eyebrow from "../../shared/ui/Eyebrow";
 import Chip from "../../shared/ui/Chip";
 import PeriodSelect, { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
+import ErrorAlert from "../../shared/ui/ErrorAlert";
+import useAppToast from "../../shared/hooks/useAppToast";
 import TimeseriesChart from "./TimeseriesChart";
 
 const MotionBox = motion.create(Box);
@@ -29,21 +31,25 @@ const QUICK_PROMPTS = [
 function MarkdownRenderer({ content }) {
   return (
     <Box
+      overflow="hidden"
+      maxW="100%"
       sx={{
         "h2,h3":   { fontWeight: 700, mt: 5, mb: 2, color: "text.primary" },
         h2:        { fontSize: "md", borderBottom: "1px solid", borderColor: "border.subtle", pb: 2 },
         h3:        { fontSize: "sm", color: "accent.cyan" },
-        p:         { mb: 3, lineHeight: 1.8, color: "text.primary", fontSize: "sm" },
+        p:         { mb: 3, lineHeight: 1.8, color: "text.primary", fontSize: "sm", wordBreak: "break-word" },
         "ul,ol":   { pl: 5, mb: 3 },
-        li:        { mb: 1, color: "text.primary", fontSize: "sm" },
+        li:        { mb: 1, color: "text.primary", fontSize: "sm", wordBreak: "break-word" },
         strong:    { color: "text.primary", fontWeight: 600 },
-        code:      { bg: "rgba(0,196,244,0.08)", px: "5px", py: "2px", borderRadius: "5px", fontSize: "0.82em", color: "brand.300", fontFamily: "mono" },
-        pre:       { bg: "rgba(0,0,0,0.4)", border: "1px solid", borderColor: "border.subtle", p: 4, borderRadius: "10px", overflowX: "auto", mb: 3, fontSize: "xs" },
-        table:     { width: "100%", borderCollapse: "collapse", mb: 3, fontSize: "sm" },
+        code:      { bg: "rgba(0,196,244,0.08)", px: "5px", py: "2px", borderRadius: "5px", fontSize: "0.82em", color: "brand.300", fontFamily: "mono", wordBreak: "break-all" },
+        pre:       { bg: "rgba(0,0,0,0.4)", border: "1px solid", borderColor: "border.subtle", p: 4, borderRadius: "10px", overflowX: "auto", maxW: "100%", mb: 3, fontSize: "xs" },
+        table:     { width: "100%", borderCollapse: "collapse", mb: 3, fontSize: "sm", display: "block", overflowX: "auto", maxW: "100%" },
         "th,td":   { border: "1px solid", borderColor: "border.subtle", px: 3, py: "6px", textAlign: "left" },
         th:        { bg: "bg.elevated", fontWeight: 600, fontSize: "xs", color: "text.muted" },
         td:        { color: "text.primary" },
         blockquote:{ borderLeft: "2px solid", borderColor: "accent.cyan", pl: 4, ml: 0, color: "text.muted", fontStyle: "italic", opacity: 0.8 },
+        img:       { maxW: "100%", height: "auto" },
+        a:         { color: "accent.cyan", wordBreak: "break-all" },
       }}
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
@@ -88,7 +94,7 @@ export default function AIAnalyzer() {
   const abortRef   = useRef(null);
   const bottomRef  = useRef(null);
   const threadRef  = useRef("");
-  const toast      = useToast();
+  const toast      = useAppToast();
 
   useEffect(() => { threadRef.current = activeThreadId; }, [activeThreadId]);
 
@@ -111,9 +117,9 @@ export default function AIAnalyzer() {
       await refreshThreads();
       setActiveThreadId(j.id);
       setThreadMessages([]);
-      toast({ title: "New conversation started", status: "success", duration: 2000 });
+      toast.success("New conversation started");
     } catch {
-      toast({ title: "Could not create thread", status: "error", duration: 3000 });
+      toast.error("Could not create thread", "Check the backend connection");
     }
   }
 
@@ -134,7 +140,7 @@ export default function AIAnalyzer() {
     fetch("/api/v1/equipment")
       .then((r) => r.json())
       .then(setEquipment)
-      .catch(() => toast({ title: "Could not load equipment list", status: "error", duration: 3000 }));
+      .catch(() => toast.error("Could not load equipment list"));
   }, []);
 
   useEffect(() => {
@@ -241,9 +247,12 @@ export default function AIAnalyzer() {
 
       {/* Equipment + Time + Thread */}
       <Flex gap={3} mb={5} flexWrap="wrap">
-        <Box flex="1" minW="180px">
-          <Eyebrow mb={2}>Equipment</Eyebrow>
+        <FormControl flex="1" minW="180px">
+          <FormLabel htmlFor="analyzer-equipment" fontSize="10px" letterSpacing="0.10em" textTransform="uppercase" color="text.muted" fontWeight={700} mb={2}>
+            Equipment
+          </FormLabel>
           <Select
+            id="analyzer-equipment"
             placeholder="All equipment"
             value={selectedEq}
             onChange={(e) => setSelectedEq(e.target.value)}
@@ -260,17 +269,22 @@ export default function AIAnalyzer() {
               );
             })}
           </Select>
-        </Box>
+        </FormControl>
 
-        <Box>
-          <Eyebrow mb={2}>Time window</Eyebrow>
-          <PeriodSelect value={hours} onChange={setHours} width="140px" />
-        </Box>
+        <FormControl w="auto">
+          <FormLabel htmlFor="analyzer-period" fontSize="10px" letterSpacing="0.10em" textTransform="uppercase" color="text.muted" fontWeight={700} mb={2}>
+            Time window
+          </FormLabel>
+          <PeriodSelect id="analyzer-period" value={hours} onChange={setHours} width="140px" />
+        </FormControl>
 
-        <Box flex="1" minW="220px">
-          <Eyebrow mb={2}>Conversation thread</Eyebrow>
+        <FormControl flex="1" minW="220px">
+          <FormLabel htmlFor="analyzer-thread" fontSize="10px" letterSpacing="0.10em" textTransform="uppercase" color="text.muted" fontWeight={700} mb={2}>
+            Conversation thread
+          </FormLabel>
           <Flex gap={2} flexWrap="wrap">
             <Select
+              id="analyzer-thread"
               placeholder="Memory off"
               value={activeThreadId}
               onChange={(e) => setActiveThreadId(e.target.value)}
@@ -283,11 +297,11 @@ export default function AIAnalyzer() {
                 <option key={t.id} value={t.id}>{t.title || t.id.slice(0, 8)}</option>
               ))}
             </Select>
-            <Button size="sm" variant="outline" borderRadius="10px" fontSize="xs" onClick={handleNewThread}>
+            <Button size="sm" variant="outline" borderRadius="10px" fontSize="xs" onClick={handleNewThread} minH="40px">
               New thread
             </Button>
           </Flex>
-        </Box>
+        </FormControl>
       </Flex>
 
       {threadMessages.length > 0 && (
@@ -318,27 +332,51 @@ export default function AIAnalyzer() {
 
       {/* Input */}
       <GlassCard p={4} mb={4}>
-        <Textarea
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAnalyze(); }}
-          placeholder="Ask about chiller efficiency, energy consumption, anomalies, maintenance…"
-          rows={3}
-          resize="vertical"
-          border="none"
-          bg="transparent"
-          _focus={{ outline: "none", boxShadow: "none" }}
-          fontSize="sm"
-          color="text.primary"
-          p={0}
-          _placeholder={{ color: "text.muted" }}
-        />
-        <Flex justify="space-between" align="center" mt={3} pt={3} borderTop="1px solid" borderColor="border.subtle">
-          <Text fontSize="xs" color="text.muted">Ctrl+Enter to send</Text>
+        <FormControl>
+          <FormLabel htmlFor="analyzer-question" srOnly>Your question about HVAC operations</FormLabel>
+          <Textarea
+            id="analyzer-question"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value.slice(0, 2000))}
+            onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAnalyze(); }}
+            placeholder="Ask about chiller efficiency, energy consumption, anomalies, maintenance…"
+            rows={3}
+            resize="vertical"
+            border="none"
+            bg="transparent"
+            _focus={{ outline: "none", boxShadow: "none" }}
+            fontSize="sm"
+            color="text.primary"
+            p={0}
+            _placeholder={{ color: "text.muted" }}
+            aria-describedby="analyzer-question-count"
+            maxLength={2000}
+          />
+        </FormControl>
+        <Flex justify="space-between" align="center" mt={3} pt={3} borderTop="1px solid" borderColor="border.subtle" flexWrap="wrap" gap={2}>
+          <HStack spacing={3}>
+            <Text fontSize="xs" color="text.muted">Ctrl+Enter to send</Text>
+            <Text
+              id="analyzer-question-count"
+              fontSize="10px"
+              fontWeight={600}
+              color={question.length >= 2000 ? "status.bad" : question.length > 1700 ? "status.warn" : "text.faint"}
+              sx={{ fontVariantNumeric: "tabular-nums" }}
+              aria-live="polite"
+            >
+              {question.length} / 2000
+            </Text>
+          </HStack>
           <HStack spacing={2}>
             {streaming && (
               <MotionBox whileTap={{ scale: 0.95 }}>
-                <Button size="sm" variant="glass" onClick={() => abortRef.current?.abort()} borderRadius="9px" fontSize="xs">
+                <Button
+                  size="sm" variant="glass"
+                  onClick={() => abortRef.current?.abort()}
+                  borderRadius="9px" fontSize="xs"
+                  aria-label="Stop generation"
+                  minH="40px"
+                >
                   Stop
                 </Button>
               </MotionBox>
@@ -349,6 +387,8 @@ export default function AIAnalyzer() {
                 isLoading={streaming} loadingText="Analyzing…"
                 borderRadius="9px" fontSize="xs" fontWeight={600}
                 px={5}
+                minH="40px"
+                isDisabled={!question.trim()}
               >
                 Analyze
               </Button>
@@ -357,11 +397,12 @@ export default function AIAnalyzer() {
         </Flex>
       </GlassCard>
 
-      {error && (
-        <GlassCard mb={4} p={3}>
-          <Text color="red.400" fontSize="sm">{error}</Text>
-        </GlassCard>
-      )}
+      <ErrorAlert
+        error={error}
+        onDismiss={() => setError(null)}
+        onRetry={() => { setError(null); handleAnalyze(); }}
+        mb={4}
+      />
 
       {/* Streaming response — chat bubble */}
       <AnimatePresence>
@@ -439,8 +480,17 @@ export default function AIAnalyzer() {
                 );
               })()}
 
-              {/* Markdown content */}
-              <Box px={{ base: 4, md: 6 }} py={5}>
+              {/* Markdown content — live region so screen readers hear streaming output */}
+              <Box
+                px={{ base: 4, md: 6 }}
+                py={5}
+                role="log"
+                aria-live="polite"
+                aria-atomic="false"
+                aria-relevant="additions text"
+                aria-busy={streaming}
+                aria-label="AI analysis response"
+              >
                 {streamContent
                   ? <MarkdownRenderer content={streamContent} />
                   : streaming && <ThinkingDots />

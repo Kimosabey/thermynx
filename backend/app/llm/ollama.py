@@ -6,6 +6,7 @@ import httpx
 from app.config import settings
 from app.errors import OllamaUnavailableError
 from app.log import get_logger
+from app.observability.context import current_request_id
 
 log = get_logger("llm.ollama")
 
@@ -13,10 +14,16 @@ TIMEOUT      = httpx.Timeout(120.0, connect=10.0)
 TOOL_TIMEOUT = httpx.Timeout(60.0,  connect=10.0)
 
 
+def _correlation_headers() -> dict[str, str]:
+    """Forward the current request's correlation ID to Ollama so its access
+    logs (if forwarded into Loki) can be joined back to backend traces."""
+    rid = current_request_id.get()
+    return {"X-Request-Id": rid} if rid else {}
+
 
 async def list_models() -> list[str]:
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+        async with httpx.AsyncClient(timeout=TIMEOUT, headers=_correlation_headers()) as client:
             resp = await client.get(f"{settings.OLLAMA_HOST}/api/tags")
             resp.raise_for_status()
             raw = resp.json().get("models", [])
@@ -31,14 +38,17 @@ async def list_models() -> list[str]:
             f"Cannot connect to Ollama at {settings.OLLAMA_HOST}."
         ) from e
 
-    log.debug("ollama_list_models count=%s", len(raw))
+    log.debug("ollama_list_models count=%s request_id=%s", len(raw), current_request_id.get())
     return [m["name"] for m in raw]
 
 
 async def stream_generate(prompt: str, model: str | None = None) -> AsyncIterator[str]:
     """Yield text chunks via /api/generate (prompt-based, no tool support)."""
     target = model or settings.OLLAMA_DEFAULT_MODEL
-    log.debug("stream_generate_start model=%s prompt_chars=%s", target, len(prompt))
+    log.debug(
+        "stream_generate_start model=%s prompt_chars=%s request_id=%s",
+        target, len(prompt), current_request_id.get(),
+    )
     payload = {
         "model": target,
         "prompt": prompt,
@@ -46,7 +56,7 @@ async def stream_generate(prompt: str, model: str | None = None) -> AsyncIterato
         "options": {"temperature": 0.3, "top_p": 0.9, "num_ctx": 8192},
     }
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+        async with httpx.AsyncClient(timeout=TIMEOUT, headers=_correlation_headers()) as client:
             async with client.stream(
                 "POST", f"{settings.OLLAMA_HOST}/api/generate", json=payload
             ) as resp:
@@ -96,7 +106,7 @@ async def chat(
     if tools:
         payload["tools"] = tools
 
-    async with httpx.AsyncClient(timeout=TOOL_TIMEOUT) as client:
+    async with httpx.AsyncClient(timeout=TOOL_TIMEOUT, headers=_correlation_headers()) as client:
         try:
             resp = await client.post(f"{settings.OLLAMA_HOST}/api/chat", json=payload)
             resp.raise_for_status()
@@ -113,10 +123,11 @@ async def chat(
             ) from e
 
     log.debug(
-        "chat_done model=%s has_tools=%s msg_chars=%s",
+        "chat_done model=%s has_tools=%s msg_chars=%s request_id=%s",
         target,
         bool(tools),
         len((data.get("message") or {}).get("content") or ""),
+        current_request_id.get(),
     )
     return data
 
@@ -127,14 +138,17 @@ async def stream_chat_text(
 ) -> AsyncIterator[str]:
     """Stream text chunks from /api/chat (final answer, no tools)."""
     target = model or settings.OLLAMA_DEFAULT_MODEL
-    log.debug("stream_chat_text_start model=%s messages=%s", target, len(messages))
+    log.debug(
+        "stream_chat_text_start model=%s messages=%s request_id=%s",
+        target, len(messages), current_request_id.get(),
+    )
     payload = {
         "model": target,
         "messages": messages,
         "stream": True,
         "options": {"temperature": 0.3, "top_p": 0.9, "num_ctx": 8192},
     }
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+    async with httpx.AsyncClient(timeout=TIMEOUT, headers=_correlation_headers()) as client:
         try:
             async with client.stream("POST", f"{settings.OLLAMA_HOST}/api/chat", json=payload) as resp:
                 resp.raise_for_status()

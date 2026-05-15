@@ -23,6 +23,7 @@ from app.config import settings
 from app.db.session import pg_engine, mysql_engine, Base
 from app.errors import AppError
 from app.limiter import limiter
+from app.observability.context import current_request_id
 from app.services import cache as cache_svc
 from app.log import get_logger
 
@@ -194,10 +195,19 @@ async def optional_api_key_gate(request: Request, call_next):
 
 @app.middleware("http")
 async def request_id_middleware(request: Request, call_next):
-    request_id = str(uuid.uuid4())
+    # Accept upstream-issued request IDs (e.g. nginx, load balancer) so traces
+    # remain stitched together across hops. Generate a new UUID only when none
+    # is present. Both forms set the ContextVar so downstream code (Ollama
+    # client, DB layer) can include the ID in their own logs without plumbing.
+    incoming = (request.headers.get("X-Request-Id") or "").strip()
+    request_id = incoming or str(uuid.uuid4())
     request.state.request_id = request_id
+    token = current_request_id.set(request_id)
     start = time.time()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    finally:
+        current_request_id.reset(token)
     elapsed_ms = round((time.time() - start) * 1000)
     response.headers["X-Request-Id"] = request_id
     response.headers["X-Response-Time-Ms"] = str(elapsed_ms)

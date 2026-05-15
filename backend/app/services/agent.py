@@ -21,6 +21,7 @@ from app.domain.agent_payload import compact_agent_tool_payload
 from app.domain.tools import TOOL_SCHEMAS, ToolContext, execute_tool
 from app.config import settings
 from app.log import get_logger
+from app.observability.metrics import agent_runs_total
 
 MAX_STEPS = 8
 
@@ -114,14 +115,17 @@ async def run_agent(
         except OllamaUnavailableError as e:
             log.warning("agent_ollama_unavailable run_id=%s step=%s", run_id, step)
             yield _sse({"type": "error", "detail": e.detail})
+            agent_runs_total.labels(mode=mode, status="error").inc()
             return
         except AppError as e:
             log.warning("agent_app_error run_id=%s step=%s status=%s", run_id, step, e.status_code)
             yield _sse({"type": "error", "detail": e.detail})
+            agent_runs_total.labels(mode=mode, status="error").inc()
             return
         except Exception:
             log.exception("agent_chat_failed run_id=%s mode=%s step=%s", run_id, mode, step)
             yield _sse({"type": "error", "detail": "LLM request failed. Check server logs for details."})
+            agent_runs_total.labels(mode=mode, status="error").inc()
             return
 
         msg = response.get("message", {})
@@ -201,9 +205,11 @@ async def run_agent(
                     yield _sse({"type": "token", "content": chunk})
             except OllamaUnavailableError as e:
                 yield _sse({"type": "error", "detail": e.detail})
+                agent_runs_total.labels(mode=mode, status="error").inc()
                 return
             except AppError as e:
                 yield _sse({"type": "error", "detail": e.detail})
+                agent_runs_total.labels(mode=mode, status="error").inc()
                 return
 
         total_ms = int((time.time() - start) * 1000)
@@ -216,8 +222,10 @@ async def run_agent(
             model,
         )
         yield _sse({"type": "done", "run_id": run_id, "steps": step, "total_ms": total_ms, "model": model})
+        agent_runs_total.labels(mode=mode, status="ok").inc()
         return
 
     # Hit max steps without a final answer
     log.warning("agent_max_steps run_id=%s mode=%s steps=%s", run_id, mode, MAX_STEPS)
     yield _sse({"type": "error", "detail": f"Agent reached max steps ({MAX_STEPS}) without a final answer."})
+    agent_runs_total.labels(mode=mode, status="error").inc()

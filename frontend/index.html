@@ -52,6 +52,34 @@
         border-radius: 4px;
       }
 
+      /* WCAG 2.4.1 — skip-to-content link */
+      .skip-link {
+        position: absolute;
+        top: -100%;
+        left: 1rem;
+        z-index: 9999;
+        padding: 0.5rem 1rem;
+        background: #1F3FFE;
+        color: #fff;
+        font-weight: 600;
+        font-size: 13px;
+        text-decoration: none;
+        border-radius: 0 0 8px 8px;
+        transition: top 0.12s ease;
+      }
+      .skip-link:focus { top: 0; }
+
+      /* WCAG 2.3.3 — respect prefers-reduced-motion (vestibular safety) */
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+
       /* Custom scrollbar */
       ::-webkit-scrollbar { width: 5px; height: 5px; }
       ::-webkit-scrollbar-track { background: transparent; }
@@ -73,6 +101,7 @@
     </style>
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -118,6 +118,7 @@ export default function ComparePage() {
         actions={
           <Flex gap={3} flexWrap="wrap" align="center" w={{ base: "100%", xl: "auto" }} maxW="100%">
             <Select size="sm" value={eqA} onChange={(e) => setEqA(e.target.value)}
+              aria-label="Equipment A"
               {...surfaceSelectProps}
               borderColor={`${COLORS.a}50`}
               color={COLORS.a}
@@ -127,8 +128,9 @@ export default function ComparePage() {
             >
               {equipment.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </Select>
-            <Text color="text.muted" fontSize="sm" fontWeight={700}>vs</Text>
+            <Text color="text.muted" fontSize="sm" fontWeight={700} aria-hidden="true">vs</Text>
             <Select size="sm" value={eqB} onChange={(e) => setEqB(e.target.value)}
+              aria-label="Equipment B"
               {...surfaceSelectProps}
               borderColor={`${COLORS.b}50`}
               color={COLORS.b}
@@ -138,7 +140,7 @@ export default function ComparePage() {
             >
               {equipment.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </Select>
-            <Select size="sm" value={hours} onChange={(e) => setHours(Number(e.target.value))} {...surfaceSelectProps} w="120px">
+            <Select size="sm" value={hours} onChange={(e) => setHours(Number(e.target.value))} aria-label="Time window" {...surfaceSelectProps} w="120px">
               <option value={6}>6 hours</option>
               <option value={12}>12 hours</option>
               <option value={24}>24 hours</option>

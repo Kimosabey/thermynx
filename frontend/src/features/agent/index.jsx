@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  Box, Flex, Text, Grid, Textarea, Select, Button,
+  Box, Flex, Text, Grid, Textarea, Select, Button, FormControl, FormLabel,
   Badge, HStack,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -130,7 +130,12 @@ function ModeCard({ mode, selected, onClick }) {
     >
       <Box
         as="button"
+        type="button"
+        role="radio"
+        aria-checked={selected}
+        aria-label={`${mode.label}: ${mode.tagline}`}
         w="full"
+        minH="44px"
         textAlign="left"
         onClick={onClick}
         bg={selected ? `linear-gradient(180deg, ${mode.color}14 0%, var(--chakra-colors-bg-surface) 70%)` : "bg.surface"}
@@ -232,26 +237,30 @@ export default function AgentHub() {
       />
 
       {/* Mode selector grid */}
-      <Grid
-        templateColumns={{
-          base: "repeat(2, minmax(0, 1fr))",
-          sm: "repeat(3, minmax(0, 1fr))",
-          lg: "repeat(5, minmax(0, 1fr))",
-        }}
-        gap={3}
-        mb={6}
-        w="100%"
-        minW={0}
-      >
-        {MODES.map((m) => (
-          <ModeCard
-            key={m.id}
-            mode={m}
-            selected={activeMode === m.id}
-            onClick={() => handleModeSwitch(m.id)}
-          />
-        ))}
-      </Grid>
+      <Box as="fieldset" border="none" p={0} m={0} mb={6}>
+        <Text as="legend" srOnly>Select agent mode</Text>
+        <Grid
+          templateColumns={{
+            base: "repeat(2, minmax(0, 1fr))",
+            sm: "repeat(3, minmax(0, 1fr))",
+            md: "repeat(5, minmax(0, 1fr))",
+          }}
+          gap={3}
+          w="100%"
+          minW={0}
+          role="radiogroup"
+          aria-label="Agent mode"
+        >
+          {MODES.map((m) => (
+            <ModeCard
+              key={m.id}
+              mode={m}
+              selected={activeMode === m.id}
+              onClick={() => handleModeSwitch(m.id)}
+            />
+          ))}
+        </Grid>
+      </Box>
 
       {/* Active mode config */}
       <AnimatePresence mode="wait">
@@ -283,9 +292,12 @@ export default function AgentHub() {
             {/* Context selectors */}
             {mode?.hasEquipment && (
               <Flex gap={3} mb={4} flexWrap="wrap">
-                <Box flex="1" minW="160px">
-                  <Eyebrow mb={1}>Equipment (optional)</Eyebrow>
+                <FormControl flex="1" minW="160px">
+                  <FormLabel htmlFor="agent-equipment" fontSize="10px" letterSpacing="0.10em" textTransform="uppercase" color="text.muted" fontWeight={700} mb={1}>
+                    Equipment (optional)
+                  </FormLabel>
                   <Select
+                    id="agent-equipment"
                     placeholder="All equipment"
                     value={selectedEq}
                     onChange={(e) => setSelectedEq(e.target.value)}
@@ -302,10 +314,13 @@ export default function AgentHub() {
                       );
                     })}
                   </Select>
-                </Box>
-                <Box>
-                  <Eyebrow mb={1}>Window</Eyebrow>
+                </FormControl>
+                <FormControl w="auto">
+                  <FormLabel htmlFor="agent-window" fontSize="10px" letterSpacing="0.10em" textTransform="uppercase" color="text.muted" fontWeight={700} mb={1}>
+                    Window
+                  </FormLabel>
                   <Select
+                    id="agent-window"
                     value={hours}
                     onChange={(e) => setHours(Number(e.target.value))}
                     w="130px"
@@ -317,7 +332,7 @@ export default function AgentHub() {
                     <option value={48}>48 hours</option>
                     <option value={168}>7 days</option>
                   </Select>
-                </Box>
+                </FormControl>
               </Flex>
             )}
 
@@ -329,32 +344,56 @@ export default function AgentHub() {
             </Flex>
 
             {/* Goal input */}
-            <Textarea
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleRun(); }}
-              placeholder={mode?.placeholder}
-              rows={3}
-              resize="vertical"
-              bg="bg.elevated"
-              border="1px solid"
-              borderColor="border.subtle"
-              borderRadius="10px"
-              _focus={{ borderColor: mode?.color ?? "accent.cyan", boxShadow: "none" }}
-              fontSize="sm"
-              color="text.primary"
-              _placeholder={{ color: "text.muted" }}
-              mb={3}
-            />
+            <FormControl mb={3}>
+              <FormLabel htmlFor="agent-goal" srOnly>Agent goal</FormLabel>
+              <Textarea
+                id="agent-goal"
+                value={goal}
+                onChange={(e) => setGoal(e.target.value.slice(0, 2000))}
+                onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleRun(); }}
+                placeholder={mode?.placeholder}
+                rows={3}
+                resize="vertical"
+                bg="bg.elevated"
+                border="1px solid"
+                borderColor="border.subtle"
+                borderRadius="10px"
+                _focus={{ borderColor: mode?.color ?? "accent.cyan", boxShadow: "none" }}
+                fontSize="sm"
+                color="text.primary"
+                _placeholder={{ color: "text.muted" }}
+                aria-describedby="agent-goal-count"
+                maxLength={2000}
+              />
+            </FormControl>
 
-            <Flex justify="space-between" align="center">
-              <Text fontSize="xs" color="text.muted">Ctrl+Enter to run</Text>
+            <Flex justify="space-between" align="center" flexWrap="wrap" gap={2}>
+              <HStack spacing={3}>
+                <Text fontSize="xs" color="text.muted">Ctrl+Enter to run</Text>
+                <Text
+                  id="agent-goal-count"
+                  fontSize="10px"
+                  fontWeight={600}
+                  color={goal.length >= 2000 ? "status.bad" : goal.length > 1700 ? "status.warn" : "text.faint"}
+                  sx={{ fontVariantNumeric: "tabular-nums" }}
+                  aria-live="polite"
+                >
+                  {goal.length} / 2000
+                </Text>
+              </HStack>
               <HStack spacing={2}>
                 {running && (
                   <Box
-                    as="button" onClick={stop}
-                    fontSize="xs" color="red.400" px={3} py="6px"
-                    borderRadius="8px" border="1px solid rgba(239,68,68,0.3)"
+                    as="button"
+                    type="button"
+                    onClick={stop}
+                    aria-label="Stop agent"
+                    fontSize="xs"
+                    color="red.400"
+                    px={3}
+                    minH="40px"
+                    borderRadius="8px"
+                    border="1px solid rgba(239,68,68,0.3)"
                     bg="rgba(239,68,68,0.08)"
                     _hover={{ bg: "rgba(239,68,68,0.15)" }}
                     transition="all 0.15s"
@@ -368,6 +407,7 @@ export default function AgentHub() {
                     isLoading={running}
                     loadingText="Agent working…"
                     borderRadius="9px" fontWeight={600} px={5}
+                    minH="40px"
                     bg={mode?.color ?? "brand.500"}
                     color="#060d1f"
                     _hover={{ opacity: 0.9, transform: "translateY(-1px)" }}

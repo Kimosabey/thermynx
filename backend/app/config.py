@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     LOG_ACCESS: bool = True
     LOG_SQL_ECHO: bool = False
 
+    # Optional log file (always JSON regardless of LOG_JSON). Promtail tails this
+    # path to ship logs into Loki when the backend runs outside Docker. Leave
+    # empty to disable file logging (stdout only).
+    LOG_FILE: str = ""
+    LOG_FILE_MAX_BYTES: int = 10 * 1024 * 1024   # 10 MB per file
+    LOG_FILE_BACKUP_COUNT: int = 5               # keep last 5 rotated files
+
     class Config:
         env_file = ".env"
 

@@ -50,8 +50,23 @@ services:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus.alerts.yml:/etc/prometheus/prometheus.alerts.yml:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"   # reach backend running on host
+    restart: unless-stopped
+    depends_on: [alertmanager]
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    profiles: [obs]
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
     restart: unless-stopped
 
   loki:
@@ -71,6 +86,8 @@ services:
     volumes:
       - ./monitoring/promtail.yml:/etc/promtail/config.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Backend log file (uvicorn on host writes here when LOG_FILE is set in backend/.env)
+      - ./logs:/var/log/graylinx:ro
     command: -config.file=/etc/promtail/config.yml
     depends_on: [loki]
     restart: unless-stopped
@@ -94,3 +111,4 @@ volumes:
   postgres_data:
   loki_data:
   grafana_data:
+  alertmanager_data:

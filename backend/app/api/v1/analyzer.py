@@ -22,6 +22,7 @@ from app.limiter import limiter
 from app.config import settings
 from app.log import get_logger
 from app.errors import OllamaUnavailableError, TelemetryUnavailableError
+from app.observability.metrics import analyzer_requests_total
 
 router = APIRouter()
 log = get_logger("api.analyzer")
@@ -128,6 +129,7 @@ async def _sse_stream(
         audit.status = "error"
         await pg.merge(audit)
         await pg.commit()
+        analyzer_requests_total.labels(status="error").inc()
         return
 
     # RAG retrieval — inject relevant doc chunks before the prompt (graceful degradation)
@@ -180,6 +182,11 @@ async def _sse_stream(
     audit.status = status
     await pg.merge(audit)
     await pg.commit()
+
+    # Custom metric — bucket terminal status as ok | error | aborted
+    analyzer_requests_total.labels(
+        status=("ok" if status == "ok" else "aborted" if status == "cancelled" else "error")
+    ).inc()
 
     log.info(
         "analyze_stream_done audit_id=%s status=%s total_ms=%s request_id=%s",

@@ -1,4 +1,4 @@
-.PHONY: dev deps stop reset logs obs obs-stop worker migrate migrate-create migrate-stamp
+.PHONY: dev deps stop reset logs obs obs-stop obs-status obs-logs obs-reload obs-test-alert obs-curl-metrics worker migrate migrate-create migrate-stamp
 
 # Start stateful deps (Postgres + Redis + Redis Commander UI)
 deps:
@@ -41,12 +41,57 @@ logs:
 # Start observability stack (Grafana at http://localhost:3000)
 obs:
 	docker compose --profile obs up -d
-	@echo "Grafana →  http://localhost:3000  (no login required)"
-	@echo "Prometheus → http://localhost:9090"
-	@echo "Loki  →  http://localhost:3100"
+	@echo ""
+	@echo "  Grafana       →  http://localhost:3000  (no login)"
+	@echo "  Prometheus    →  http://localhost:9090  (Alerts tab: /alerts)"
+	@echo "  Alertmanager  →  http://localhost:9093"
+	@echo "  Loki          →  http://localhost:3100  (query via Grafana)"
+	@echo ""
+	@echo "  Pre-built dashboard:  Grafana → Dashboards → Graylinx folder"
+	@echo ""
+	@echo "  Backend logs into Loki require LOG_FILE=./logs/graylinx-api.log in backend/.env"
 
 obs-stop:
 	docker compose --profile obs down
+
+# Show health of every obs container at a glance
+obs-status:
+	@docker compose ps --filter "label=com.docker.compose.service=prometheus" \
+	                   --filter "label=com.docker.compose.service=alertmanager" \
+	                   --filter "label=com.docker.compose.service=loki" \
+	                   --filter "label=com.docker.compose.service=promtail" \
+	                   --filter "label=com.docker.compose.service=grafana"
+	@echo ""
+	@echo "Scrape state (backend reachable?):"
+	@curl -s http://localhost:9090/api/v1/targets 2>/dev/null | grep -o '"health":"[^"]*"' | head -3 || echo "  (Prometheus not reachable)"
+	@echo ""
+	@echo "Active alerts:"
+	@curl -s http://localhost:9093/api/v2/alerts 2>/dev/null | python -c "import json,sys; alerts=json.load(sys.stdin); print(f'  {len(alerts)} firing') if alerts else print('  (none)')" 2>/dev/null || echo "  (Alertmanager not reachable)"
+
+# Tail logs of all obs containers
+obs-logs:
+	docker compose --profile obs logs -f --tail=50
+
+# Reload Prometheus + Alertmanager configs without restart (after editing YAML)
+obs-reload:
+	@echo "Reloading Prometheus config..."
+	@curl -X POST http://localhost:9090/-/reload && echo "  ok"
+	@echo "Reloading Alertmanager config..."
+	@curl -X POST http://localhost:9093/-/reload && echo "  ok"
+
+# Verify the backend /metrics endpoint exposes Graylinx custom metrics
+obs-curl-metrics:
+	@echo "Custom Graylinx metrics:"
+	@curl -s http://localhost:8000/metrics | grep -E "^graylinx_" || echo "  (none — is the backend running?)"
+
+# Fire a synthetic alert to verify the Alertmanager pipeline end-to-end
+obs-test-alert:
+	@echo "Sending synthetic test alert to Alertmanager..."
+	@curl -X POST http://localhost:9093/api/v2/alerts \
+	  -H "Content-Type: application/json" \
+	  -d '[{"labels":{"alertname":"TestAlert","severity":"warning","job":"thermynx-api"},"annotations":{"summary":"Test alert from `make obs-test-alert`","description":"If you see this in Alertmanager UI, the pipeline works."}}]'
+	@echo ""
+	@echo "  → Open http://localhost:9093 to verify it appears"
 
 # ── arq job worker ────────────────────────────────────────────────────────────
 

@@ -1,0 +1,4 @@
+# Track this dir for the docker-compose bind mount but ignore actual log files.
+*
+!.gitkeep
+!.gitignore

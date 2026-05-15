@@ -9,6 +9,7 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
+  # ── Docker container logs (postgres, redis, etc.) ────────────────────────────
   - job_name: docker-containers
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
@@ -21,3 +22,30 @@ scrape_configs:
         target_label: logstream
       - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
         target_label: service
+
+  # ── Backend log file (uvicorn on host writes JSON to logs/graylinx-api.log) ──
+  # Bind-mounted into this container via docker-compose. Only emits entries when
+  # the backend has LOG_FILE configured (default: ./logs/graylinx-api.log).
+  - job_name: graylinx-api-file
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: graylinx-api
+          service: api
+          source: file
+          __path__: /var/log/graylinx/*.log
+    pipeline_stages:
+      # File is JSON one-line-per-record (see logging_setup.JsonFormatter).
+      - json:
+          expressions:
+            ts: ts
+            level: level
+            logger: logger
+            msg: msg
+      - labels:
+          level:
+          logger:
+      - timestamp:
+          source: ts
+          format: RFC3339Nano

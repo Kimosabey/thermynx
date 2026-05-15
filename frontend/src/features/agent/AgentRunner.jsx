@@ -148,19 +148,21 @@ function TraceStep({ frame, index }) {
 
 function MarkdownOutput({ content }) {
   return (
-    <Box sx={{
+    <Box overflow="hidden" maxW="100%" sx={{
       "h2,h3":  { fontWeight: 700, mt: 4, mb: 2, color: "text.primary" },
       h2:       { fontSize: "md", borderBottom: "1px solid", borderColor: "border.subtle", pb: 2 },
       h3:       { fontSize: "sm", color: "accent.primary" },
-      p:        { mb: 3, lineHeight: 1.8, color: "text.primary", fontSize: "sm" },
+      p:        { mb: 3, lineHeight: 1.8, color: "text.primary", fontSize: "sm", wordBreak: "break-word" },
       "ul,ol":  { pl: 5, mb: 3 },
-      li:       { mb: 1, color: "text.primary", fontSize: "sm" },
+      li:       { mb: 1, color: "text.primary", fontSize: "sm", wordBreak: "break-word" },
       strong:   { color: "text.primary", fontWeight: 700 },
-      code:     { bg: "rgba(31,63,254,0.06)", px: "5px", py: "2px", borderRadius: "5px", fontSize: "0.82em", color: "accent.primary", fontFamily: "mono" },
-      pre:      { bg: "#F4F7FF", border: "1px solid", borderColor: "border.subtle", p: 4, borderRadius: "10px", overflowX: "auto", mb: 3, fontSize: "xs" },
-      table:    { width: "100%", borderCollapse: "collapse", mb: 3, fontSize: "sm" },
+      code:     { bg: "rgba(31,63,254,0.06)", px: "5px", py: "2px", borderRadius: "5px", fontSize: "0.82em", color: "accent.primary", fontFamily: "mono", wordBreak: "break-all" },
+      pre:      { bg: "#F4F7FF", border: "1px solid", borderColor: "border.subtle", p: 4, borderRadius: "10px", overflowX: "auto", maxW: "100%", mb: 3, fontSize: "xs" },
+      table:    { width: "100%", borderCollapse: "collapse", mb: 3, fontSize: "sm", display: "block", overflowX: "auto", maxW: "100%" },
       "th,td":  { border: "1px solid", borderColor: "border.subtle", px: 3, py: "6px" },
       th:       { bg: "bg.elevated", fontWeight: 600, fontSize: "xs", color: "text.muted" },
+      img:      { maxW: "100%", height: "auto" },
+      a:        { color: "accent.primary", wordBreak: "break-all" },
     }}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </Box>
@@ -268,7 +270,16 @@ export default function AgentRunner({ trace, output, running, done, meta, error 
         {/* Left: reasoning trace */}
         <Box minW={0}>
           <Eyebrow mb={3}>Reasoning Trace</Eyebrow>
-          <GlassCard p={4} maxH={{ base: "none", lg: "min(62vh, 560px)" }} overflowY="auto">
+          <GlassCard
+            p={4}
+            maxH={{ base: "none", lg: "min(62vh, 560px)" }}
+            overflowY="auto"
+            role="log"
+            aria-live="polite"
+            aria-atomic="false"
+            aria-relevant="additions"
+            aria-label="Agent reasoning steps"
+          >
           <Box position="relative" pl="24px" pr={1}>
             {/* Vertical rail — gutter matches TraceStep dot offset (-22px) */}
             {trace.length > 0 && (
@@ -331,9 +342,19 @@ export default function AgentRunner({ trace, output, running, done, meta, error 
             </HStack>
           </Flex>
 
-          <Box px={{ base: 4, md: 6 }} py={5} minH="100px">
+          <Box
+            px={{ base: 4, md: 6 }}
+            py={5}
+            minH="100px"
+            role="log"
+            aria-live="polite"
+            aria-atomic="false"
+            aria-relevant="additions text"
+            aria-busy={running}
+            aria-label="Agent final answer"
+          >
             {error
-              ? <Text color="red.400" fontSize="sm">{error}</Text>
+              ? <Text role="alert" color="red.400" fontSize="sm">{error}</Text>
               : output
                 ? <MarkdownOutput content={output} />
                 : running

@@ -12,6 +12,7 @@ from app.domain.equipment import EQUIPMENT_CATALOG
 from app.analytics.anomaly import (
     detect_anomalies, CHILLER_METRICS, TOWER_PUMP_METRICS
 )
+from app.observability.metrics import anomalies_detected_total
 
 log = get_logger("jobs.anomaly_scan")
 
@@ -62,6 +63,10 @@ async def _scan_once():
                                     "description":   ev.description,
                                 }
                             )
+                            anomalies_detected_total.labels(
+                                equipment_id=ev.equipment_id,
+                                severity=ev.severity,
+                            ).inc()
                         await pg.commit()
                     found += len(events)
 

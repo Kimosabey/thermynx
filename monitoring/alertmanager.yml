@@ -1,0 +1,28 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: default
+
+receivers:
+  # Default receiver: writes alerts to a log via webhook stub. Replace `url`
+  # with a real Slack/Teams/email/PagerDuty webhook when you wire up real
+  # delivery. For now, alerts fire silently and can be inspected at the
+  # Alertmanager UI (http://localhost:9093).
+  - name: default
+    webhook_configs:
+      - url: http://host.docker.internal:9099/alert-sink
+        send_resolved: true
+
+inhibit_rules:
+  # When the backend is down, suppress derived alerts (error rate, latency,
+  # data age) — they would just add noise.
+  - source_matchers:
+      - alertname = "BackendDown"
+    target_matchers:
+      - severity =~ "warning|critical"
+    equal: ['job']

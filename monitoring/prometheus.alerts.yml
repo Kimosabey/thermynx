@@ -1,0 +1,65 @@
+groups:
+  - name: graylinx-api
+    interval: 30s
+    rules:
+
+      # ── Liveness ────────────────────────────────────────────────────────────
+      - alert: BackendDown
+        expr: up{job="thermynx-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Graylinx backend is unreachable"
+          description: "Prometheus could not scrape thermynx-api at host.docker.internal:8000 for 1 minute. Check `docker compose ps`, uvicorn process, and host firewall."
+
+      # ── Reliability ─────────────────────────────────────────────────────────
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{job="thermynx-api",status=~"5.."}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backend 5xx error rate > 0.1/s (5m avg)"
+          description: "Sustained server errors — likely Ollama/MySQL/Redis dependency failure. Check `/api/v1/health` and recent logs in Loki (level=ERROR)."
+
+      - alert: HighLatencyP99
+        expr: histogram_quantile(0.99, sum by (handler, le) (rate(http_request_duration_seconds_bucket{job="thermynx-api"}[5m]))) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p99 latency > 5s on {{ $labels.handler }}"
+          description: "Endpoint {{ $labels.handler }} has p99 latency above 5 seconds for 5 minutes. Likely culprits: slow MySQL queries, Ollama cold-start, agent loop runaway."
+
+      # ── Data quality ────────────────────────────────────────────────────────
+      - alert: TelemetryStale
+        expr: graylinx_telemetry_data_age_seconds > 1800
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Telemetry data > 30 min old"
+          description: "Newest row in MySQL is {{ $value | humanizeDuration }} old. The Unicharm data feed may be down — check upstream ingestion and Tailscale."
+
+      # ── LLM / Ollama ────────────────────────────────────────────────────────
+      - alert: OllamaErrorRate
+        expr: sum(rate(http_requests_total{job="thermynx-api",handler=~"/api/v1/(analyze|agent/run)",status=~"5.."}[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ollama-dependent endpoints failing"
+          description: "Analyze / agent endpoints have 5xx > 0.05/s for 5 minutes. Likely Ollama box offline or model not loaded — verify `ollama list` on the GPU host."
+
+      # ── Anomaly volume (Loki-based — requires Loki ruler, optional) ─────────
+      # Documented here for reference; uncomment and move to a Loki ruler config
+      # once the Loki ruler is wired up.
+      # - alert: AnomalyRateSpike
+      #   expr: sum(rate({service="api", logger="thermynx.jobs.anomaly_scan"} |= "anomaly_detected" [1h])) > 5
+      #   for: 10m
+      #   labels:
+      #     severity: warning
+      #   annotations:
+      #     summary: "Anomaly scan firing > 5/hour"
+      #     description: "Plant-wide anomaly detection rate exceeded 5/hour for 10 min. Review the anomalies page."

@@ -2,8 +2,8 @@
   ResponsiveContainer, ComposedChart, Area, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
 } from "recharts";
-import { Box, Text, Flex, Badge } from "@chakra-ui/react";
-import { motion } from "framer-motion";
+import { Box, Text, Flex, Badge, VisuallyHidden } from "@chakra-ui/react";
+import { motion, useReducedMotion } from "framer-motion";
 import GlassCard from "../../shared/ui/GlassCard";
 
 const MotionBox = motion.create(Box);
@@ -41,10 +41,12 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function TimeseriesChart({ data, equipmentName, loading }) {
+  const shouldReduceMotion = useReducedMotion();
+
   if (loading) {
     return (
       <GlassCard h="220px" display="flex" alignItems="center" justifyContent="center">
-        <Text color="text.muted" fontSize="sm">Loading chart…</Text>
+        <Text color="text.muted" fontSize="sm" role="status">Loading chart…</Text>
       </GlassCard>
     );
   }
@@ -61,12 +63,26 @@ export default function TimeseriesChart({ data, equipmentName, loading }) {
   const chartData = data.points.filter((_, i) => i % step === 0);
   const pts = data.points.filter((p) => p.kw_per_tr != null);
   const avg = pts.length ? pts.reduce((s, p) => s + p.kw_per_tr, 0) / pts.length : null;
+  const kwPts = data.points.filter((p) => p.kw != null);
+  const minKw = kwPts.length ? Math.min(...kwPts.map((p) => p.kw)) : null;
+  const maxKw = kwPts.length ? Math.max(...kwPts.map((p) => p.kw)) : null;
+
+  // Accessible chart description
+  const a11ySummary = [
+    `${equipmentName ?? "Equipment"} timeseries over ${data.hours} hours, ${data.count} data points at ${data.resolution} resolution.`,
+    isChiller && avg != null ? `Average kW/TR: ${avg.toFixed(3)}.` : null,
+    minKw != null && maxKw != null ? `kW range: ${minKw.toFixed(0)} to ${maxKw.toFixed(0)}.` : null,
+  ].filter(Boolean).join(" ");
 
   return (
-    <MotionBox initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+    <MotionBox
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
       <GlassCard p={0} overflow="hidden">
         <Flex px={5} pt={4} pb={3} align="center" justify="space-between" flexWrap="wrap" gap={2}>
-          <Text fontWeight={700} fontSize="sm" color="text.primary">{equipmentName}</Text>
+          <Text as="h2" fontWeight={700} fontSize="sm" color="text.primary">{equipmentName}</Text>
           <Flex gap={2} flexWrap="wrap">
             {avg != null && (
               <Badge fontSize="10px" borderRadius="6px" px={2} py="2px"
@@ -82,37 +98,48 @@ export default function TimeseriesChart({ data, equipmentName, loading }) {
           </Flex>
         </Flex>
 
-        <ResponsiveContainer width="100%" height={200}>
-          <ComposedChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-            <defs>
-              <linearGradient id="kwTrGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="#1F3FFE" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#1F3FFE" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,63,254,0.06)" />
-            <XAxis dataKey="slot_time" tickFormatter={fmt} tick={{ fontSize: 10, fill: "#334155" }}
-              axisLine={false} tickLine={false} interval="preserveStartEnd" />
-            <YAxis yAxisId="kw" orientation="right" tick={{ fontSize: 10, fill: "#334155" }}
-              axisLine={false} tickLine={false} width={38} />
-            {isChiller && (
-              <YAxis yAxisId="eff" orientation="left" domain={[0.3, 1.1]}
-                tick={{ fontSize: 10, fill: "#334155" }} axisLine={false} tickLine={false} width={36} />
-            )}
-            <Tooltip content={<CustomTooltip />} />
-            {isChiller && (
-              <>
-                <ReferenceLine yAxisId="eff" y={BAND_GOOD} stroke="#10b981" strokeDasharray="5 3" strokeOpacity={0.35} />
-                <ReferenceLine yAxisId="eff" y={BAND_POOR} stroke="#ef4444" strokeDasharray="5 3" strokeOpacity={0.35} />
-                <Area yAxisId="eff" type="monotoneX" dataKey="kw_per_tr" name="kW/TR"
-                  stroke="#1F3FFE" strokeWidth={2} fill="url(#kwTrGrad)"
-                  dot={false} isAnimationActive animationDuration={800} />
-              </>
-            )}
-            <Bar yAxisId="kw" dataKey="kw" name="kW" fill="rgba(255,255,255,0.07)"
-              maxBarSize={5} radius={[2, 2, 0, 0]} />
-          </ComposedChart>
-        </ResponsiveContainer>
+        <Box
+          as="figure"
+          role="img"
+          aria-label={a11ySummary}
+          m={0}
+        >
+          <VisuallyHidden as="figcaption">{a11ySummary}</VisuallyHidden>
+          <ResponsiveContainer width="100%" height={200}>
+            <ComposedChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+              <defs>
+                <linearGradient id="kwTrGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#1F3FFE" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#1F3FFE" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,63,254,0.06)" />
+              <XAxis dataKey="slot_time" tickFormatter={fmt} tick={{ fontSize: 10, fill: "#334155" }}
+                axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis yAxisId="kw" orientation="right" tick={{ fontSize: 10, fill: "#334155" }}
+                axisLine={false} tickLine={false} width={38} />
+              {isChiller && (
+                <YAxis yAxisId="eff" orientation="left" domain={[0.3, 1.1]}
+                  tick={{ fontSize: 10, fill: "#334155" }} axisLine={false} tickLine={false} width={36} />
+              )}
+              <Tooltip content={<CustomTooltip />} />
+              {isChiller && (
+                <>
+                  <ReferenceLine yAxisId="eff" y={BAND_GOOD} stroke="#10b981" strokeDasharray="5 3" strokeOpacity={0.35} />
+                  <ReferenceLine yAxisId="eff" y={BAND_POOR} stroke="#ef4444" strokeDasharray="5 3" strokeOpacity={0.35} />
+                  <Area yAxisId="eff" type="monotoneX" dataKey="kw_per_tr" name="kW/TR"
+                    stroke="#1F3FFE" strokeWidth={2} fill="url(#kwTrGrad)"
+                    dot={false}
+                    isAnimationActive={!shouldReduceMotion}
+                    animationDuration={shouldReduceMotion ? 0 : 800} />
+                </>
+              )}
+              <Bar yAxisId="kw" dataKey="kw" name="kW" fill="rgba(255,255,255,0.07)"
+                maxBarSize={5} radius={[2, 2, 0, 0]}
+                isAnimationActive={!shouldReduceMotion} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </Box>
       </GlassCard>
     </MotionBox>
   );

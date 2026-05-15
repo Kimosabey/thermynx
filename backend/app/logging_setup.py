@@ -10,12 +10,20 @@ Namespaces in use:
   thermynx.jobs.anomaly_scan — scheduled anomaly job
 
 Add ``from app.log import get_logger`` and ``log = get_logger("api.mymodule")`` in new code.
+
+Output destinations:
+  - stdout (always)            — captured by uvicorn / docker
+  - rotating file (optional)   — when ``LOG_FILE`` is set, also writes structured JSON
+                                  to that path. Used by Promtail to ship logs into Loki
+                                  when the backend runs outside Docker (uvicorn on host).
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import logging.handlers
+import os
 import sys
 from datetime import datetime, timezone
 from typing import Any
@@ -44,27 +52,54 @@ def _resolve_level(name: str) -> int:
 
 def configure_logging() -> None:
     """
-    Attach a single handler to ``thermynx`` (non-propagating).
+    Attach handlers to ``thermynx`` (non-propagating).
     Child loggers ``thermynx.api``, ``thermynx.llm``, etc. propagate into it.
     Aligns uvicorn log levels with ``LOG_LEVEL``.
+
+    Handlers:
+      - StreamHandler(stdout)                   — always
+      - RotatingFileHandler(settings.LOG_FILE)  — only if LOG_FILE is set
     """
     level = _resolve_level(settings.LOG_LEVEL)
 
     if settings.LOG_JSON:
-        formatter: logging.Formatter = JsonFormatter()
+        stdout_formatter: logging.Formatter = JsonFormatter()
     else:
-        formatter = logging.Formatter(
+        stdout_formatter = logging.Formatter(
             fmt="%(asctime)s | %(levelname)-5s | %(name)s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(level)
-    handler.setFormatter(formatter)
-
     tnx = logging.getLogger("thermynx")
     tnx.handlers.clear()
-    tnx.addHandler(handler)
+
+    # stdout handler — human-readable or JSON depending on LOG_JSON
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(level)
+    stdout_handler.setFormatter(stdout_formatter)
+    tnx.addHandler(stdout_handler)
+
+    # File handler — always structured JSON (for Loki ingestion via Promtail)
+    if settings.LOG_FILE:
+        try:
+            log_dir = os.path.dirname(settings.LOG_FILE) or "."
+            os.makedirs(log_dir, exist_ok=True)
+            file_handler = logging.handlers.RotatingFileHandler(
+                settings.LOG_FILE,
+                maxBytes=settings.LOG_FILE_MAX_BYTES,
+                backupCount=settings.LOG_FILE_BACKUP_COUNT,
+                encoding="utf-8",
+            )
+            file_handler.setLevel(level)
+            file_handler.setFormatter(JsonFormatter())  # file is always JSON
+            tnx.addHandler(file_handler)
+        except OSError as e:
+            # File logging is best-effort — never crash the app over it.
+            stdout_handler.setLevel(level)
+            logging.getLogger("thermynx.app").warning(
+                "log_file_setup_failed path=%s err=%s", settings.LOG_FILE, e
+            )
+
     tnx.setLevel(level)
     tnx.propagate = False
 

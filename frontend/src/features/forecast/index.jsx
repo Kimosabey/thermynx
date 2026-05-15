@@ -128,16 +128,17 @@ export default function ForecastPage() {
               size="sm"
               value={selectedEq}
               onChange={(e) => { setSelectedEq(e.target.value); setMetric("kw_per_tr"); }}
+              aria-label="Equipment"
               {...surfaceSelectProps}
               w="160px"
             >
               {equipment.filter((e) => e.type === "chiller").map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
               {equipment.filter((e) => e.type !== "chiller").map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </Select>
-            <Select size="sm" value={metric} onChange={(e) => setMetric(e.target.value)} {...surfaceSelectProps} w="120px">
+            <Select size="sm" value={metric} onChange={(e) => setMetric(e.target.value)} aria-label="Metric" {...surfaceSelectProps} w="120px">
               {availMetrics.map((m) => <option key={m} value={m}>{m.replace(/_/g, " ")}</option>)}
             </Select>
-            <Select size="sm" value={horizon} onChange={(e) => setHorizon(Number(e.target.value))} {...surfaceSelectProps} w="120px">
+            <Select size="sm" value={horizon} onChange={(e) => setHorizon(Number(e.target.value))} aria-label="Forecast horizon" {...surfaceSelectProps} w="120px">
               <option value={12}>Next 12h</option>
               <option value={24}>Next 24h</option>
               <option value={48}>Next 48h</option>

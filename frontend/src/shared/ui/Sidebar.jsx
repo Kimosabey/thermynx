@@ -230,6 +230,8 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
 
       {/* Sidebar */}
       <MotionBox
+        as="nav"
+        aria-label="Main navigation"
         position={overlay ? "fixed" : "relative"}
         left={overlay ? (mobileOpen ? 0 : "-260px") : 0}
         top={0}
@@ -346,7 +348,7 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
             {!overlay && (
               <MotionBox
                 as="button"
-                w="28px" h="28px" borderRadius="8px"
+                w="32px" h="32px" borderRadius="8px"
                 border="1px solid rgba(255,255,255,0.1)"
                 display="flex" alignItems="center" justifyContent="center"
                 color="rgba(255,255,255,0.35)"
@@ -354,6 +356,7 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
                 whileHover={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(31,63,254,0.5)" }}
                 transition={{ duration: 0.15 }}
                 aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-expanded={!collapsed}
               >
                 <MotionBox animate={{ rotate: collapsed ? 180 : 0 }} transition={{ duration: 0.25 }}>
                   <ChevronLeft size={14} strokeWidth={2} />

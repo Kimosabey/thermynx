@@ -24,6 +24,7 @@ The product roadmap lives one level up: [`../BUILD_PLAN.md`](../BUILD_PLAN.md).
 | Run the test suite end-to-end | [TESTING.md](./operations/TESTING.md) |
 | See what's broken and what to fix | [FLAWS_AND_IMPROVEMENT_PLAN.md](./planning/FLAWS_AND_IMPROVEMENT_PLAN.md) |
 | **Plan AI work and see AI-first backlog** | [AI_ROADMAP_AND_BACKLOG.md](./planning/AI_ROADMAP_AND_BACKLOG.md) |
+| **Plan UI/UX, a11y, animation, responsive work** | [UI_UX_IMPROVEMENT_PLAN.md](./planning/UI_UX_IMPROVEMENT_PLAN.md) |
 | Check what changed in each version | [CHANGELOG.md](./CHANGELOG.md) |
 
 ---
@@ -75,6 +76,7 @@ The product roadmap lives one level up: [`../BUILD_PLAN.md`](../BUILD_PLAN.md).
 | Document | What it covers |
 |----------|----------------|
 | [AI_ROADMAP_AND_BACKLOG.md](./planning/AI_ROADMAP_AND_BACKLOG.md) | AI-first priorities (agents, analyzer, RAG, Ollama), recently completed AI work, defer non-AI items |
+| [UI_UX_IMPROVEMENT_PLAN.md](./planning/UI_UX_IMPROVEMENT_PLAN.md) | WCAG 2.2 gaps, animation polish, responsiveness fixes, UI/UX patterns — 4-sprint execution plan |
 | [TECH_STACK_ASSESSMENT.md](./architecture/TECH_STACK_ASSESSMENT.md) | Honest layer-by-layer review of every framework and architecture decision |
 | [FLAWS_AND_IMPROVEMENT_PLAN.md](./planning/FLAWS_AND_IMPROVEMENT_PLAN.md) | All known gaps: P0–P3 severity, root cause, fix description, sprint plan |
 | [../BUILD_PLAN.md](../BUILD_PLAN.md) | Product vision, phases 0–6, architecture decisions, deployment, security roadmap |
