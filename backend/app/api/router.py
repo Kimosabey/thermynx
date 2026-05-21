@@ -15,6 +15,13 @@ from app.api.v1 import (
     reports,
     threads,
     rag,
+    capabilities,
+    alarms,
+    audit,
+    nl_query,
+    vision,
+    causal,
+    topology,
 )
 
 router = APIRouter()
@@ -33,3 +40,10 @@ router.include_router(cooling_tower.router, tags=["Cooling Tower Optimizer"])
 router.include_router(reports.router,       tags=["Reports"])
 router.include_router(threads.router,       tags=["Threads"])
 router.include_router(rag.router,           tags=["RAG"])
+router.include_router(capabilities.router,  tags=["Capabilities"])
+router.include_router(alarms.router,        tags=["Alarms"])
+router.include_router(audit.router,         tags=["Audit Log"])
+router.include_router(nl_query.router,      tags=["NL Query"])
+router.include_router(vision.router,        tags=["Vision"])
+router.include_router(causal.router,        tags=["Causal Explanations"])
+router.include_router(topology.router,      tags=["Topology"])
