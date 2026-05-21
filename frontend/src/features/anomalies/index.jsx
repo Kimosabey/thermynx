@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Box, Flex, Text, Grid, Badge, Button } from "@chakra-ui/react";
+import { Box, Flex, Text, Grid, Badge, Button, Spinner, Collapse } from "@chakra-ui/react";
 import { CheckCircleIcon } from "@chakra-ui/icons";
-import { TriangleAlert } from "lucide-react";
+import { TriangleAlert, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
@@ -25,11 +25,46 @@ const SEVERITY_META = {
   warning:  { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.25)", label: "WARNING" },
 };
 
+const CONF_COLOR = { high: "#10b981", medium: "#f59e0b", low: "#64748b" };
+
 function AnomalyCard({ anomaly }) {
   const meta = SEVERITY_META[anomaly.severity] ?? SEVERITY_META.warning;
   const time = anomaly.timestamp
     ? new Date(anomaly.timestamp).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false })
     : "—";
+  const [open, setOpen]         = useState(false);
+  const [explain, setExplain]   = useState(null);
+  const [exLoad, setExLoad]     = useState(false);
+  const [exErr, setExErr]       = useState(null);
+
+  async function loadExplanation() {
+    setOpen(true);
+    if (explain || exLoad) return;
+    setExLoad(true); setExErr(null);
+    try {
+      const r = await fetch("/api/v1/causal/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          equipment_id:  anomaly.equipment_id,
+          metric:        anomaly.metric,
+          value:         anomaly.value,
+          z_score:       anomaly.z_score,
+          timestamp:     anomaly.timestamp,
+          hours_context: 6,
+        }),
+      });
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        throw new Error(data?.detail || `HTTP ${r.status}`);
+      }
+      setExplain(await r.json());
+    } catch (e) {
+      setExErr(e.message);
+    } finally {
+      setExLoad(false);
+    }
+  }
 
   return (
     <MotionBox variants={fadeUp}>
@@ -78,12 +113,80 @@ function AnomalyCard({ anomaly }) {
 
         {anomaly.description && (
           <Box
-            bg="rgba(255,255,255,0.03)" border="1px solid" borderColor="border.subtle"
+            bg="bg.chip" border="1px solid" borderColor="border.subtle"
             borderRadius="8px" px={3} py={2}
+            mb={3}
           >
             <Text fontSize="xs" color="text.muted" lineHeight={1.6}>{anomaly.description}</Text>
           </Box>
         )}
+
+        {/* Causal explanation toggle */}
+        <Flex justify="flex-end">
+          <Button
+            size="xs"
+            variant="ghost"
+            leftIcon={<Sparkles size={12} strokeWidth={2.2} />}
+            rightIcon={open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            onClick={() => (open ? setOpen(false) : loadExplanation())}
+            color="accent.primary"
+          >
+            {open ? "Hide why" : "Explain why"}
+          </Button>
+        </Flex>
+
+        <Collapse in={open} animateOpacity>
+          <Box mt={3} pt={3} borderTop="1px solid" borderColor="border.subtle">
+            {exLoad && (
+              <Flex align="center" gap={2}>
+                <Spinner size="xs" />
+                <Text fontSize="xs" color="text.muted">Asking model for likely causes…</Text>
+              </Flex>
+            )}
+            {exErr && <Text fontSize="xs" color="status.bad">{exErr}</Text>}
+            {explain && (
+              <Box>
+                {explain.summary && (
+                  <Text fontSize="xs" color="text.primary" mb={3}>{explain.summary}</Text>
+                )}
+                {(explain.likely_causes || []).length > 0 && (
+                  <Box mb={3}>
+                    <Eyebrow mb={2}>Likely causes</Eyebrow>
+                    {explain.likely_causes.map((c, i) => (
+                      <Flex key={i} align="flex-start" gap={2} py={1}>
+                        <Badge
+                          fontSize="9px" px={2} borderRadius="6px"
+                          bg="bg.chip" border="1px solid" borderColor="border.subtle"
+                          color={CONF_COLOR[c.confidence] || CONF_COLOR.low}
+                        >
+                          {c.confidence}
+                        </Badge>
+                        <Box flex="1">
+                          <Text fontSize="xs" color="text.primary" fontWeight={600}>{c.cause}</Text>
+                          {c.evidence && <Text fontSize="11px" color="text.muted" mt="2px">{c.evidence}</Text>}
+                        </Box>
+                      </Flex>
+                    ))}
+                  </Box>
+                )}
+                {(explain.recommended_checks || []).length > 0 && (
+                  <Box>
+                    <Eyebrow mb={2}>Recommended checks</Eyebrow>
+                    {explain.recommended_checks.map((s, i) => (
+                      <Flex key={i} align="flex-start" gap={2} py="2px">
+                        <Box w="4px" h="4px" mt="7px" bg="accent.primary" borderRadius="full" flexShrink={0} />
+                        <Text fontSize="xs" color="text.primary">{s}</Text>
+                      </Flex>
+                    ))}
+                  </Box>
+                )}
+                {explain.status === "skipped" && (
+                  <Text fontSize="xs" color="status.warn">⚠ Skipped: {explain.reason}</Text>
+                )}
+              </Box>
+            )}
+          </Box>
+        </Collapse>
       </GlassCard>
     </MotionBox>
   );
