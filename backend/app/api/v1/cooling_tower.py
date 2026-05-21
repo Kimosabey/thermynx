@@ -27,4 +27,13 @@ async def cooling_tower_optimize(
 
     points = await fetch_bucket_series(db, eq["table"], eq["type"], hours=hours, bucket_secs=_BUCKET_SECS)
     hint = tower_hint(eq["id"], eq["name"], points, bucket_secs=_BUCKET_SECS)
-    return {**asdict(hint), "hours": hours, "bucket_secs": _BUCKET_SECS}
+    payload = asdict(hint)
+    payload["data_status"] = {
+        "wet_bulb_available": payload["wet_bulb_avg_c"] is not None,
+        "cell_count_available": payload["cell_count_latest"] is not None,
+        "note": (
+            "Unicharm normalized tower schema has fan_kw + run_hours only; "
+            "wet-bulb and per-cell metadata are not collected by current sensors."
+        ),
+    }
+    return {**payload, "hours": hours, "bucket_secs": _BUCKET_SECS}
