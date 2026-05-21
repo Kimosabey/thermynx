@@ -1,14 +1,11 @@
-import { useState, useEffect } from "react";
-import { Box, Flex, Text, Select, Grid } from "@chakra-ui/react";
+import { useState, useEffect, useMemo } from "react";
+import { Box, Flex, Text, Select, Grid, useColorMode } from "@chakra-ui/react";
 import { Trophy, Columns2 } from "lucide-react";
 import { motion } from "framer-motion";
+import ReactECharts from "echarts-for-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
-import {
-  ResponsiveContainer, LineChart, Line,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine,
-} from "recharts";
 import GlassCard from "../../shared/ui/GlassCard";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import Eyebrow from "../../shared/ui/Eyebrow";
@@ -24,24 +21,6 @@ const BAND_GOOD = 0.65, BAND_POOR = 0.85;
 function bandColor(v) {
   if (v==null) return "#64748b";
   return v < BAND_GOOD ? "#10b981" : v < BAND_POOR ? "#f59e0b" : "#ef4444";
-}
-
-function CustomTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <Box bg="#0d1526" border="1px solid #1e2d4a" borderRadius="10px" px={3} py={2} fontSize="xs" boxShadow="0 8px 32px rgba(0,0,0,0.5)">
-      <Text fontWeight={600} color="whiteAlpha.500" mb={1}>{String(label).slice(11)}</Text>
-      {payload.map((p) => (
-        <Flex key={p.name} gap={2} align="center">
-          <Box w={2} h={2} borderRadius="full" bg={p.color} />
-          <Text color="whiteAlpha.600">{p.name}:</Text>
-          <Text fontWeight={700} color={p.name.includes("kW/TR") ? bandColor(p.value) : "white"}>
-            {p.value?.toFixed ? p.value.toFixed(3) : p.value}
-          </Text>
-        </Flex>
-      ))}
-    </Box>
-  );
 }
 
 function StatRow({ label, valA, valB, isEff }) {
@@ -60,6 +39,14 @@ function StatRow({ label, valA, valB, isEff }) {
 }
 
 export default function ComparePage() {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === "dark";
+  const tipBg  = isDark ? "#0d1526" : "#ffffff";
+  const tipBd  = isDark ? "#1e2d4a" : "#E0E7FF";
+  const tipFg  = isDark ? "#fff"    : "#0D0D0D";
+  const tipMt  = isDark ? "rgba(255,255,255,0.55)" : "#64748b";
+  const gridCol = isDark ? "rgba(255,255,255,0.05)" : "rgba(31,63,254,0.06)";
+
   const [equipment, setEquipment] = useState([]);
   const [eqA, setEqA]         = useState("chiller_1");
   const [eqB, setEqB]         = useState("chiller_2");
@@ -84,22 +71,79 @@ export default function ComparePage() {
 
   useEffect(() => { load(); }, [eqA, eqB, hours]);
 
-  // Merge timeseries for overlay chart
-  const chartData = (() => {
+  const chartData = useMemo(() => {
     if (!data) return [];
     const map = {};
-    (data.a.timeseries||[]).forEach(p => {
-      const k = p.slot_time;
-      if (!map[k]) map[k] = { slot_time:k };
-      map[k][`${data.a.name}_kW/TR`] = p.kw_per_tr;
+    (data.a.timeseries || []).forEach(p => {
+      if (!map[p.slot_time]) map[p.slot_time] = { slot_time: p.slot_time };
+      map[p.slot_time][`${data.a.name}_kW/TR`] = p.kw_per_tr;
     });
-    (data.b.timeseries||[]).forEach(p => {
-      const k = p.slot_time;
-      if (!map[k]) map[k] = { slot_time:k };
-      map[k][`${data.b.name}_kW/TR`] = p.kw_per_tr;
+    (data.b.timeseries || []).forEach(p => {
+      if (!map[p.slot_time]) map[p.slot_time] = { slot_time: p.slot_time };
+      map[p.slot_time][`${data.b.name}_kW/TR`] = p.kw_per_tr;
     });
-    return Object.values(map).sort((x,y)=>x.slot_time.localeCompare(y.slot_time));
-  })();
+    return Object.values(map).sort((x, y) => x.slot_time.localeCompare(y.slot_time));
+  }, [data]);
+
+  const compareOption = useMemo(() => {
+    if (!data || !chartData.length) return null;
+    const xData   = chartData.map(p => p.slot_time);
+    const seriesA = chartData.map(p => p[`${data.a.name}_kW/TR`] ?? null);
+    const seriesB = chartData.map(p => p[`${data.b.name}_kW/TR`] ?? null);
+    return {
+      animation: true,
+      animationDuration: 600,
+      grid: { top: 8, right: 16, bottom: 28, left: 40 },
+      xAxis: {
+        type: "category", data: xData,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { fontSize: 10, color: "#334155", formatter: v => String(v).slice(11, 16), hideOverlap: true, showMinLabel: true, showMaxLabel: true },
+        splitLine: { show: false }, boundaryGap: false,
+      },
+      yAxis: {
+        type: "value", min: 0.3, max: 1.2,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { fontSize: 10, color: "#334155" },
+        splitLine: { lineStyle: { color: gridCol, type: "dashed" } },
+      },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "line", lineStyle: { color: "#94a3b8", opacity: 0.3 } },
+        backgroundColor: tipBg, borderColor: tipBd, borderRadius: 10,
+        padding: [8, 12], textStyle: { fontSize: 11, color: tipFg },
+        formatter(params) {
+          const time = String(params[0]?.axisValue).slice(11, 16);
+          let html = `<div style="font-weight:600;color:${tipMt};margin-bottom:4px">${time}</div>`;
+          for (const p of params) {
+            if (p.value == null) continue;
+            html += `<div style="display:flex;align-items:center;gap:6px">
+              <span style="width:8px;height:8px;border-radius:50%;background:${p.color};display:inline-block"></span>
+              <span style="color:${tipMt}">${p.seriesName}:</span>
+              <span style="font-weight:700;color:${bandColor(p.value)}">${Number(p.value).toFixed(3)}</span>
+            </div>`;
+          }
+          return html;
+        },
+      },
+      series: [
+        {
+          name: data.a.name, type: "line", data: seriesA,
+          symbol: "none", lineStyle: { color: COLORS.a, width: 2 },
+          markLine: {
+            silent: true, symbol: "none", label: { show: false },
+            data: [
+              { yAxis: BAND_GOOD, lineStyle: { color: "#10b981", type: "dashed", opacity: 0.4, width: 1.5 } },
+              { yAxis: BAND_POOR, lineStyle: { color: "#ef4444", type: "dashed", opacity: 0.4, width: 1.5 } },
+            ],
+          },
+        },
+        {
+          name: data.b.name, type: "line", data: seriesB,
+          symbol: "none", lineStyle: { color: COLORS.b, width: 2 },
+        },
+      ],
+    };
+  }, [data, chartData, isDark, tipBg, tipBd, tipFg, tipMt, gridCol]);
 
   const sa = data?.a?.summary || {};
   const sb = data?.b?.summary || {};
@@ -166,7 +210,7 @@ export default function ComparePage() {
       )}
 
       {/* Overlay chart */}
-      {loading ? <SkeletonEquipCard /> : chartData.length > 0 && (
+      {loading ? <SkeletonEquipCard /> : compareOption && (
         <MotionBox variants={fadeUp} initial="initial" animate="animate" mb={5}>
           <GlassCard p={0} overflow="hidden">
             <Flex px={5} pt={4} pb={3} align="center" gap={3} flexWrap="wrap">
@@ -180,19 +224,11 @@ export default function ComparePage() {
                 ))}
               </Flex>
             </Flex>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={chartData} margin={{top:4,right:16,left:0,bottom:4}}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="slot_time" tickFormatter={v=>String(v).slice(11,16)}
-                  tick={{fontSize:10,fill:"#334155"}} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                <YAxis domain={[0.3,1.2]} tick={{fontSize:10,fill:"#334155"}} axisLine={false} tickLine={false} width={36} />
-                <Tooltip content={<CustomTooltip />} />
-                <ReferenceLine y={BAND_GOOD} stroke="#10b981" strokeDasharray="4 3" strokeOpacity={0.35} />
-                <ReferenceLine y={BAND_POOR} stroke="#ef4444" strokeDasharray="4 3" strokeOpacity={0.35} />
-                {data && <Line type="monotoneX" dataKey={`${data.a.name}_kW/TR`} stroke={COLORS.a} strokeWidth={2} dot={false} isAnimationActive animationDuration={600} />}
-                {data && <Line type="monotoneX" dataKey={`${data.b.name}_kW/TR`} stroke={COLORS.b} strokeWidth={2} dot={false} isAnimationActive animationDuration={600} />}
-              </LineChart>
-            </ResponsiveContainer>
+            <ReactECharts
+              option={compareOption}
+              style={{ height: "220px", width: "100%" }}
+              opts={{ renderer: "canvas" }}
+            />
           </GlassCard>
         </MotionBox>
       )}
