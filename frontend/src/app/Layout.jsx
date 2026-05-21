@@ -43,7 +43,19 @@ export default function Layout() {
         bg="bg.canvas"
         sx={{ "&:focus": { outline: "none" } }}
       >
-        <AuroraBackground />
+        {/* Sticky viewport-pinned wrapper — Aurora stays in viewport during scroll
+            and its negative margin removes its layout footprint so content overlays it. */}
+        <Box
+          position="sticky"
+          top={0}
+          h="100vh"
+          mb="-100vh"
+          pointerEvents="none"
+          zIndex={0}
+          overflow="hidden"
+        >
+          <AuroraBackground />
+        </Box>
         {/* Mobile top bar */}
         {useDrawerNav && (
           <Flex

@@ -15,7 +15,7 @@
  */
 
 import { useCallback } from "react";
-import { Box } from "@chakra-ui/react";
+import { Box, useColorMode } from "@chakra-ui/react";
 import {
   motion,
   useMotionTemplate,
@@ -31,6 +31,12 @@ const BRAND_100 = "#C7C9FF";
 
 export default function AuroraBackground({ intensity = 0.6 }) {
   const reduced = useReducedMotion();
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === "dark";
+  const baseWash = isDark
+    ? "linear-gradient(180deg, #0A0E1F 0%, #0E1330 100%)"
+    : "linear-gradient(180deg, #F8FAFF 0%, #EEF1FB 100%)";
+  const dotColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(15,23,42,0.08)";
   const mx = useMotionValue(50);
   const my = useMotionValue(15);
 
@@ -63,11 +69,11 @@ export default function AuroraBackground({ intensity = 0.6 }) {
         },
       }}
     >
-      {/* Layer 1 — base wash */}
+      {/* Layer 1 — base wash (light/dark aware) */}
       <Box
         position="absolute"
         inset={0}
-        bg={`linear-gradient(180deg, #F8FAFF 0%, #EEF1FB 100%)`}
+        bg={baseWash}
       />
 
       {/* Layer 2 — mesh-gradient blobs (Aceternity-style) */}
@@ -118,7 +124,7 @@ export default function AuroraBackground({ intensity = 0.6 }) {
         opacity={0.5}
         sx={{
           backgroundImage:
-            "radial-gradient(circle at 1px 1px, rgba(15,23,42,0.08) 1px, transparent 0)",
+            `radial-gradient(circle at 1px 1px, ${dotColor} 1px, transparent 0)`,
           backgroundSize: "20px 20px",
           maskImage:
             "radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%)",

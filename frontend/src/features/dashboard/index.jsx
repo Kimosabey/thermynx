@@ -74,7 +74,7 @@ function EquipCard({ name, data, type }) {
               w="32px"
               h="32px"
               borderRadius="10px"
-              bg="rgba(255,255,255,0.04)"
+              bg="bg.chip"
               border="1px solid"
               borderColor="border.subtle"
               display="flex"

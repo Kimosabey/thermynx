@@ -38,6 +38,12 @@ const semanticTokens = {
     "bg.elevated": { default: "#EFF0FF",             _dark: "#1B2249" },
     "bg.sidebar":  { default: "#06091A",             _dark: "#06091A" }, // always dark
     "bg.overlay":  { default: "rgba(0,15,100,0.72)", _dark: "rgba(0,0,0,0.72)" },
+    // Subtle "chip" tint used on inline badges/pills — visible in BOTH modes
+    "bg.chip":     { default: "rgba(31,63,254,0.06)", _dark: "rgba(255,255,255,0.05)" },
+    "bg.chipHover":{ default: "rgba(31,63,254,0.10)", _dark: "rgba(255,255,255,0.08)" },
+    // Glass surfaces — flips between light translucent and dark translucent
+    "bg.glass":      { default: "rgba(255,255,255,0.70)", _dark: "rgba(19,25,51,0.65)" },
+    "bg.glassHigh":  { default: "rgba(255,255,255,0.55)", _dark: "rgba(19,25,51,0.55)" },
 
     // Borders
     "border.subtle": { default: "#C7C9FF",              _dark: "rgba(255,255,255,0.08)" },

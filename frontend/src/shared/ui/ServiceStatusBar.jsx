@@ -58,21 +58,21 @@ function Pill({ icon: Icon, label, value, kind = "ok", detail }) {
       align="center" gap={2}
       px={3} py="6px"
       borderRadius="full"
-      bg="rgba(255,255,255,0.7)"
+      bg="bg.glass"
       backdropFilter="blur(12px)"
       border="1px solid"
-      borderColor="rgba(15,23,42,0.06)"
+      borderColor="border.subtle"
       boxShadow="0 4px 14px rgba(31,63,254,0.08)"
       title={detail}
     >
       <StatusDot kind={kind} />
-      <Icon size={13} strokeWidth={2} color="#475569" />
-      <Text fontSize="11px" fontWeight={600} color="#334155" letterSpacing="-0.01em">
+      <Icon size={13} strokeWidth={2} />
+      <Text fontSize="11px" fontWeight={600} color="text.secondary" letterSpacing="-0.01em">
         {label}
       </Text>
       {value && (
         <Text
-          fontFamily="mono" fontSize="10px" color="#64748b"
+          fontFamily="mono" fontSize="10px" color="text.muted"
           maxW="120px" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap"
         >
           {value}
