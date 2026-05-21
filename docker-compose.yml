@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: thermynx
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
     ports:
-      - "5432:5432"
+      - "5442:5432"   # host 5442 — avoids clash with other Postgres stacks
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,7 +21,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"   # host 6380 — avoids default Redis if already bound
     command: redis-server --save ""
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -33,7 +33,7 @@ services:
   redis-commander:
     image: rediscommander/redis-commander:latest
     ports:
-      - "8081:8081"
+      - "8181:8081"   # host 8181 — avoids clash with ClimaStream Airflow (8080) / other UIs
     environment:
       REDIS_HOSTS: "local:redis:6379"
     depends_on:

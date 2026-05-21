@@ -28,6 +28,22 @@ Copy `.env.example` to `backend/.env` and fill in required values before startin
 
 ## MySQL (Unicharm telemetry — read-only)
 
+### Local Docker dev (Harshan laptop)
+
+Start shared stack first: `D:\Harshan\selfaware-dev-stack` → `docker compose up -d`
+
+```
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=admin
+DB_NAME=unicharm
+```
+
+Same database as **SelfAware Continuum** and DBeaver (`127.0.0.1:3306` / `unicharm`). See [`../../../selfaware-dev-stack/README.md`](../../../selfaware-dev-stack/README.md).
+
+### Remote / production (Tailscale)
+
 ### `DB_HOST`
 **Required.** Tailscale IP or hostname of the Unicharm MySQL server.
 
@@ -43,7 +59,7 @@ Port for the MySQL connection.
 ```
 DB_PORT=3307
 ```
-Default: `3307`. The Unicharm server uses a non-standard port.
+Default in code: `3306` for local Docker; use **`3307`** for remote Unicharm servers (non-standard port).
 
 ---
 

@@ -8,9 +8,9 @@ Quick reference to the `unicharm` MySQL tables Graylinx reads. **Read-only, no w
 
 ## Source
 
-- **Server:** MySQL `unicharm:3307` (Tailscale-reachable)
-- **Database:** `unicharm`
-- **Connection:** `mysql+aiomysql://ro_user:<pw>@<host>:3307/unicharm`
+- **Database:** `unicharm` (schema name is always `unicharm`)
+- **Local Docker:** `mysql+aiomysql://root:admin@127.0.0.1:3306/unicharm` — start [`selfaware-dev-stack`](../../../selfaware-dev-stack/README.md)
+- **Remote:** `mysql+aiomysql://ro_user:<pw>@<host>:3307/unicharm` (Tailscale)
 - **Privilege:** `SELECT` only on the listed tables (read-only credential)
 
 ## Use the `*_normalized` tables — never the raw ones

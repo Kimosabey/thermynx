@@ -33,14 +33,34 @@ POSTGRES_PASSWORD=<anything for local>
 
 ## Start the stack
 
+### Local Docker (Harshan — shared `unicharm` on port 3306)
+
+```powershell
+# 1) SelfAware + Continuum MySQL, Postgres (RAG), Neo4j
+cd D:\Harshan\selfaware-dev-stack
+docker compose up -d
+
+# 2) HVAC app Postgres + Redis
+cd "D:\Harshan\HVAC AI Operations Intelligence Platform"
+docker compose up -d
+
+# 3) Backend + frontend (see Makefile)
+make backend   # terminal 1 — uses backend/.env: DB_PORT=3306, DB_NAME=unicharm
+make frontend  # terminal 2 — http://localhost:5174
+```
+
+`backend/.env` should have `DB_HOST=localhost`, `DB_PORT=3306`, `DB_USER=root`, `DB_PASSWORD=admin`, `DB_NAME=unicharm`.
+
+### Generic / remote POC
+
 ```bash
 make dev
 # OR if no Makefile yet:
-docker compose up -d                # api + postgres + redis
+docker compose up -d                # thermynx postgres + redis
 cd frontend && npm install && npm run dev
 ```
 
-Open <http://localhost:5173> — you should see the Analyzer page.
+Open <http://localhost:5174> (or `:5173` if using default Vite port) — you should see the Analyzer page.
 
 ## Smoke test (Phase 1 demo)
 
@@ -60,7 +80,7 @@ If you see content streaming → the POC is working end-to-end.
 | PostgreSQL `thermynx_app` | docker compose on your laptop | `:5432` |
 | Redis | docker compose on your laptop | `:6379` |
 | Frontend (Vite dev server) | your laptop (host) | `:5173` |
-| MySQL `unicharm` | external, Tailscale-reachable | `:3307` |
+| MySQL `unicharm` | **local:** Docker `gl-mysql-test` **`:3306`** · **remote:** Tailscale **`:3307`** |
 | Ollama | external server (Dell Pro Max Tower), Tailscale | `:11434` |
 
 See [`ARCHITECTURE.md` §7](../architecture/ARCHITECTURE.md#7-poc-deployment-topology) for the topology diagram.

@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Unicharm MySQL (read-only telemetry source)
     DB_HOST: str = "localhost"
-    DB_PORT: int = 3307
+    DB_PORT: int = 3306
     DB_USER: str = "root"
     DB_PASSWORD: str = "changeme"
     DB_NAME: str = "unicharm"
