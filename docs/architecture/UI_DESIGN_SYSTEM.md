@@ -126,8 +126,14 @@ Cost: <1% CPU on integrated GPUs, no GC churn, no requestAnimationFrame loop (it
 
 | Component | Purpose |
 |---|---|
-| **`GraylinxLogo`** | Animated SVG brand mark + wordmark (3 variants) |
-| **`AuroraBackground`** | Ambient drifting gradient mesh, on-premise compatible |
+| **`GraylinxLogo`** | Animated lockup around the real Graylinx PNG (3 variants) |
+| **`AuroraBackground`** | Aceternity-inspired 5-layer ambient mesh (base wash · drift blobs · dot-grid · mouse spotlight · scan beam) |
+| **`ServiceStatusBar`** | Floating glassmorphic live indicator for MySQL/Postgres/Ollama/Telemetry; polls `/api/v1/health`; toasts on transitions |
+| **`HoverGradientCard`** | Cursor-following radial spotlight + animated gradient border on hover (the "Linear/Vercel" effect) |
+| **`BackgroundBeams`** | Animated diagonal SVG light beams along curved paths; pure SVG + Framer Motion |
+| **`TextGenerateEffect`** | Staggered word-by-word reveal for static AI text (blur → clear + float-up) |
+| **`StreamingText`** | Sibling of above for *live* SSE tokens — only the new tail animates each render |
+| **`MovingBorder`** | Pill button with a rotating conic-gradient orbit border (3 tone presets) |
 
 ---
 
@@ -144,6 +150,7 @@ Cost: <1% CPU on integrated GPUs, no GC churn, no requestAnimationFrame loop (it
 | **lucide-react** | ISC | Iconography | Modern stroke-icon set, tree-shakable |
 | **react-router-dom 6.28** | MIT | SPA routing | Standard, declarative |
 | **react-markdown 9 + remark-gfm 4** | MIT | Render streamed LLM output (tables, code blocks) | Streaming-friendly |
+| **@formkit/auto-animate 0.9** | MIT | Auto-animated list reorder for agent timeline / alarm feed | 3 KB, drop-in `useAutoAnimate()` hook — zero config |
 
 ### Deliberately *not* added
 
@@ -195,12 +202,20 @@ Cost: <1% CPU on integrated GPUs, no GC churn, no requestAnimationFrame loop (it
 
 ```
 src/shared/ui/
-├── GraylinxLogo.jsx         (NEW) animated SVG brand mark + wordmark
-├── AuroraBackground.jsx     (NEW) ambient drifting gradient mesh
-└── Sidebar.jsx              (MOD) replaced static PNG with <GraylinxLogo />
+├── GraylinxLogo.jsx         (NEW) animated PNG lockup with breathing glow
+├── AuroraBackground.jsx     (NEW) Aceternity-style 5-layer ambient bg
+├── ServiceStatusBar.jsx     (NEW) live system status pills + toasts
+├── HoverGradientCard.jsx    (NEW) cursor-spotlight card with gradient border
+├── BackgroundBeams.jsx      (NEW) SVG diagonal light beams along arcs
+├── TextGenerateEffect.jsx   (NEW) staggered word reveal (+ StreamingText)
+├── MovingBorder.jsx         (NEW) rotating conic-gradient border button
+└── Sidebar.jsx              (MOD) wires <GraylinxLogo /> mark + wordmark
+
+src/features/agent/
+└── AgentRunner.jsx          (MOD) useAutoAnimate() on reasoning timeline
 
 src/app/
-└── Layout.jsx               (MOD) injects AuroraBackground + mobile <GraylinxLogo />
+└── Layout.jsx               (MOD) mounts AuroraBackground + ServiceStatusBar
 
 docs/architecture/
 └── UI_DESIGN_SYSTEM.md      (NEW) this document

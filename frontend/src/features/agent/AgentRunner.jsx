@@ -6,6 +6,7 @@
 import { useRef, useState } from "react";
 import { Box, Flex, Text, Badge, Grid, Spinner, HStack } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import {
   List, Zap, ScanSearch, BarChart2, Columns2,
   History, Wrench, CheckCircle2,
@@ -172,6 +173,7 @@ function MarkdownOutput({ content }) {
 import { useAgentStream } from "./useAgentStream";
 
 export default function AgentRunner({ trace, output, running, done, meta, error }) {
+  const [timelineRef] = useAutoAnimate({ duration: 220, easing: "ease-out" });
   const bottomRef = useRef(null);
 
   if (!running && !output && !error) return null;
@@ -209,7 +211,7 @@ export default function AgentRunner({ trace, output, running, done, meta, error 
             aria-relevant="additions"
             aria-label="Agent reasoning steps"
           >
-          <Box position="relative" pl="24px" pr={1}>
+          <Box position="relative" pl="24px" pr={1} ref={timelineRef}>
             {/* Vertical rail — gutter matches TraceStep dot offset (-22px) */}
             {trace.length > 0 && (
               <Box
