@@ -16,7 +16,7 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import logoPng from "../../assets/logo.png";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const BRAND_500 = "#1F3FFE";
 const BRAND_300 = "#6671FF";

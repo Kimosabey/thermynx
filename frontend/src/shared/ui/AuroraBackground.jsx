@@ -23,7 +23,7 @@ import {
   useReducedMotion,
 } from "framer-motion";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const BRAND_500 = "#1F3FFE";
 const BRAND_300 = "#6671FF";
@@ -49,7 +49,7 @@ export default function AuroraBackground({ intensity = 0.6 }) {
     <Box
       aria-hidden="true"
       onMouseMove={onMove}
-      position="fixed"
+      position="absolute"
       inset={0}
       zIndex={0}
       overflow="hidden"

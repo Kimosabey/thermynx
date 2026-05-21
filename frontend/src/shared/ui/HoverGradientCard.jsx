@@ -19,7 +19,7 @@ import { useRef, useState } from "react";
 import { Box } from "@chakra-ui/react";
 import { motion, useMotionTemplate, useMotionValue, useReducedMotion } from "framer-motion";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const BRAND_500 = "#1F3FFE";
 const BRAND_300 = "#6671FF";

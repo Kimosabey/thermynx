@@ -20,8 +20,8 @@ import {
   Database, Server, Cpu, Activity, ChevronUp, ChevronDown,
 } from "lucide-react";
 
-const MotionBox  = motion(Box);
-const MotionFlex = motion(Flex);
+const MotionBox  = motion.create(Box);
+const MotionFlex = motion.create(Flex);
 
 const POLL_MS = 15_000;
 
@@ -110,7 +110,7 @@ function relative(slot) {
 
 export default function ServiceStatusBar() {
   const [health, setHealth] = useState(null);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const prevKindRef = useRef({});
   const toast = useToast();
 

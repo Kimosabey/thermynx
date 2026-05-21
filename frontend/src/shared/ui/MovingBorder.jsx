@@ -18,7 +18,7 @@
 import { Box } from "@chakra-ui/react";
 import { motion, useReducedMotion } from "framer-motion";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const TONES = {
   primary: { a: "#1F3FFE", b: "#6671FF", c: "#000F64" },

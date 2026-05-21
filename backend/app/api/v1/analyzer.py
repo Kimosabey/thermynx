@@ -18,6 +18,7 @@ from app.domain.equipment import get_by_id
 from app.llm.ollama import stream_generate
 from app.prompts.hvac_prompts import build_analyze_prompt
 from app.services.rag import retrieve, format_rag_context
+from app.services.critique import verify_answer
 from app.limiter import limiter
 from app.config import settings
 from app.log import get_logger
@@ -34,6 +35,7 @@ class AnalyzeRequest(BaseModel):
     hours: int = Field(default=24, ge=1, le=8760)
     model: str | None = None
     thread_id: str | None = Field(default=None, max_length=36)
+    verify: bool = Field(default=True, description="Run self-critique pass after answer is generated")
 
 
 def _hash(text: str) -> str:
@@ -174,6 +176,23 @@ async def _sse_stream(
     total_ms = int(time.time() * 1000) - start_ms
     response_text = "".join(full_response)
     yield f"data: {json.dumps({'type': 'done', 'audit_id': audit_id, 'model': model, 'total_ms': total_ms})}\n\n"
+
+    # ── Self-critique pass ─────────────────────────────────────────────────
+    # Runs after the synthesised answer is complete. The auditor LLM checks
+    # numeric claims against the summary we sent the synthesiser; any
+    # mismatch surfaces in the UI as a fact-check panel. Never mutates the
+    # answer, never raises — failures degrade to a "skipped" frame.
+    if req.verify and status == "ok" and response_text.strip():
+        critique_start = time.time()
+        verdict = await verify_answer(response_text, summary, model=None)
+        verdict["critique_ms"] = int((time.time() - critique_start) * 1000)
+        yield f"data: {json.dumps({'type': 'verification', 'verdict': verdict})}\n\n"
+        log.info(
+            "analyze_critique_done audit_id=%s overall=%s critique_ms=%s",
+            audit_id,
+            verdict.get("overall") or verdict.get("status"),
+            verdict["critique_ms"],
+        )
 
     audit.prompt_hash = prompt_hash
     audit.response_hash = _hash(response_text) if response_text else None
