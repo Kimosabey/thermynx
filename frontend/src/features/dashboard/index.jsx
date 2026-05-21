@@ -17,6 +17,7 @@ import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import GlassCard from "../../shared/ui/GlassCard";
 import KpiCard from "../../shared/ui/KpiCard";
+import HoverGradientCard from "../../shared/ui/HoverGradientCard";
 import StatusPulse from "../../shared/ui/StatusPulse";
 import ErrorAlert from "../../shared/ui/ErrorAlert";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
@@ -313,44 +314,56 @@ export default function Dashboard() {
         ) : (
           <>
             <MotionBox variants={fadeUp} minW={0}>
-              <KpiCard
-                label="Chiller 1 kW/TR"
-                value={s.chiller_1?.avg_kw_per_tr}
-                decimals={3}
-                accent={
-                  s.chiller_1?.avg_kw_per_tr == null ? "text.muted"
-                    : s.chiller_1.avg_kw_per_tr < 0.65 ? "green.400"
-                    : s.chiller_1.avg_kw_per_tr < 0.85 ? "yellow.400" : "red.400"
-                }
-                helpText="Efficiency"
-                icon={<Snowflake {...KPI_ICON} />}
-              />
+              <HoverGradientCard padding={0} bg="transparent" border={false}>
+                <KpiCard
+                  label="Chiller 1 kW/TR"
+                  value={s.chiller_1?.avg_kw_per_tr}
+                  decimals={3}
+                  accent={
+                    s.chiller_1?.avg_kw_per_tr == null ? "text.muted"
+                      : s.chiller_1.avg_kw_per_tr < 0.65 ? "green.400"
+                      : s.chiller_1.avg_kw_per_tr < 0.85 ? "yellow.400" : "red.400"
+                  }
+                  helpText="Efficiency"
+                  icon={<Snowflake {...KPI_ICON} />}
+                />
+              </HoverGradientCard>
             </MotionBox>
             <MotionBox variants={fadeUp} minW={0}>
-              <KpiCard
-                label="Chiller 2 kW/TR"
-                value={s.chiller_2?.avg_kw_per_tr}
-                decimals={3}
-                accent={
-                  s.chiller_2?.avg_kw_per_tr == null ? "text.muted"
-                    : s.chiller_2.avg_kw_per_tr < 0.65 ? "green.400"
-                    : s.chiller_2.avg_kw_per_tr < 0.85 ? "yellow.400" : "red.400"
-                }
-                helpText="Efficiency"
-                icon={<Snowflake {...KPI_ICON} />}
-              />
+              <HoverGradientCard padding={0} bg="transparent" border={false}>
+                <KpiCard
+                  label="Chiller 2 kW/TR"
+                  value={s.chiller_2?.avg_kw_per_tr}
+                  decimals={3}
+                  accent={
+                    s.chiller_2?.avg_kw_per_tr == null ? "text.muted"
+                      : s.chiller_2.avg_kw_per_tr < 0.65 ? "green.400"
+                      : s.chiller_2.avg_kw_per_tr < 0.85 ? "yellow.400" : "red.400"
+                  }
+                  helpText="Efficiency"
+                  icon={<Snowflake {...KPI_ICON} />}
+                />
+              </HoverGradientCard>
             </MotionBox>
             <MotionBox variants={fadeUp} minW={0}>
-              <KpiCard label="CH1 Load" value={s.chiller_1?.avg_chiller_load} unit="%" decimals={1} icon={<Gauge {...KPI_ICON} />} />
+              <HoverGradientCard padding={0} bg="transparent" border={false}>
+                <KpiCard label="CH1 Load" value={s.chiller_1?.avg_chiller_load} unit="%" decimals={1} icon={<Gauge {...KPI_ICON} />} />
+              </HoverGradientCard>
             </MotionBox>
             <MotionBox variants={fadeUp} minW={0}>
-              <KpiCard label="CH2 Load" value={s.chiller_2?.avg_chiller_load} unit="%" decimals={1} icon={<Gauge {...KPI_ICON} />} />
+              <HoverGradientCard padding={0} bg="transparent" border={false}>
+                <KpiCard label="CH2 Load" value={s.chiller_2?.avg_chiller_load} unit="%" decimals={1} icon={<Gauge {...KPI_ICON} />} />
+              </HoverGradientCard>
             </MotionBox>
             <MotionBox variants={fadeUp} minW={0}>
-              <KpiCard label="Ambient" value={s.chiller_1?.latest_ambient_temp} unit="°C" decimals={1} icon={<ThermometerSun {...KPI_ICON} />} />
+              <HoverGradientCard padding={0} bg="transparent" border={false}>
+                <KpiCard label="Ambient" value={s.chiller_1?.latest_ambient_temp} unit="°C" decimals={1} icon={<ThermometerSun {...KPI_ICON} />} />
+              </HoverGradientCard>
             </MotionBox>
             <MotionBox variants={fadeUp} minW={0}>
-              <KpiCard label="CHW Supply" value={s.chiller_1?.latest_evap_leaving} unit="°C" decimals={1} icon={<Droplets {...KPI_ICON} />} />
+              <HoverGradientCard padding={0} bg="transparent" border={false}>
+                <KpiCard label="CHW Supply" value={s.chiller_1?.latest_evap_leaving} unit="°C" decimals={1} icon={<Droplets {...KPI_ICON} />} />
+              </HoverGradientCard>
             </MotionBox>
           </>
         )}

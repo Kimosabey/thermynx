@@ -4,7 +4,7 @@ import {
   Badge, HStack,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ScanSearch, Zap, CalendarCheck, Microscope, Wrench, Bot, Check } from "lucide-react";
+import { ScanSearch, Zap, CalendarCheck, Microscope, Wrench, Bot, Check, Play } from "lucide-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
@@ -12,6 +12,8 @@ import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import Chip from "../../shared/ui/Chip";
+import MovingBorder from "../../shared/ui/MovingBorder";
+import BackgroundBeams from "../../shared/ui/BackgroundBeams";
 import AgentRunner from "./AgentRunner";
 import { useAgentStream } from "./useAgentStream";
 
@@ -402,21 +404,16 @@ export default function AgentHub() {
                     Stop
                   </Box>
                 )}
-                <MotionBox whileTap={{ scale: 0.95 }}>
-                  <Button
-                    size="sm" onClick={handleRun}
-                    isLoading={running}
-                    loadingText="Agent working…"
-                    borderRadius="9px" fontWeight={600} px={5}
-                    minH="40px"
-                    bg={mode?.color ?? "brand.500"}
-                    color="#060d1f"
-                    _hover={{ opacity: 0.9, transform: "translateY(-1px)" }}
-                    transition="all 0.15s"
-                    isDisabled={!goal.trim()}
+                <MotionBox whileTap={{ scale: 0.96 }}>
+                  <MovingBorder
+                    icon={running ? undefined : Play}
+                    tone="primary"
+                    size="md"
+                    onClick={handleRun}
+                    isDisabled={!goal.trim() || running}
                   >
-                    Run {mode?.label}
-                  </Button>
+                    {running ? "Agent working…" : `Run ${mode?.label}`}
+                  </MovingBorder>
                 </MotionBox>
               </HStack>
             </Flex>
