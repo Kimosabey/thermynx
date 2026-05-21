@@ -7,6 +7,7 @@ import {
   LayoutDashboard, MessageSquareText, Activity, TriangleAlert,
   TrendingUp, Columns2, Wrench, IndianRupee, FileText, Bot,
   BookOpen, ChevronLeft, ChevronRight, Wind, Zap,
+  Sparkles, BellRing, Network, Camera, ScrollText,
 } from "lucide-react";
 import { GraylinxLogo } from "./GraylinxLogo";
 
@@ -20,6 +21,7 @@ const NAV_GROUPS = [
     items: [
       { label: "Dashboard",   to: "/dashboard",   Icon: LayoutDashboard },
       { label: "AI Analyzer", to: "/analyzer",    Icon: MessageSquareText },
+      { label: "NL Query",    to: "/nl-query",    Icon: Sparkles },
     ],
   },
   {
@@ -27,6 +29,7 @@ const NAV_GROUPS = [
     items: [
       { label: "Efficiency",  to: "/efficiency",  Icon: Zap },
       { label: "Anomalies",   to: "/anomalies",   Icon: TriangleAlert },
+      { label: "Alarms",      to: "/alarms",      Icon: BellRing },
       { label: "Forecast",    to: "/forecast",    Icon: TrendingUp },
       { label: "Compare",     to: "/compare",     Icon: Columns2 },
     ],
@@ -35,6 +38,7 @@ const NAV_GROUPS = [
     label: "Advanced",
     items: [
       { label: "Maintenance", to: "/maintenance", Icon: Wrench },
+      { label: "Topology",    to: "/topology",    Icon: Network },
       { label: "Cost",        to: "/cost",        Icon: IndianRupee },
       { label: "Reports",     to: "/reports",     Icon: FileText },
     ],
@@ -44,6 +48,8 @@ const NAV_GROUPS = [
     items: [
       { label: "AI Agents",   to: "/agent",       Icon: Bot },
       { label: "Knowledge",   to: "/rag",         Icon: BookOpen },
+      { label: "Vision",      to: "/vision",      Icon: Camera },
+      { label: "Audit Log",   to: "/audit",       Icon: ScrollText },
     ],
   },
 ];
