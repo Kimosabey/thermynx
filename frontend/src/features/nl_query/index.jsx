@@ -1,0 +1,287 @@
+import { useState, useMemo, useRef } from "react";
+import {
+  Box, Flex, Text, Textarea, Button, Grid, Badge, Spinner,
+  useColorMode, useToast,
+} from "@chakra-ui/react";
+import { Sparkles, Play, Database, AlertCircle, BarChart3, Table as TableIcon } from "lucide-react";
+import { motion } from "framer-motion";
+import ReactECharts from "echarts-for-react";
+import PageShell from "../../shared/ui/PageShell";
+import PageHeader from "../../shared/ui/PageHeader";
+import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import GlassCard from "../../shared/ui/GlassCard";
+import Eyebrow from "../../shared/ui/Eyebrow";
+
+const MotionBox = motion.create(Box);
+
+const EXAMPLES = [
+  "Show me the average kW/TR for chiller 1 in the last 6 hours",
+  "Which chiller has the highest energy use over the last 24 hours?",
+  "What is the run percentage of cooling tower 1 over the past 7 days?",
+  "Show kw_per_tr by hour for chiller 2 yesterday",
+];
+
+function pickSeries(rows, columns) {
+  if (!rows.length || columns.length < 2) return null;
+  // Try to detect a time column + a numeric column
+  const timeCol = columns.find(c => /time|date|slot|hour|day/i.test(c)) || columns[0];
+  const numericCol = columns.find(c => c !== timeCol && typeof rows[0][c] === "number");
+  if (!numericCol) return null;
+  return { timeCol, numericCol };
+}
+
+export default function NLQueryPage() {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === "dark";
+  const toast  = useToast();
+  const taRef  = useRef(null);
+
+  const [question, setQuestion] = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [result, setResult]     = useState(null);
+  const [error, setError]       = useState(null);
+
+  async function run(q) {
+    const text = (q ?? question).trim();
+    if (text.length < 3) return;
+    setLoading(true); setError(null); setResult(null);
+    try {
+      const r = await fetch("/api/v1/nl-query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ question: text }),
+      });
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        throw new Error(data?.detail || `HTTP ${r.status}`);
+      }
+      const data = await r.json();
+      setResult(data);
+      toast({
+        title: `Returned ${data.row_count} row${data.row_count === 1 ? "" : "s"} in ${data.elapsed_ms}ms`,
+        status: "success", duration: 2500, isClosable: true, position: "bottom-right",
+      });
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const chartOption = useMemo(() => {
+    if (!result?.rows?.length) return null;
+    const meta = pickSeries(result.rows, result.columns);
+    if (!meta) return null;
+    const xData = result.rows.map(r => r[meta.timeCol]);
+    const yData = result.rows.map(r => r[meta.numericCol]);
+    return {
+      animation: true, animationDuration: 600,
+      grid: { top: 16, right: 16, bottom: 28, left: 50 },
+      xAxis: {
+        type: "category", data: xData,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { fontSize: 10, color: isDark ? "#9D9DAA" : "#334155", hideOverlap: true },
+        splitLine: { show: false },
+      },
+      yAxis: {
+        type: "value",
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { fontSize: 10, color: isDark ? "#9D9DAA" : "#334155" },
+        splitLine: { lineStyle: { color: isDark ? "rgba(255,255,255,0.05)" : "rgba(31,63,254,0.06)", type: "dashed" } },
+      },
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: isDark ? "#0d1526" : "#fff",
+        borderColor:     isDark ? "#1e2d4a" : "#E0E7FF",
+        borderRadius: 10, padding: [8, 12],
+        textStyle: { fontSize: 11, color: isDark ? "#fff" : "#0D0D0D" },
+      },
+      series: [{
+        name: meta.numericCol, type: "line", data: yData,
+        smooth: true, symbol: "none",
+        lineStyle: { color: "#1F3FFE", width: 2 },
+        areaStyle: {
+          color: { type: "linear", x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0.05, color: "rgba(31,63,254,0.20)" },
+              { offset: 0.95, color: "rgba(31,63,254,0)" },
+            ],
+          },
+        },
+      }],
+    };
+  }, [result, isDark]);
+
+  return (
+    <PageShell>
+      <PageHeader
+        title="Natural Language Query"
+        icon={<PageHeaderIcon icon={<Sparkles size={20} strokeWidth={1.85} />} />}
+        subtitle="Ask the plant in plain English — agent generates safe read-only SQL and returns results"
+      />
+
+      <GlassCard p={5} mb={6}>
+        <Eyebrow mb={2}>Your question</Eyebrow>
+        <Textarea
+          ref={taRef}
+          value={question}
+          onChange={e => setQuestion(e.target.value)}
+          onKeyDown={e => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") run();
+          }}
+          placeholder="e.g. Show average kW/TR for chiller 1 in the last 6 hours"
+          rows={2}
+          resize="vertical"
+          mb={3}
+        />
+        <Flex justify="space-between" gap={3} align="center" wrap="wrap">
+          <Text fontSize="11px" color="text.muted">
+            ⌘/Ctrl+Enter to run · Only SELECT against telemetry tables · Hard 10s query timeout · Max 1000 rows
+          </Text>
+          <Button
+            leftIcon={loading ? <Spinner size="xs" /> : <Play size={14} strokeWidth={2.2} />}
+            onClick={() => run()}
+            isDisabled={loading || question.trim().length < 3}
+            colorScheme="brand"
+            size="sm"
+          >
+            {loading ? "Generating…" : "Run query"}
+          </Button>
+        </Flex>
+      </GlassCard>
+
+      {/* Examples */}
+      {!result && !error && (
+        <Box mb={6}>
+          <Eyebrow mb={3}>Try one of these</Eyebrow>
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={3}>
+            {EXAMPLES.map((ex, i) => (
+              <MotionBox
+                key={ex}
+                whileHover={{ y: -1 }}
+                transition={{ duration: 0.15 }}
+              >
+                <GlassCard
+                  as="button"
+                  textAlign="left"
+                  p={4}
+                  w="100%"
+                  cursor="pointer"
+                  _hover={{ borderColor: "border.brand" }}
+                  onClick={() => { setQuestion(ex); taRef.current?.focus(); }}
+                >
+                  <Flex align="center" gap={2} mb={1}>
+                    <Sparkles size={12} strokeWidth={2} color="#1F3FFE" />
+                    <Eyebrow>Example {i + 1}</Eyebrow>
+                  </Flex>
+                  <Text fontSize="sm" color="text.primary">{ex}</Text>
+                </GlassCard>
+              </MotionBox>
+            ))}
+          </Grid>
+        </Box>
+      )}
+
+      {/* Error */}
+      {error && (
+        <MotionBox initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+          <GlassCard p={4} mb={4} borderColor="rgba(239,68,68,0.32)" border="1px solid">
+            <Flex align="center" gap={3}>
+              <Box color="status.bad"><AlertCircle size={18} /></Box>
+              <Box>
+                <Eyebrow color="#ef4444">Query refused</Eyebrow>
+                <Text fontSize="sm" color="text.primary" mt={1}>{error}</Text>
+              </Box>
+            </Flex>
+          </GlassCard>
+        </MotionBox>
+      )}
+
+      {/* Result */}
+      {result && (
+        <MotionBox initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+          {/* Generated SQL */}
+          <GlassCard p={4} mb={4}>
+            <Flex align="center" gap={2} mb={2}>
+              <Database size={14} strokeWidth={2} color="#1F3FFE" />
+              <Eyebrow>Generated SQL</Eyebrow>
+              <Badge ml="auto" fontSize="9px" bg="bg.chip" color="text.muted" border="1px solid" borderColor="border.subtle" borderRadius="6px" px={2}>
+                {result.row_count} rows · {result.elapsed_ms}ms
+              </Badge>
+            </Flex>
+            <Box
+              as="pre"
+              bg="bg.chip"
+              border="1px solid"
+              borderColor="border.subtle"
+              borderRadius="8px"
+              p={3}
+              fontSize="12px"
+              fontFamily="mono"
+              color="text.primary"
+              overflowX="auto"
+              whiteSpace="pre-wrap"
+            >
+              {result.sql}
+            </Box>
+            {result.warnings?.length > 0 && (
+              <Text mt={2} fontSize="10px" color="status.warn">
+                ⚠ {result.warnings.join(" · ")}
+              </Text>
+            )}
+          </GlassCard>
+
+          {/* Chart */}
+          {chartOption && (
+            <GlassCard p={0} overflow="hidden" mb={4}>
+              <Flex px={5} pt={4} pb={3} align="center" gap={2}>
+                <BarChart3 size={14} strokeWidth={2} color="#1F3FFE" />
+                <Eyebrow>Auto-visualization</Eyebrow>
+              </Flex>
+              <ReactECharts option={chartOption} style={{ height: "240px", width: "100%" }} opts={{ renderer: "canvas" }} />
+            </GlassCard>
+          )}
+
+          {/* Table */}
+          <GlassCard p={0} overflow="hidden">
+            <Flex px={5} pt={4} pb={3} align="center" gap={2}>
+              <TableIcon size={14} strokeWidth={2} color="#1F3FFE" />
+              <Eyebrow>Results</Eyebrow>
+            </Flex>
+            <Box overflowX="auto">
+              <Box as="table" minW="600px" w="100%" fontSize="xs">
+                <Box as="thead">
+                  <Box as="tr" borderBottom="1px solid" borderColor="border.subtle">
+                    {result.columns.map(c => (
+                      <Box key={c} as="th" textAlign="left" px={4} py={2}
+                        color="text.muted" textTransform="uppercase" letterSpacing="0.08em" fontWeight={700} fontSize="10px">
+                        {c}
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+                <Box as="tbody">
+                  {result.rows.slice(0, 200).map((row, i) => (
+                    <Box as="tr" key={i} borderBottom="1px solid" borderColor="border.subtle"
+                      _hover={{ bg: "rgba(31,63,254,0.04)" }}>
+                      {result.columns.map(c => (
+                        <Box as="td" key={c} px={4} py="6px" color="text.primary" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                          {row[c] == null ? "—" : typeof row[c] === "number" ? Number(row[c]).toLocaleString() : String(row[c])}
+                        </Box>
+                      ))}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            </Box>
+            {result.rows.length > 200 && (
+              <Text px={5} py={2} fontSize="10px" color="text.muted">
+                Showing first 200 of {result.row_count} rows
+              </Text>
+            )}
+          </GlassCard>
+        </MotionBox>
+      )}
+    </PageShell>
+  );
+}
