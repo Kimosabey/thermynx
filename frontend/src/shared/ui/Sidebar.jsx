@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Flex, Text, Tooltip, Image, useColorMode } from "@chakra-ui/react";
+import { Box, Flex, Text, Tooltip, useColorMode } from "@chakra-ui/react";
 import { Sun, Moon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,7 +8,7 @@ import {
   TrendingUp, Columns2, Wrench, IndianRupee, FileText, Bot,
   BookOpen, ChevronLeft, ChevronRight, Wind, Zap,
 } from "lucide-react";
-import logo from "../../assets/logo.png";
+import { GraylinxLogo } from "./GraylinxLogo";
 
 const MotionBox = motion.create(Box);
 
@@ -258,29 +258,14 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
           borderBottom="1px solid rgba(255,255,255,0.06)"
           flexShrink={0}
         >
-          <Box
-            w="34px" h="34px" borderRadius="10px" flexShrink={0}
-            bg="white"
-            display="flex" alignItems="center" justifyContent="center"
-            overflow="hidden"
-            boxShadow="0 0 0 1px rgba(31,63,254,0.2), 0 4px 12px rgba(31,63,254,0.25)"
-          >
-            <Image src={logo} alt="Graylinx" w="28px" objectFit="contain" />
-          </Box>
+          <GraylinxLogo variant="mark" size={34} />
           <AnimatePresence>
             {!collapsed && (
               <MotionBox
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <Text fontFamily="heading" fontWeight={800} fontSize="15px"
-                  color="white" letterSpacing="-0.02em" lineHeight="1.1">
-                  Graylinx
-                </Text>
-                <Text fontSize="9px" color="rgba(255,255,255,0.35)"
-                  letterSpacing="0.14em" textTransform="uppercase" mt="1px">
-                  HVAC intelligence
-                </Text>
+                <GraylinxLogo variant="wordmark" />
               </MotionBox>
             )}
           </AnimatePresence>

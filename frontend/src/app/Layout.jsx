@@ -5,6 +5,9 @@ import { AnimatePresence } from "framer-motion";
 import { Menu } from "lucide-react";
 import Sidebar from "../shared/ui/Sidebar";
 import PageTransition from "../shared/ui/PageTransition";
+import { GraylinxLogo } from "../shared/ui/GraylinxLogo";
+import AuroraBackground from "../shared/ui/AuroraBackground";
+import ServiceStatusBar from "../shared/ui/ServiceStatusBar";
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -40,6 +43,7 @@ export default function Layout() {
         bg="bg.canvas"
         sx={{ "&:focus": { outline: "none" } }}
       >
+        <AuroraBackground />
         {/* Mobile top bar */}
         {useDrawerNav && (
           <Flex
@@ -60,18 +64,22 @@ export default function Layout() {
               minW="44px"
               h="44px"
             />
-            <Text fontFamily="heading" fontWeight={800} fontSize="14px"
-              color="accent.primary" letterSpacing="-0.02em">
-              Graylinx
-            </Text>
+            <Flex align="center" gap={2}>
+              <GraylinxLogo variant="mark" size={26} />
+              <GraylinxLogo variant="wordmark" color="text.primary" muted="text.muted" tagline={null} />
+            </Flex>
           </Flex>
         )}
 
-        <AnimatePresence mode="wait">
-          <PageTransition key={location.pathname}>
-            <Outlet />
-          </PageTransition>
-        </AnimatePresence>
+        <Box position="relative" zIndex={1}>
+          <AnimatePresence mode="wait">
+            <PageTransition key={location.pathname}>
+              <Outlet />
+            </PageTransition>
+          </AnimatePresence>
+        </Box>
+
+        <ServiceStatusBar />
       </Box>
     </Flex>
   );
