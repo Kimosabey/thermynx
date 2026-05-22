@@ -319,7 +319,7 @@ export default function Sidebar({ overlay, mobileOpen, onMobileClose }) {
                 px="20px" pt="10px" pb="8px"
               >
                 <Text fontSize="10px" color="rgba(255,255,255,0.2)" textAlign="center">
-                  Unicharm Facility · v0.4.0-poc
+                  Unicharm Facility · v0.4.0
                 </Text>
               </MotionBox>
             )}

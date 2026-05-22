@@ -222,7 +222,7 @@ export default function ForecastPage() {
       <PageHeader
         title="Energy Forecaster"
         icon={<PageHeaderIcon icon={<TrendingUp size={20} strokeWidth={1.85} />} />}
-        subtitle="Hour-of-day mean ± 1σ over 7d history · foundation model swap-in planned (Phase 8)"
+        subtitle="Hour-of-day mean ± 1σ over 7 days of recent history"
         actions={
           <Flex gap={3} flexWrap="wrap">
             <Select

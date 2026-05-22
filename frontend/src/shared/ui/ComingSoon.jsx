@@ -6,7 +6,11 @@ import Eyebrow from "./Eyebrow";
 
 const MotionBox = motion.create(Box);
 
-export default function ComingSoon({ phase, items = [] }) {
+/**
+ * In-development placeholder card. The `phase` prop is accepted for
+ * source-code traceability but is intentionally not rendered in the UI.
+ */
+export default function ComingSoon({ phase: _phase, items = [] }) {
   return (
     <MotionBox
       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -24,20 +28,20 @@ export default function ComingSoon({ phase, items = [] }) {
             <Sparkles size={18} strokeWidth={1.9} />
           </Box>
           <Box>
-            <Eyebrow>{phase} · planned</Eyebrow>
+            <Eyebrow>In development</Eyebrow>
             <Text fontSize="md" fontWeight={700} color="text.primary" letterSpacing="-0.01em" mt={1}>
-              Coming soon
+              Available soon
             </Text>
           </Box>
           <Badge ml="auto" fontSize="10px" bg="rgba(124,58,237,0.12)" color="#a78bfa"
             border="1px solid rgba(124,58,237,0.25)" borderRadius="6px" px={2} py="2px">
-            Roadmap
+            Preview
           </Badge>
         </Flex>
 
         <Text fontSize="sm" color="text.muted" mb={4}>
-          The capabilities below are scoped and queued. They will arrive natively in this product —
-          no cross-service dependencies, no cloud APIs, all processing on the on-prem Ollama box.
+          The capabilities below are in active development. All processing
+          stays on the on-prem Ollama server — no cloud APIs.
         </Text>
 
         <Box>
