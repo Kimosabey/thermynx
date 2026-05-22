@@ -156,6 +156,32 @@ TOOL_SCHEMAS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "propose_work_order",
+            "description": (
+                "Draft a work order recommendation that a human operator will review and "
+                "confirm before creation. Use this AT THE END of an investigation when you "
+                "have a clear diagnosis and an actionable next step (a specific check, "
+                "inspection, part replacement, or PM task). The tool does NOT create the "
+                "WO directly — the UI surfaces the proposal with a one-click 'Create' "
+                "button. Do NOT call this tool for vague suggestions; only when there is "
+                "a concrete, equipment-specific action."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "equipment_id":        {"type": "string", "description": "Affected equipment id"},
+                    "title":               {"type": "string", "description": "Short imperative title (e.g. 'Inspect Chiller 1 condenser approach')"},
+                    "priority":            {"type": "string", "enum": ["low", "normal", "high", "critical"], "default": "normal"},
+                    "diagnosis":           {"type": "string", "description": "1-3 sentence diagnosis summary cited with telemetry numbers"},
+                    "recommended_actions": {"type": "string", "description": "Newline-separated concrete checks / fixes"},
+                },
+                "required": ["equipment_id", "title", "diagnosis"],
+            },
+        },
+    },
 ]
 
 
@@ -309,6 +335,35 @@ async def _exec_search_knowledge_base(
     }
 
 
+async def _exec_propose_work_order(
+    equipment_id: str,
+    title: str,
+    diagnosis: str,
+    priority: str = "normal",
+    recommended_actions: str | None = None,
+) -> dict:
+    """Validate + echo. Does NOT persist — the UI surfaces the proposal with
+    a one-click confirm; persistence happens through /api/v1/work-orders
+    when the operator approves."""
+    eq = get_by_id(equipment_id)
+    if not eq:
+        return {"status": "rejected", "reason": f"Unknown equipment '{equipment_id}'."}
+    if priority not in {"low", "normal", "high", "critical"}:
+        priority = "normal"
+    return {
+        "status":   "proposed",
+        "proposal": {
+            "equipment_id":        equipment_id,
+            "equipment_name":      eq["name"],
+            "title":               title.strip()[:256],
+            "priority":            priority,
+            "diagnosis":           diagnosis.strip()[:2000],
+            "recommended_actions": (recommended_actions or "").strip()[:2000] or None,
+        },
+        "note": "Human review required — proposal will not be created until the operator confirms.",
+    }
+
+
 # ── Registry ─────────────────────────────────────────────────────────────────
 
 TOOL_EXECUTORS = {
@@ -320,6 +375,7 @@ TOOL_EXECUTORS = {
     "get_anomaly_history":     _exec_get_anomaly_history,
     "search_knowledge_base":   _exec_search_knowledge_base,
     "retrieve_manual":         _exec_search_knowledge_base,  # backward compat — old model/tool name
+    "propose_work_order":      _exec_propose_work_order,
 }
 
 

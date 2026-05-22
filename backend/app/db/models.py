@@ -104,3 +104,83 @@ class Embedding(Base):
 
     equipment_tags: Mapped[str | None] = mapped_column(String(256))  # "chiller_1,chiller_2"
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+# ── Work Orders (Phase WO) ────────────────────────────────────────────────────
+
+class WorkOrder(Base):
+    """Operator-actionable work item. Created manually, by the agent during
+    investigation, automatically from a high-severity anomaly, or by the
+    preventive-maintenance scheduler. Lifecycle is enforced in code:
+    open → assigned → in_progress → resolved → closed (with cancel allowed
+    from any non-terminal state)."""
+    __tablename__ = "work_orders"
+
+    id:           Mapped[str] = mapped_column(String(36), primary_key=True)
+    equipment_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    title:        Mapped[str] = mapped_column(String(256))
+    description:  Mapped[str | None] = mapped_column(Text)
+    priority:     Mapped[str] = mapped_column(String(16), default="normal")  # low / normal / high / critical
+    state:        Mapped[str] = mapped_column(String(16), default="open", index=True)
+    # Provenance — where did this WO come from?
+    source:       Mapped[str] = mapped_column(String(32), default="manual")   # manual / agent / anomaly / pm
+    source_ref:   Mapped[str | None] = mapped_column(String(64))              # agent_run_id / anomaly_id / pm_template_id
+    # Assignment
+    created_by:   Mapped[str | None] = mapped_column(String(64))
+    assigned_to:  Mapped[str | None] = mapped_column(String(64), ForeignKey("technicians.id", ondelete="SET NULL"), index=True)
+    # Recommended-action payload (LLM diagnosis, recommended parts, etc.)
+    diagnosis:    Mapped[str | None] = mapped_column(Text)
+    recommended_actions: Mapped[str | None] = mapped_column(Text)  # newline-separated
+    # Timestamps
+    due_at:       Mapped[datetime | None] = mapped_column(DateTime)
+    resolved_at:  Mapped[datetime | None] = mapped_column(DateTime)
+    closed_at:    Mapped[datetime | None] = mapped_column(DateTime)
+    created_at:   Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+    updated_at:   Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class WorkOrderEvent(Base):
+    """Append-only audit trail of every WO state change + comment. The
+    `work_orders` table holds the *current* state; this table holds the *history*."""
+    __tablename__ = "work_order_events"
+
+    id:          Mapped[str] = mapped_column(String(36), primary_key=True)
+    wo_id:       Mapped[str] = mapped_column(String(36), ForeignKey("work_orders.id", ondelete="CASCADE"), index=True)
+    kind:        Mapped[str] = mapped_column(String(24))   # transition / comment / assignment / system
+    from_state:  Mapped[str | None] = mapped_column(String(16))
+    to_state:    Mapped[str | None] = mapped_column(String(16))
+    actor:       Mapped[str | None] = mapped_column(String(64))
+    notes:       Mapped[str | None] = mapped_column(Text)
+    created_at:  Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+
+
+class Technician(Base):
+    __tablename__ = "technicians"
+
+    id:               Mapped[str] = mapped_column(String(36), primary_key=True)
+    name:             Mapped[str] = mapped_column(String(128))
+    email:            Mapped[str | None] = mapped_column(String(128))
+    skills:           Mapped[str | None] = mapped_column(Text)  # comma-separated tags
+    location:         Mapped[str | None] = mapped_column(String(64))
+    active:           Mapped[int] = mapped_column(Integer, default=1)
+    success_rate:     Mapped[float | None] = mapped_column(Float)  # 0..1 (filled from analytics)
+    open_assignments: Mapped[int] = mapped_column(Integer, default=0)
+    notes:            Mapped[str | None] = mapped_column(Text)
+    created_at:       Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class PMTemplate(Base):
+    """Recurring preventive-maintenance template. The scheduler reads these
+    once a day and creates work orders for each (equipment, template) pair
+    whose `interval_days` has elapsed since the last completion."""
+    __tablename__ = "pm_templates"
+
+    id:               Mapped[str] = mapped_column(String(36), primary_key=True)
+    name:             Mapped[str] = mapped_column(String(128))
+    equipment_type:   Mapped[str] = mapped_column(String(32))  # chiller / cooling_tower / pump / all
+    interval_days:    Mapped[int] = mapped_column(Integer)
+    priority:         Mapped[str] = mapped_column(String(16), default="normal")
+    description:      Mapped[str | None] = mapped_column(Text)
+    active:           Mapped[int] = mapped_column(Integer, default=1)
+    last_run_at:      Mapped[datetime | None] = mapped_column(DateTime)
+    created_at:       Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

@@ -14,11 +14,12 @@ from arq.cron import cron as arq_cron
 
 from app.jobs.anomaly_scan import run_scan_job
 from app.jobs.slack_forwarder import run_slack_forward_job
+from app.jobs.pm_scheduler import run_pm_scheduler_job
 from app.config import settings as app_settings
 
 
 class WorkerSettings:
-    functions  = [run_scan_job, run_slack_forward_job]
+    functions  = [run_scan_job, run_slack_forward_job, run_pm_scheduler_job]
     cron_jobs  = [
         # Every 5 minutes — anomaly persistence scan
         arq_cron(
@@ -32,8 +33,14 @@ class WorkerSettings:
             minute=set(range(60)),
             run_at_startup=False,
         ),
+        # Daily 02:05 UTC — PM scheduler creates due maintenance WOs
+        arq_cron(
+            run_pm_scheduler_job,
+            hour={2}, minute={5},
+            run_at_startup=True,    # so a fresh install gets its first PM batch immediately
+        ),
     ]
     redis_settings = RedisSettings.from_dsn(app_settings.REDIS_URL)
-    max_jobs       = 2     # anomaly scan + slack can run in parallel
-    job_timeout    = 120
+    max_jobs       = 3
+    job_timeout    = 180
     keep_result    = 300
