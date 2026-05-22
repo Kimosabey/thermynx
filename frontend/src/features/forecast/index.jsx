@@ -185,8 +185,31 @@ export default function ForecastPage() {
   }, [selectedEq, metric, horizon]);
 
   const eqObj = equipment.find(e => e.id === selectedEq);
-  const METRICS_BY_TYPE = { chiller: ["kw_per_tr", "kw", "chiller_load"], cooling_tower: ["kw"], pump: ["kw"] };
+  const METRICS_BY_TYPE = {
+    chiller: [
+      "kw_per_tr", "kw", "tr", "chiller_load",
+      "evap_entering_temp", "evap_leaving_temp", "chw_delta_t",
+      "cond_entering_temp", "cond_leaving_temp", "ambient_temp",
+      "kwh", "trh",
+    ],
+    cooling_tower: ["kw", "kwh", "cumulative_kwh", "run_hours"],
+    pump:          ["kw", "kwh", "cumulative_kwh", "run_hours"],
+  };
   const availMetrics = METRICS_BY_TYPE[eqObj?.type || "chiller"] || ["kw"];
+
+  const HORIZON_OPTIONS = [
+    { v: 1,   label: "Next 1h" },
+    { v: 3,   label: "Next 3h" },
+    { v: 6,   label: "Next 6h" },
+    { v: 12,  label: "Next 12h" },
+    { v: 24,  label: "Next 24h" },
+    { v: 36,  label: "Next 36h" },
+    { v: 48,  label: "Next 48h" },
+    { v: 72,  label: "Next 72h" },
+    { v: 96,  label: "Next 96h" },
+    { v: 120, label: "Next 5d" },
+    { v: 168, label: "Next 7d" },
+  ];
 
   const pts     = data?.points || [];
   const avgPred = pts.length ? pts.reduce((s, p) => s + p.predicted, 0) / pts.length : null;
@@ -199,7 +222,7 @@ export default function ForecastPage() {
       <PageHeader
         title="Energy Forecaster"
         icon={<PageHeaderIcon icon={<TrendingUp size={20} strokeWidth={1.85} />} />}
-        subtitle={`Hour-of-day statistical profile · next ${horizon}h prediction with confidence interval`}
+        subtitle="Hour-of-day mean ± 1σ over 7d history · foundation model swap-in planned (Phase 8)"
         actions={
           <Flex gap={3} flexWrap="wrap">
             <Select
@@ -213,11 +236,8 @@ export default function ForecastPage() {
             <Select size="sm" value={metric} onChange={(e) => setMetric(e.target.value)} aria-label="Metric" {...surfaceSelectProps} w="120px">
               {availMetrics.map(m => <option key={m} value={m}>{m.replace(/_/g, " ")}</option>)}
             </Select>
-            <Select size="sm" value={horizon} onChange={(e) => setHorizon(Number(e.target.value))} aria-label="Forecast horizon" {...surfaceSelectProps} w="120px">
-              <option value={12}>Next 12h</option>
-              <option value={24}>Next 24h</option>
-              <option value={48}>Next 48h</option>
-              <option value={72}>Next 72h</option>
+            <Select size="sm" value={horizon} onChange={(e) => setHorizon(Number(e.target.value))} aria-label="Forecast horizon" {...surfaceSelectProps} w="140px">
+              {HORIZON_OPTIONS.map(h => <option key={h.v} value={h.v}>{h.label}</option>)}
             </Select>
           </Flex>
         }
