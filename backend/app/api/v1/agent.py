@@ -9,6 +9,7 @@ from sqlalchemy import text
 from app.db.session import get_pg
 from app.db.models import AgentRun
 from app.services.agent import run_agent
+from app.services.multi_agent import run_multi_agent
 from app.limiter import limiter
 from app.config import settings
 from app.log import get_logger
@@ -123,6 +124,94 @@ async def agent_run(
 ):
     return StreamingResponse(
         _stream(request, req, pg),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+class OrchestrateRequest(BaseModel):
+    goal:    str = Field(..., min_length=3, max_length=2000)
+    context: dict | None = None
+    model:   str | None = None
+
+
+async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: AsyncSession):
+    """Multi-agent stream — same persistence model as `_stream`, mode='orchestrator'."""
+    run_id = str(uuid.uuid4())
+    model  = req.model or settings.OLLAMA_DEFAULT_MODEL
+
+    run = AgentRun(
+        id=run_id,
+        mode="orchestrator",
+        goal=req.goal,
+        context_json=json.dumps(req.context) if req.context else None,
+        model=model,
+        status="running",
+        request_id=getattr(request.state, "request_id", None),
+    )
+    pg.add(run)
+    await pg.commit()
+
+    log.info(
+        "orchestrator_run_start run_id=%s model=%s request_id=%s",
+        run_id, model, getattr(request.state, "request_id", None),
+    )
+
+    synth_tokens: list[str] = []
+    subtasks     = 0
+    status       = "error"
+
+    try:
+        async for frame in run_multi_agent(req.goal, req.context, model=model):
+            if await request.is_disconnected():
+                status = "cancelled"
+                break
+            yield frame
+            try:
+                data = json.loads(frame[6:])
+                if data["type"] == "synthesis_token":
+                    synth_tokens.append(data["content"])
+                elif data["type"] == "done":
+                    subtasks = data.get("subtasks", 0)
+                    status   = "ok"
+                elif data["type"] == "error":
+                    status = "error"
+            except Exception:
+                pass
+    except AppError as e:
+        rid = getattr(request.state, "request_id", None)
+        log.warning("orchestrator_app_error run_id=%s detail=%s request_id=%s", run_id, e.detail, rid)
+        yield f"data: {json.dumps({'type':'error','detail':e.detail,'request_id':rid})}\n\n"
+        status = "error"
+    except Exception:
+        log.exception("orchestrator_run_error run_id=%s", run_id)
+        rid = getattr(request.state, "request_id", None)
+        yield f"data: {json.dumps({'type':'error','detail':'Orchestrator failed.','request_id':rid})}\n\n"
+        status = "error"
+
+    run.final_output = "".join(synth_tokens) or None
+    run.steps_taken  = subtasks
+    run.status       = status
+    await pg.merge(run)
+    await pg.commit()
+
+    log.info(
+        "orchestrator_run_done run_id=%s status=%s subtasks=%s request_id=%s",
+        run_id, status, subtasks, getattr(request.state, "request_id", None),
+    )
+
+
+@router.post("/agent/orchestrate")
+@limiter.limit("6/minute")
+async def agent_orchestrate(
+    request: Request,
+    req: OrchestrateRequest,
+    pg: AsyncSession = Depends(get_pg),
+):
+    """Multi-agent orchestration — decomposes one complex goal into specialist
+    sub-tasks, then synthesises one final answer. Returns SSE stream."""
+    return StreamingResponse(
+        _orchestrate_stream(request, req, pg),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

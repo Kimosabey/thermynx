@@ -4,7 +4,7 @@ import {
   Badge, HStack,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ScanSearch, Zap, CalendarCheck, Microscope, Wrench, Bot, Check, Play } from "lucide-react";
+import { ScanSearch, Zap, CalendarCheck, Microscope, Wrench, Bot, Check, Play, Network } from "lucide-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
@@ -15,6 +15,7 @@ import Chip from "../../shared/ui/Chip";
 import MovingBorder from "../../shared/ui/MovingBorder";
 import BackgroundBeams from "../../shared/ui/BackgroundBeams";
 import AgentRunner from "./AgentRunner";
+import MultiAgentRunner from "./MultiAgentRunner";
 import { useAgentStream } from "./useAgentStream";
 
 const MotionBox = motion.create(Box);
@@ -114,6 +115,25 @@ const MODES = [
     ],
     hasEquipment: true,
   },
+  {
+    id:       "orchestrator",
+    label:    "Orchestrator",
+    Icon: Network,
+    color:  "#a78bfa",
+    cDeep:  "#6d28d9",
+    cShadow:"rgba(167,139,250,0.34)",
+    bg:     "rgba(167,139,250,0.08)",
+    border: "rgba(167,139,250,0.22)",
+    tagline:  "Plans + dispatches multiple specialists, then synthesises one answer",
+    placeholder: "e.g. Diagnose why energy is up 12%, propose fixes, and plan maintenance for next month",
+    presets: [
+      "Diagnose why total plant kW is high today, propose optimisations, and plan maintenance",
+      "Investigate Chiller 1 issues, find optimisations, and produce a maintenance plan",
+      "Full plant audit: investigate problems, optimise operations, plan next-week maintenance",
+      "Compare both chillers, root-cause the underperformer, and recommend actions",
+    ],
+    hasEquipment: false,
+  },
 ];
 
 function ModeIcon({ mode, size = 18 }) {
@@ -196,8 +216,9 @@ export default function AgentHub() {
   const [selectedEq,  setSelectedEq]  = useState("");
   const [hours,       setHours]       = useState(24);
 
-  const { trace, output, running, done, meta, error, start, stop } = useAgentStream();
+  const { trace, output, running, done, meta, error, plan, delegations, synthesis, start, stop } = useAgentStream();
   const mode = MODES.find((m) => m.id === activeMode);
+  const isOrchestrator = activeMode === "orchestrator";
 
   useEffect(() => {
     fetch("/api/v1/equipment")
@@ -246,7 +267,7 @@ export default function AgentHub() {
           templateColumns={{
             base: "repeat(2, minmax(0, 1fr))",
             sm: "repeat(3, minmax(0, 1fr))",
-            md: "repeat(5, minmax(0, 1fr))",
+            md: "repeat(6, minmax(0, 1fr))",
           }}
           gap={3}
           w="100%"
@@ -422,14 +443,26 @@ export default function AgentHub() {
       </AnimatePresence>
 
       {/* Agent runner output */}
-      <AgentRunner
-        trace={trace}
-        output={output}
-        running={running}
-        done={done}
-        meta={meta}
-        error={error}
-      />
+      {isOrchestrator ? (
+        <MultiAgentRunner
+          plan={plan}
+          delegations={delegations}
+          synthesis={synthesis}
+          running={running}
+          done={done}
+          meta={meta}
+          error={error}
+        />
+      ) : (
+        <AgentRunner
+          trace={trace}
+          output={output}
+          running={running}
+          done={done}
+          meta={meta}
+          error={error}
+        />
+      )}
     </PageShell>
   );
 }
