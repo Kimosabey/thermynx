@@ -1,43 +1,58 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { Flex, Spinner } from "@chakra-ui/react";
 import Layout from "./Layout";
-import Dashboard    from "../features/dashboard";
-import AIAnalyzer   from "../features/analyzer";
-import Efficiency   from "../features/efficiency";
-import Anomalies    from "../features/anomalies";
-import AgentHub     from "../features/agent";
-import Forecast     from "../features/forecast";
-import Compare      from "../features/compare";
-import Maintenance  from "../features/maintenance";
-import CostAnalytics from "../features/cost";
-import Reports      from "../features/reports";
-import RAGKnowledge from "../features/rag";
-import NLQuery      from "../features/nl_query";
-import Alarms       from "../features/alarms";
-import Topology     from "../features/topology";
-import Vision       from "../features/vision";
-import Audit        from "../features/audit";
+
+// Lazy-load every feature page so each becomes its own chunk and the
+// initial bundle stays small. ECharts + Chakra + Framer-Motion + react /
+// markdown vendor libs are pinned into shared chunks via vite.config.js
+// manualChunks so the second page load reuses them from cache.
+const Dashboard     = lazy(() => import("../features/dashboard"));
+const AIAnalyzer    = lazy(() => import("../features/analyzer"));
+const Efficiency    = lazy(() => import("../features/efficiency"));
+const Anomalies     = lazy(() => import("../features/anomalies"));
+const AgentHub      = lazy(() => import("../features/agent"));
+const Forecast      = lazy(() => import("../features/forecast"));
+const Compare       = lazy(() => import("../features/compare"));
+const Maintenance   = lazy(() => import("../features/maintenance"));
+const CostAnalytics = lazy(() => import("../features/cost"));
+const Reports       = lazy(() => import("../features/reports"));
+const RAGKnowledge  = lazy(() => import("../features/rag"));
+const NLQuery       = lazy(() => import("../features/nl_query"));
+const Alarms        = lazy(() => import("../features/alarms"));
+const Topology      = lazy(() => import("../features/topology"));
+const Vision        = lazy(() => import("../features/vision"));
+const Audit         = lazy(() => import("../features/audit"));
+
+function PageFallback() {
+  return (
+    <Flex h="60vh" align="center" justify="center">
+      <Spinner size="lg" color="accent.primary" thickness="3px" speed="0.7s" />
+    </Flex>
+  );
+}
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard"   element={<Dashboard />} />
-        <Route path="analyzer"    element={<AIAnalyzer />} />
-        <Route path="nl-query"    element={<NLQuery />} />
-        <Route path="efficiency"  element={<Efficiency />} />
-        <Route path="anomalies"   element={<Anomalies />} />
-        <Route path="alarms"      element={<Alarms />} />
-        <Route path="forecast"    element={<Forecast />} />
-        <Route path="compare"     element={<Compare />} />
-        <Route path="maintenance" element={<Maintenance />} />
-        <Route path="topology"    element={<Topology />} />
-        <Route path="cost"        element={<CostAnalytics />} />
-        <Route path="reports"     element={<Reports />} />
-        <Route path="agent"       element={<AgentHub />} />
-        <Route path="rag"         element={<RAGKnowledge />} />
-        <Route path="vision"      element={<Vision />} />
-        <Route path="audit"       element={<Audit />} />
+        <Route path="dashboard"   element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
+        <Route path="analyzer"    element={<Suspense fallback={<PageFallback />}><AIAnalyzer /></Suspense>} />
+        <Route path="nl-query"    element={<Suspense fallback={<PageFallback />}><NLQuery /></Suspense>} />
+        <Route path="efficiency"  element={<Suspense fallback={<PageFallback />}><Efficiency /></Suspense>} />
+        <Route path="anomalies"   element={<Suspense fallback={<PageFallback />}><Anomalies /></Suspense>} />
+        <Route path="alarms"      element={<Suspense fallback={<PageFallback />}><Alarms /></Suspense>} />
+        <Route path="forecast"    element={<Suspense fallback={<PageFallback />}><Forecast /></Suspense>} />
+        <Route path="compare"     element={<Suspense fallback={<PageFallback />}><Compare /></Suspense>} />
+        <Route path="maintenance" element={<Suspense fallback={<PageFallback />}><Maintenance /></Suspense>} />
+        <Route path="topology"    element={<Suspense fallback={<PageFallback />}><Topology /></Suspense>} />
+        <Route path="cost"        element={<Suspense fallback={<PageFallback />}><CostAnalytics /></Suspense>} />
+        <Route path="reports"     element={<Suspense fallback={<PageFallback />}><Reports /></Suspense>} />
+        <Route path="agent"       element={<Suspense fallback={<PageFallback />}><AgentHub /></Suspense>} />
+        <Route path="rag"         element={<Suspense fallback={<PageFallback />}><RAGKnowledge /></Suspense>} />
+        <Route path="vision"      element={<Suspense fallback={<PageFallback />}><Vision /></Suspense>} />
+        <Route path="audit"       element={<Suspense fallback={<PageFallback />}><Audit /></Suspense>} />
       </Route>
     </Routes>
   );
