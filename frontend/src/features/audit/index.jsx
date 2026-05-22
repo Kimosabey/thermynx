@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { Box, Flex, Text, Select, Grid, Badge, Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
-import { ScrollText, MessageSquareText, Bot } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Box, Flex, Text, Select, Grid, Badge, Tabs, TabList, TabPanels, Tab, TabPanel, useColorMode } from "@chakra-ui/react";
+import { ScrollText, MessageSquareText, Bot, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
+import ReactECharts from "echarts-for-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
@@ -44,10 +45,13 @@ function StatTile({ label, value, color = "text.primary", delay = 0 }) {
 }
 
 export default function AuditPage() {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === "dark";
   const [hours, setHours]     = useState(24);
   const [stats, setStats]     = useState(null);
   const [analyses, setAnalyses] = useState(null);
   const [agents, setAgents]   = useState(null);
+  const [quality, setQuality] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,13 +60,59 @@ export default function AuditPage() {
       fetch(`/api/v1/audit/stats?hours=${hours}`).then(r => r.json()),
       fetch(`/api/v1/audit/analyses?hours=${hours}&limit=100`).then(r => r.json()),
       fetch(`/api/v1/audit/agents?hours=${hours}&limit=100`).then(r => r.json()),
+      fetch(`/api/v1/audit/quality?hours=${hours}&bucket_hours=${hours >= 168 ? 6 : 1}`).then(r => r.json()),
     ])
-      .then(([s, a, ag]) => { setStats(s); setAnalyses(a); setAgents(ag); setLoading(false); })
+      .then(([s, a, ag, q]) => { setStats(s); setAnalyses(a); setAgents(ag); setQuality(q); setLoading(false); })
       .catch(() => setLoading(false));
   }, [hours]);
 
   const okCount   = stats?.analyses_by_status?.ok ?? 0;
   const errCount  = stats?.analyses_by_status?.error ?? 0;
+
+  const qualityOption = useMemo(() => {
+    if (!quality?.series?.length) return null;
+    const xData    = quality.series.map(p => new Date(p.ts).toLocaleString("en-IN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }));
+    const okData   = quality.series.map(p => p.ok);
+    const errData  = quality.series.map(p => p.error);
+    return {
+      animation: true,
+      animationDuration: 600,
+      grid: { top: 24, right: 16, bottom: 32, left: 36 },
+      legend: { data: ["OK", "Error"], top: 0, textStyle: { color: isDark ? "#CCCCD4" : "#3B3B42", fontSize: 11 }, itemWidth: 12, itemHeight: 8 },
+      xAxis: {
+        type: "category", data: xData,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { fontSize: 10, color: isDark ? "#9D9DAA" : "#334155", hideOverlap: true, interval: "auto" },
+        splitLine: { show: false },
+        boundaryGap: false,
+      },
+      yAxis: {
+        type: "value",
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { fontSize: 10, color: isDark ? "#9D9DAA" : "#334155" },
+        splitLine: { lineStyle: { color: isDark ? "rgba(255,255,255,0.05)" : "rgba(31,63,254,0.06)", type: "dashed" } },
+      },
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: isDark ? "#0d1526" : "#fff",
+        borderColor:     isDark ? "#1e2d4a" : "#E0E7FF",
+        borderRadius: 10, padding: [8, 12],
+        textStyle: { fontSize: 11, color: isDark ? "#fff" : "#0D0D0D" },
+      },
+      series: [
+        {
+          name: "OK", type: "bar", stack: "verdict", data: okData,
+          itemStyle: { color: "#10b981", borderRadius: [3, 3, 0, 0] },
+          barMaxWidth: 18,
+        },
+        {
+          name: "Error", type: "bar", stack: "verdict", data: errData,
+          itemStyle: { color: "#ef4444", borderRadius: [3, 3, 0, 0] },
+          barMaxWidth: 18,
+        },
+      ],
+    };
+  }, [quality, isDark]);
 
   return (
     <PageShell>
@@ -104,6 +154,12 @@ export default function AuditPage() {
               <Flex align="center" gap={2}>
                 <Bot size={14} strokeWidth={2} />
                 Agent runs ({agents?.rows?.length ?? 0})
+              </Flex>
+            </Tab>
+            <Tab fontSize="sm" fontWeight={600}>
+              <Flex align="center" gap={2}>
+                <ShieldCheck size={14} strokeWidth={2} />
+                Quality
               </Flex>
             </Tab>
           </TabList>
@@ -184,6 +240,57 @@ export default function AuditPage() {
                   </Box>
                 </Box>
               </GlassCard>
+            </TabPanel>
+
+            <TabPanel px={0}>
+              {/* Quality KPIs */}
+              <Grid templateColumns={{ base: "minmax(0,1fr)", sm: "repeat(2,minmax(0,1fr))", lg: "repeat(4,minmax(0,1fr))" }} gap={4} mb={6}>
+                <StatTile label="Success rate" value={quality ? `${(quality.success_rate * 100).toFixed(1)}%` : "—"} color="#10b981" delay={0} />
+                <StatTile label="OK"        value={quality?.by_status?.ok ?? 0}        color="#10b981" delay={0.04} />
+                <StatTile label="Error"     value={quality?.by_status?.error ?? 0}     color={quality?.by_status?.error ? "#ef4444" : "text.primary"} delay={0.08} />
+                <StatTile label="Cancelled" value={quality?.by_status?.cancelled ?? 0} color="text.muted" delay={0.12} />
+              </Grid>
+
+              {qualityOption ? (
+                <GlassCard p={0} overflow="hidden">
+                  <Flex px={5} pt={4} pb={3} align="center" gap={2}>
+                    <ShieldCheck size={14} strokeWidth={2} color="#10b981" />
+                    <Eyebrow>Verdict trend</Eyebrow>
+                    <Badge ml="auto" fontSize="9px" bg="bg.chip" color="text.muted" border="1px solid" borderColor="border.subtle" borderRadius="6px" px={2}>
+                      {quality.bucket_hours}h buckets · {quality.series.length} points
+                    </Badge>
+                  </Flex>
+                  <ReactECharts option={qualityOption} style={{ height: "280px", width: "100%" }} opts={{ renderer: "canvas" }} />
+                  <Box px={5} pb={3}>
+                    <Text fontSize="10px" color="text.muted">
+                      Green = analyses that passed self-critique without issues. Red = errors / aborted runs.
+                      Hallucination score is derived from the self-critique verdict written to <code>analysis_audit.status</code>.
+                    </Text>
+                  </Box>
+                </GlassCard>
+              ) : (
+                <GlassCard p={6} display="flex" alignItems="center" justifyContent="center">
+                  <Text color="text.muted" fontSize="sm">No analyses in this window yet.</Text>
+                </GlassCard>
+              )}
+
+              {/* Latency split */}
+              {quality?.latency_by_status && Object.keys(quality.latency_by_status).length > 0 && (
+                <GlassCard mt={4} p={4}>
+                  <Eyebrow mb={3}>Average latency by verdict</Eyebrow>
+                  <Flex gap={6} flexWrap="wrap">
+                    {Object.entries(quality.latency_by_status).map(([k, v]) => (
+                      <Flex key={k} align="center" gap={2}>
+                        <Box w={2} h={2} borderRadius="full" bg={k === "ok" ? "#10b981" : k === "error" ? "#ef4444" : "#64748b"} />
+                        <Text fontSize="xs" color="text.muted">{k}:</Text>
+                        <Text fontSize="xs" fontWeight={700} color="text.primary" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                          {v != null ? `${(v / 1000).toFixed(2)}s` : "—"}
+                        </Text>
+                      </Flex>
+                    ))}
+                  </Flex>
+                </GlassCard>
+              )}
             </TabPanel>
           </TabPanels>
         </Tabs>

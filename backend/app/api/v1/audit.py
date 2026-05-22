@@ -158,3 +158,79 @@ async def audit_stats(
         "agents_by_mode":     await _count_by(AgentRun, AgentRun.mode),
         "agents_by_status":   await _count_by(AgentRun, AgentRun.status),
     }
+
+
+@router.get("/audit/quality")
+@limiter.limit("60/minute")
+async def audit_quality(
+    request: Request,
+    hours: int = Query(default=168, ge=1, le=24 * 30),
+    bucket_hours: int = Query(default=1, ge=1, le=24),
+    pg: AsyncSession = Depends(get_pg),
+):
+    """Hallucination-scorer dashboard data.
+
+    Returns:
+      - tile counts by status (ok / error / cancelled / streaming)
+      - bucketed timeseries of counts (for the trend chart)
+      - average latency by status
+
+    The self-critique loop writes `status` per analysis. `ok` means the
+    critique didn't flag anything as suspicious. `error` covers both
+    crashes and critique-detected fail verdicts.
+    """
+    since = _window(hours)
+    base  = select(AnalysisAudit).where(AnalysisAudit.created_at >= since) if since is not None else select(AnalysisAudit)
+
+    # Tile counts by status
+    by_status_stmt = select(AnalysisAudit.status, func.count()).group_by(AnalysisAudit.status)
+    if since is not None:
+        by_status_stmt = by_status_stmt.where(AnalysisAudit.created_at >= since)
+    by_status_rows = (await pg.execute(by_status_stmt)).all()
+    by_status = {(k or "(none)"): int(v) for k, v in by_status_rows}
+
+    # Average latency by status (ms)
+    lat_stmt = select(AnalysisAudit.status, func.avg(AnalysisAudit.total_ms)).group_by(AnalysisAudit.status)
+    if since is not None:
+        lat_stmt = lat_stmt.where(AnalysisAudit.created_at >= since)
+    lat_rows = (await pg.execute(lat_stmt)).all()
+    latency_by_status = {(k or "(none)"): int(v) if v is not None else None for k, v in lat_rows}
+
+    # Bucketed trend — pull the rows and group in Python to stay portable
+    rows_stmt = (
+        base.order_by(AnalysisAudit.created_at.asc())
+            .limit(5000)  # safety cap
+    )
+    rows = (await pg.execute(rows_stmt)).scalars().all()
+
+    bucket_ms = bucket_hours * 3600 * 1000
+    buckets: dict[int, dict[str, int]] = {}
+    for r in rows:
+        if not r.created_at:
+            continue
+        ts = int(r.created_at.timestamp() * 1000)
+        b  = (ts // bucket_ms) * bucket_ms
+        slot = buckets.setdefault(b, {"ok": 0, "error": 0, "streaming": 0, "cancelled": 0})
+        slot[r.status if r.status in slot else "error"] += 1
+
+    series = [
+        {
+            "ts":         b,
+            "ok":         v["ok"],
+            "error":      v["error"],
+            "streaming":  v["streaming"],
+            "cancelled":  v["cancelled"],
+            "total":      sum(v.values()),
+        }
+        for b, v in sorted(buckets.items())
+    ]
+
+    total = sum(by_status.values()) or 1
+    return {
+        "hours":             hours,
+        "bucket_hours":      bucket_hours,
+        "by_status":         by_status,
+        "latency_by_status": latency_by_status,
+        "success_rate":      round(by_status.get("ok", 0) / total, 4),
+        "series":            series,
+    }
