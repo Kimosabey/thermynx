@@ -7,7 +7,7 @@ import {
   LayoutDashboard, MessageSquareText, Activity, TriangleAlert,
   TrendingUp, Columns2, Wrench, IndianRupee, FileText, Bot,
   BookOpen, ChevronLeft, ChevronRight, Wind, Zap,
-  Sparkles, BellRing, Network, Camera, ScrollText, Server,
+  Sparkles, BellRing, Network, Camera, ScrollText, Server, ClipboardList,
 } from "lucide-react";
 import { GraylinxLogo } from "./GraylinxLogo";
 
@@ -38,6 +38,7 @@ const NAV_GROUPS = [
     label: "Advanced",
     items: [
       { label: "Maintenance", to: "/maintenance", Icon: Wrench },
+      { label: "Work Orders", to: "/work-orders", Icon: ClipboardList },
       { label: "Topology",    to: "/topology",    Icon: Network },
       { label: "Cost",        to: "/cost",        Icon: IndianRupee },
       { label: "Reports",     to: "/reports",     Icon: FileText },

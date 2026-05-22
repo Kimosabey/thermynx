@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Box, Flex, Text, Grid, Badge, Button, Spinner, Collapse } from "@chakra-ui/react";
+import { Box, Flex, Text, Grid, Badge, Button, Spinner, Collapse, useToast } from "@chakra-ui/react";
 import { CheckCircleIcon } from "@chakra-ui/icons";
-import { TriangleAlert, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { TriangleAlert, Sparkles, ChevronDown, ChevronUp, ClipboardList } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
@@ -36,6 +37,54 @@ function AnomalyCard({ anomaly }) {
   const [explain, setExplain]   = useState(null);
   const [exLoad, setExLoad]     = useState(false);
   const [exErr, setExErr]       = useState(null);
+  const [woLoading, setWoLoading] = useState(false);
+  const toast                   = useToast();
+  const navigate                = useNavigate();
+
+  async function createWorkOrder() {
+    setWoLoading(true);
+    const title = `Investigate ${anomaly.equipment_name || anomaly.equipment_id} ${anomaly.metric}`;
+    const lines = [
+      `Anomaly detected on ${anomaly.equipment_name || anomaly.equipment_id}.`,
+      `Metric: ${anomaly.metric} = ${anomaly.value} (z-score ${anomaly.z_score?.toFixed(2)}).`,
+      anomaly.timestamp ? `Observed at ${anomaly.timestamp}.` : null,
+      anomaly.description || null,
+    ].filter(Boolean);
+    const diagnosis = explain?.summary
+      ? explain.summary + (explain.likely_causes?.length ? "\n\nLikely causes:\n" + explain.likely_causes.map(c => `• [${c.confidence}] ${c.cause}`).join("\n") : "")
+      : null;
+    const actions = explain?.recommended_checks?.length
+      ? explain.recommended_checks.map(s => `• ${s}`).join("\n")
+      : null;
+    try {
+      const r = await fetch("/api/v1/work-orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          equipment_id: anomaly.equipment_id,
+          priority:     anomaly.severity === "critical" ? "high" : "normal",
+          description:  lines.join("\n"),
+          source:       "anomaly",
+          source_ref:   anomaly.id || null,
+          diagnosis,
+          recommended_actions: actions,
+          created_by:   "operator",
+        }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || `HTTP ${r.status}`);
+      const wo = await r.json();
+      toast({
+        title: "Work order created",
+        description: wo.title,
+        status: "success", duration: 3500, isClosable: true, position: "bottom-right",
+      });
+    } catch (e) {
+      toast({ title: "Create failed", description: e.message, status: "error", duration: 4000 });
+    } finally {
+      setWoLoading(false);
+    }
+  }
 
   async function loadExplanation() {
     setOpen(true);
@@ -121,8 +170,18 @@ function AnomalyCard({ anomaly }) {
           </Box>
         )}
 
-        {/* Causal explanation toggle */}
-        <Flex justify="flex-end">
+        {/* Causal explanation + Create WO actions */}
+        <Flex justify="flex-end" gap={2}>
+          <Button
+            size="xs"
+            variant="ghost"
+            leftIcon={<ClipboardList size={12} strokeWidth={2.2} />}
+            isLoading={woLoading}
+            onClick={createWorkOrder}
+            color="accent.primary"
+          >
+            Create WO
+          </Button>
           <Button
             size="xs"
             variant="ghost"

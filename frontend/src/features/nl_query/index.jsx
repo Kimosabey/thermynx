@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Box, Flex, Text, Textarea, Button, Grid, Badge, Spinner,
   useColorMode, useToast,
@@ -14,12 +14,29 @@ import Eyebrow from "../../shared/ui/Eyebrow";
 
 const MotionBox = motion.create(Box);
 
-const EXAMPLES = [
-  "Show me the average kW/TR for chiller 1 in the last 6 hours",
-  "Which chiller has the highest energy use over the last 24 hours?",
-  "What is the run percentage of cooling tower 1 over the past 7 days?",
-  "Show kw_per_tr by hour for chiller 2 yesterday",
-];
+function buildExamples(equipment) {
+  // Examples are derived from the real equipment list so they always match
+  // what's actually queryable. Time phrasing avoids "now" because the
+  // dataset's latest slot may be days/weeks old.
+  if (!equipment?.length) return [];
+
+  const chillers = equipment.filter(e => e.type === "chiller");
+  const towers   = equipment.filter(e => e.type === "cooling_tower");
+  const pumps    = equipment.filter(e => e.type === "pump");
+  const ch1 = chillers[0];
+  const ch2 = chillers[1];
+  const tw1 = towers[0];
+  const pp1 = pumps[0];
+
+  const ex = [];
+  if (ch1)        ex.push(`Show the most recent 50 kW/TR readings for ${ch1.name}`);
+  if (ch1 && ch2) ex.push(`Compare average kW for ${ch1.name} and ${ch2.name} over the last 7 days of data`);
+  if (tw1)        ex.push(`What is the run percentage of ${tw1.name} over the latest 7 days in the dataset?`);
+  if (ch1)        ex.push(`Top 10 hours of highest energy use for ${ch1.name} from the available data`);
+  if (pp1)        ex.push(`Average kW for ${pp1.name} grouped by hour-of-day over the last 30 days of data`);
+  if (ch2)        ex.push(`How many hours did ${ch2.name} spend in the poor efficiency band (kW/TR > 0.75)?`);
+  return ex;
+}
 
 function pickSeries(rows, columns) {
   if (!rows.length || columns.length < 2) return null;
@@ -40,6 +57,13 @@ export default function NLQueryPage() {
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState(null);
   const [error, setError]       = useState(null);
+  const [equipment, setEquipment] = useState([]);
+
+  useEffect(() => {
+    fetch("/api/v1/equipment").then(r => r.ok ? r.json() : []).then(setEquipment).catch(() => setEquipment([]));
+  }, []);
+
+  const examples = useMemo(() => buildExamples(equipment), [equipment]);
 
   async function run(q) {
     const text = (q ?? question).trim();
@@ -150,12 +174,12 @@ export default function NLQueryPage() {
         </Flex>
       </GlassCard>
 
-      {/* Examples */}
-      {!result && !error && (
+      {/* Examples (generated from the real equipment list) */}
+      {!result && !error && examples.length > 0 && (
         <Box mb={6}>
-          <Eyebrow mb={3}>Try one of these</Eyebrow>
+          <Eyebrow mb={3}>Try one of these — generated from the {equipment.length} assets in the database</Eyebrow>
           <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={3}>
-            {EXAMPLES.map((ex, i) => (
+            {examples.map((ex, i) => (
               <MotionBox
                 key={ex}
                 whileHover={{ y: -1 }}
