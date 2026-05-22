@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     # Phase 3 cost analytics — flat blended tariff (₹/kWh), POC default
     TARIFF_INR_PER_KWH: float = 8.5
 
+    # Forecast backend — "ml" uses Holt-Winters triple-exp smoothing from
+    # statsmodels (real ML, captures trend + 24h seasonality). "heuristic"
+    # uses the simple hour-of-day mean ± 1σ projection. ML falls back to
+    # heuristic when there's not enough history to fit.
+    FORECAST_BACKEND: Literal["heuristic", "ml"] = "ml"
+
     # Slack integration (Phase 9A) — empty disables outbound + inbound Slack paths.
     # SLACK_BOT_TOKEN starts with "xoxb-..."; SLACK_SIGNING_SECRET is the Slack
     # app's signing secret used to verify inbound slash-command / event requests.

@@ -99,13 +99,16 @@ async def fetch_chiller_data(
     hours: int = 24,
     *,
     until: datetime | None = None,
+    limit: int = 96,
 ) -> list[dict]:
+    """`limit` defaults to 96 rows for snappy dashboard reads — forecast and
+    other long-window analytics should pass a larger value (e.g. 5000)."""
     if until is None:
         until = await resolve_telemetry_until(db, table=table)
     since = until - timedelta(hours=hours)
     result = await db.execute(
-        text(f"SELECT {CHILLER_COLS} FROM {table} WHERE slot_time >= :since ORDER BY slot_time DESC LIMIT 96"),
-        {"since": since},
+        text(f"SELECT {CHILLER_COLS} FROM {table} WHERE slot_time >= :since ORDER BY slot_time DESC LIMIT :lim"),
+        {"since": since, "lim": int(limit)},
     )
     return [dict(r) for r in result.mappings().all()]
 
@@ -117,13 +120,14 @@ async def fetch_equipment_data(
     hours: int = 24,
     *,
     until: datetime | None = None,
+    limit: int = 96,
 ) -> list[dict]:
     if until is None:
         until = await resolve_telemetry_until(db, table=table)
     since = until - timedelta(hours=hours)
     result = await db.execute(
-        text(f"SELECT {cols} FROM {table} WHERE slot_time >= :since ORDER BY slot_time DESC LIMIT 96"),
-        {"since": since},
+        text(f"SELECT {cols} FROM {table} WHERE slot_time >= :since ORDER BY slot_time DESC LIMIT :lim"),
+        {"since": since, "lim": int(limit)},
     )
     return [dict(r) for r in result.mappings().all()]
 
