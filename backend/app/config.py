@@ -38,6 +38,16 @@ class Settings(BaseSettings):
     # Phase 3 cost analytics — flat blended tariff (₹/kWh), POC default
     TARIFF_INR_PER_KWH: float = 8.5
 
+    # Slack integration (Phase 9A) — empty disables outbound + inbound Slack paths.
+    # SLACK_BOT_TOKEN starts with "xoxb-..."; SLACK_SIGNING_SECRET is the Slack
+    # app's signing secret used to verify inbound slash-command / event requests.
+    SLACK_BOT_TOKEN:        str = ""
+    SLACK_SIGNING_SECRET:   str = ""
+    # Channel for outbound critical alarms (e.g. "#hvac-ops"). Empty disables.
+    SLACK_ALARM_CHANNEL:    str = ""
+    # Minimum severity that should be posted to Slack (info / warning / critical).
+    SLACK_ALARM_MIN_SEVERITY: Literal["info", "warning", "critical"] = "critical"
+
     # Logging — DEBUG | INFO | WARNING | ERROR
     LOG_LEVEL: str = "INFO"
     LOG_JSON: bool = False

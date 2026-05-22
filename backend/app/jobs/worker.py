@@ -13,20 +13,27 @@ from arq.connections import RedisSettings
 from arq.cron import cron as arq_cron
 
 from app.jobs.anomaly_scan import run_scan_job
+from app.jobs.slack_forwarder import run_slack_forward_job
 from app.config import settings as app_settings
 
 
 class WorkerSettings:
-    functions  = [run_scan_job]
+    functions  = [run_scan_job, run_slack_forward_job]
     cron_jobs  = [
-        # Every 5 minutes — matches previous APScheduler schedule
+        # Every 5 minutes — anomaly persistence scan
         arq_cron(
             run_scan_job,
             minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55},
-            run_at_startup=True,   # run once immediately on worker start
+            run_at_startup=True,
+        ),
+        # Every minute — Slack alarm forwarder (no-op when Slack disabled)
+        arq_cron(
+            run_slack_forward_job,
+            minute=set(range(60)),
+            run_at_startup=False,
         ),
     ]
     redis_settings = RedisSettings.from_dsn(app_settings.REDIS_URL)
-    max_jobs       = 1     # only one scan at a time
-    job_timeout    = 120   # 2 min max per scan (fail-safe)
-    keep_result    = 300   # keep result in Redis for 5 min for inspection
+    max_jobs       = 2     # anomaly scan + slack can run in parallel
+    job_timeout    = 120
+    keep_result    = 300

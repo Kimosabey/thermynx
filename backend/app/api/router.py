@@ -22,6 +22,7 @@ from app.api.v1 import (
     vision,
     causal,
     topology,
+    slack,
 )
 
 router = APIRouter()
@@ -47,3 +48,4 @@ router.include_router(nl_query.router,      tags=["NL Query"])
 router.include_router(vision.router,        tags=["Vision"])
 router.include_router(causal.router,        tags=["Causal Explanations"])
 router.include_router(topology.router,      tags=["Topology"])
+router.include_router(slack.router,         tags=["Slack"])
