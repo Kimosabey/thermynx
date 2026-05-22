@@ -6,6 +6,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { CitationsPanel } from "./CitationFootnotes";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
@@ -28,7 +29,7 @@ const QUICK_PROMPTS = [
   "Summarize energy consumption and cooling output",
 ];
 
-function MarkdownRenderer({ content }) {
+function MarkdownRenderer({ content, components }) {
   return (
     <Box
       overflow="hidden"
@@ -52,7 +53,7 @@ function MarkdownRenderer({ content }) {
         a:         { color: "accent.cyan", wordBreak: "break-all" },
       }}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>{content}</ReactMarkdown>
     </Box>
   );
 }
@@ -82,6 +83,8 @@ export default function AIAnalyzer() {
   const [tsData,       setTsData]       = useState(null);
   const [tsLoading,    setTsLoading]    = useState(false);
   const [streamContent,setStreamContent]= useState("");
+  const [citations,   setCitations]   = useState([]);
+  const citationsAPI = CitationsPanel({ chunks: citations });
   const [streaming,    setStreaming]    = useState(false);
   const [streamDone,   setStreamDone]   = useState(false);
   const [streamMeta,   setStreamMeta]   = useState(null);
@@ -169,6 +172,7 @@ export default function AIAnalyzer() {
     setStreamContent("");
     setStreamMeta(null);
     setError(null);
+    setCitations([]);
 
     try {
       const res = await fetch("/api/v1/analyze", {
@@ -203,6 +207,7 @@ export default function AIAnalyzer() {
             continue;
           }
           if (evt.type === "token") setStreamContent((p) => p + evt.content);
+          if (evt.type === "citations") setCitations(evt.chunks || []);
           if (evt.type === "done") {
             setStreamMeta(evt);
             setStreamDone(true);
@@ -492,15 +497,19 @@ export default function AIAnalyzer() {
                 aria-label="AI analysis response"
               >
                 {streamContent
-                  ? <MarkdownRenderer content={streamContent} />
+                  ? <MarkdownRenderer content={streamContent} components={citationsAPI.markdownComponents} />
                   : streaming && <ThinkingDots />
                 }
                 <div ref={bottomRef} />
+              </Box>
+              <Box px={{ base: 4, md: 6 }} pb={5}>
+                <citationsAPI.List />
               </Box>
             </GlassCard>
           </MotionBox>
         )}
       </AnimatePresence>
+      <citationsAPI.Drawer />
     </PageShell>
   );
 }

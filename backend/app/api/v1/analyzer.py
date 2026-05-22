@@ -138,6 +138,22 @@ async def _sse_stream(
     rag_chunks = await retrieve(pg, req.question, top_k=5, equipment_id=req.equipment_id)
     rag_context = format_rag_context(rag_chunks) if rag_chunks else ""
 
+    # Emit a citations frame BEFORE the stream so the UI can render footnote
+    # targets the moment the LLM mentions [source: ...]. Snippet is capped so
+    # this frame stays small.
+    if rag_chunks:
+        citation_payload = [
+            {
+                "source_id":  c.source_id,
+                "chunk_idx":  c.chunk_idx,
+                "score":      c.score,
+                "snippet":    (c.content[:480] + "…") if len(c.content) > 480 else c.content,
+                "equipment_tags": c.equipment_tags,
+            }
+            for c in rag_chunks
+        ]
+        yield f"data: {json.dumps({'type': 'citations', 'chunks': citation_payload})}\n\n"
+
     prompt = build_analyze_prompt(
         req.question, context, summary,
         conversation_history=conversation_history,
