@@ -81,10 +81,10 @@ async def retrieve(
         if equipment_id:
             sql = text("""
                 SELECT source_id, chunk_idx, content, equipment_tags,
-                       1 - (embedding <=> :vec::vector) AS score
+                       1 - (embedding <=> CAST(:vec AS vector)) AS score
                 FROM embeddings
                 WHERE equipment_tags = '' OR equipment_tags ILIKE :eq_filter
-                ORDER BY embedding <=> :vec::vector
+                ORDER BY embedding <=> CAST(:vec AS vector)
                 LIMIT :k
             """)
             result = await pg.execute(sql, {
@@ -95,9 +95,9 @@ async def retrieve(
         else:
             sql = text("""
                 SELECT source_id, chunk_idx, content, equipment_tags,
-                       1 - (embedding <=> :vec::vector) AS score
+                       1 - (embedding <=> CAST(:vec AS vector)) AS score
                 FROM embeddings
-                ORDER BY embedding <=> :vec::vector
+                ORDER BY embedding <=> CAST(:vec AS vector)
                 LIMIT :k
             """)
             result = await pg.execute(sql, {"vec": vec_str, "k": top_k})

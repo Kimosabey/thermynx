@@ -117,7 +117,7 @@ async def store_chunks(
             text("""
                 INSERT INTO embeddings
                     (id, source_type, source_id, chunk_idx, content, embedding, equipment_tags)
-                VALUES (:id, 'manual', :sid, :ci, :content, :vec::vector, :tags)
+                VALUES (:id, 'manual', :sid, :ci, :content, CAST(:vec AS vector), :tags)
                 ON CONFLICT (id) DO NOTHING
             """),
             {
