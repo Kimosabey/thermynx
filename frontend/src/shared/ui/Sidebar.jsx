@@ -7,7 +7,7 @@ import {
   LayoutDashboard, MessageSquareText, Activity, TriangleAlert,
   TrendingUp, Columns2, Wrench, IndianRupee, FileText, Bot,
   BookOpen, ChevronLeft, ChevronRight, Wind, Zap,
-  Sparkles, BellRing, Network, Camera, ScrollText,
+  Sparkles, BellRing, Network, Camera, ScrollText, Server,
 } from "lucide-react";
 import { GraylinxLogo } from "./GraylinxLogo";
 
@@ -50,6 +50,12 @@ const NAV_GROUPS = [
       { label: "Knowledge",   to: "/rag",         Icon: BookOpen },
       { label: "Vision",      to: "/vision",      Icon: Camera },
       { label: "Audit Log",   to: "/audit",       Icon: ScrollText },
+    ],
+  },
+  {
+    label: "Admin",
+    items: [
+      { label: "System",      to: "/system",      Icon: Server },
     ],
   },
 ];

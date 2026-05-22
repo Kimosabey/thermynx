@@ -23,6 +23,7 @@ const Alarms        = lazy(() => import("../features/alarms"));
 const Topology      = lazy(() => import("../features/topology"));
 const Vision        = lazy(() => import("../features/vision"));
 const Audit         = lazy(() => import("../features/audit"));
+const SystemPage    = lazy(() => import("../features/system"));
 
 function PageFallback() {
   return (
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="rag"         element={<Suspense fallback={<PageFallback />}><RAGKnowledge /></Suspense>} />
         <Route path="vision"      element={<Suspense fallback={<PageFallback />}><Vision /></Suspense>} />
         <Route path="audit"       element={<Suspense fallback={<PageFallback />}><Audit /></Suspense>} />
+        <Route path="system"      element={<Suspense fallback={<PageFallback />}><SystemPage /></Suspense>} />
       </Route>
     </Routes>
   );
