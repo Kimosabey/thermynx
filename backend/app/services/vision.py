@@ -126,18 +126,28 @@ def _validate_image(b64: str) -> str:
 
 
 async def _ollama_vision_call(model: str, prompt: str, images: list[str]) -> str:
+    """One-shot vision call. `format: json` is intentionally omitted —
+    `llama3.2-vision` returns 400 when JSON-mode is combined with image
+    inputs. The prompt instructs the model to return JSON anyway; we
+    parse it with `_parse_vision_json` which is tolerant of code fences
+    and surrounding prose."""
     url = f"{settings.OLLAMA_HOST.rstrip('/')}/api/generate"
     body = {
         "model":   model,
         "prompt":  prompt,
         "images":  images,
         "stream":  False,
-        "format":  "json",
         "options": {"temperature": _VISION_TEMPERATURE},
     }
     async with httpx.AsyncClient(timeout=_VISION_TIMEOUT_S) as client:
         r = await client.post(url, json=body)
-        r.raise_for_status()
+        if r.status_code >= 400:
+            # Surface the actual Ollama error message to make debugging clearer.
+            try:
+                detail = r.json().get("error", r.text)
+            except Exception:
+                detail = r.text
+            raise VisionError(f"Ollama {r.status_code}: {detail[:200]}")
         data = r.json()
         return data.get("response", "")
 

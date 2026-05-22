@@ -29,6 +29,21 @@ function SeverityChip({ severity }) {
   );
 }
 
+function asText(v) {
+  // LLMs occasionally return arrays of {severity, description} objects instead of
+  // plain strings. Render gracefully either way.
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (Array.isArray(v)) return v.map(asText).join(" · ");
+  if (typeof v === "object") {
+    const text = v.text ?? v.message ?? v.description ?? v.detail;
+    if (text) return typeof text === "string" ? text : asText(text);
+    return Object.entries(v).map(([k, val]) => `${k}: ${asText(val)}`).join(" · ");
+  }
+  return String(v);
+}
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -217,7 +232,7 @@ export default function VisionPage() {
                   {result.model} · {result.elapsed_ms}ms
                 </Badge>
               </Flex>
-              <Text fontSize="sm" color="text.primary" mb={3}>{result.description}</Text>
+              <Text fontSize="sm" color="text.primary" mb={3}>{asText(result.description)}</Text>
 
               {result.differences?.length > 0 && (
                 <Box mb={3}>
@@ -225,7 +240,7 @@ export default function VisionPage() {
                   {result.differences.map((d, i) => (
                     <Flex key={i} align="flex-start" gap={2} py={1}>
                       <Box w="6px" h="6px" mt="6px" borderRadius="full" bg="#f59e0b" flexShrink={0} />
-                      <Text fontSize="sm" color="text.primary">{d}</Text>
+                      <Text fontSize="sm" color="text.primary">{asText(d)}</Text>
                     </Flex>
                   ))}
                 </Box>
@@ -237,7 +252,7 @@ export default function VisionPage() {
                   {result.findings.map((f, i) => (
                     <Flex key={i} align="flex-start" gap={2} py={1}>
                       <Box w="6px" h="6px" mt="6px" borderRadius="full" bg="#0ea5e9" flexShrink={0} />
-                      <Text fontSize="sm" color="text.primary">{f}</Text>
+                      <Text fontSize="sm" color="text.primary">{asText(f)}</Text>
                     </Flex>
                   ))}
                 </Box>
