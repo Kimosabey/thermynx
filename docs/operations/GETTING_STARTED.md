@@ -102,4 +102,5 @@ For deeper troubleshooting see [`RUNBOOK.md`](./RUNBOOK.md).
 
 - Review [`../../BUILD_PLAN.md` §1A](../../BUILD_PLAN.md) for current scope
 - Read [`ARCHITECTURE.md`](../architecture/ARCHITECTURE.md) for the system mental model
+- Read [`ON_PREMISE_DEPLOYMENT_GUIDE.md`](./ON_PREMISE_DEPLOYMENT_GUIDE.md) for production/on-premise server deployment details and hardware checklists.
 - Pick a Phase 1 deliverable from [`../../BUILD_PLAN.md` §6](../../BUILD_PLAN.md) and ship it

@@ -10,6 +10,7 @@ The product roadmap lives one level up: [`../BUILD_PLAN.md`](../BUILD_PLAN.md).
 | I want to… | Go to |
 |------------|-------|
 | Set up the project for the first time | [GETTING_STARTED.md](./operations/GETTING_STARTED.md) |
+| **Plan an on-premise installation** | [ON_PREMISE_DEPLOYMENT_GUIDE.md](./operations/ON_PREMISE_DEPLOYMENT_GUIDE.md) |
 | Look up an API endpoint | [API_REFERENCE.md](./reference/API_REFERENCE.md) |
 | Understand what an env var does | [ENV_REFERENCE.md](./reference/ENV_REFERENCE.md) |
 | Debug a production issue | [RUNBOOK.md](./operations/RUNBOOK.md) |
@@ -36,6 +37,9 @@ The product roadmap lives one level up: [`../BUILD_PLAN.md`](../BUILD_PLAN.md).
 | Document | What it covers |
 |----------|----------------|
 | [GETTING_STARTED.md](./operations/GETTING_STARTED.md) | Clone, configure, and run the full stack locally in under 10 minutes |
+| [ON_PREMISE_DEPLOYMENT_GUIDE.md](./operations/ON_PREMISE_DEPLOYMENT_GUIDE.md) | On-premise server deployment details, hardware checklists, and future Kafka resources |
+| [HARDWARE_EVALUATION_AIIMS_MADURAI.md](./operations/HARDWARE_EVALUATION_AIIMS_MADURAI.md) | Hardware compatibility evaluation & upgrades checklist for AIIMS Madurai |
+| [HARDWARE_EVALUATION_VARANASI_AIRPORT.md](./operations/HARDWARE_EVALUATION_VARANASI_AIRPORT.md) | Hardware compatibility evaluation & upgrades checklist for Varanasi Airport |
 | [RUNBOOK.md](./operations/RUNBOOK.md) | Start/stop stack, inspect logs, reset DBs, re-pull LLM models, troubleshoot common failures |
 | [OBSERVABILITY.md](./operations/OBSERVABILITY.md) | Prometheus `/metrics`, Loki log aggregation, Grafana dashboards, `obs` Docker profile, open gaps |
 | [TESTING.md](./operations/TESTING.md) | End-to-end test checklist: infra, automated suite, DB verification, API checks, frontend, performance |

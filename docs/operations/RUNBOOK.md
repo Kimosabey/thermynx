@@ -1,6 +1,10 @@
 # Graylinx — Operations Runbook
 
 > First time? → [`GETTING_STARTED.md`](./GETTING_STARTED.md)
+> On-Premise Deployments? → [`ON_PREMISE_DEPLOYMENT_GUIDE.md`](./ON_PREMISE_DEPLOYMENT_GUIDE.md)
+> Site Hardware Reviews:
+> - [AIIMS Madurai Hardware Suitability Review](./HARDWARE_EVALUATION_AIIMS_MADURAI.md)
+> - [Varanasi Airport Hardware Suitability Review](./HARDWARE_EVALUATION_VARANASI_AIRPORT.md)
 > API reference? → [`API_REFERENCE.md`](../reference/API_REFERENCE.md)
 
 ---
