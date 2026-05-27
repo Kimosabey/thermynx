@@ -23,8 +23,6 @@ from app.config import settings
 from app.log import get_logger
 from app.observability.metrics import agent_runs_total
 
-MAX_STEPS = 8
-
 log = get_logger("services.agent")
 
 
@@ -88,9 +86,13 @@ async def run_agent(
     model  = model or settings.OLLAMA_DEFAULT_MODEL
     start  = time.time()
 
+    if mode not in SYSTEM_PROMPTS:
+        log.warning("agent_unknown_mode run_id=%s mode=%s falling_back=investigator", run_id, mode)
+        mode = "investigator"
+
     log.info("agent_loop_begin run_id=%s mode=%s model=%s", run_id, mode, model)
 
-    system_prompt = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["investigator"])
+    system_prompt = SYSTEM_PROMPTS[mode]
 
     # Build initial user message with optional context
     user_msg = goal
@@ -108,10 +110,10 @@ async def run_agent(
 
     # ── ReAct loop ────────────────────────────────────────────────────────────
     step = 0
-    for _ in range(MAX_STEPS):
+    for _ in range(settings.AGENT_MAX_STEPS):
         step += 1
         try:
-            response = await chat(messages, tools=TOOL_SCHEMAS, model=model)
+            response = await chat(messages, tools=TOOL_SCHEMAS, model=model, temperature=0.0)
         except OllamaUnavailableError as e:
             log.warning("agent_ollama_unavailable run_id=%s step=%s", run_id, step)
             yield _sse({"type": "error", "detail": e.detail})
@@ -163,6 +165,23 @@ async def run_agent(
                     log.warning("agent_tool_timeout tool=%s run_id=%s step=%s", name, run_id, step)
                     raw_result = {"error": f"Tool '{name}' timed out after 30 s — skipping."}
 
+                # If the tool returned an error, surface it explicitly so the LLM
+                # doesn't try to reason over a partial/empty result and hallucinate.
+                if isinstance(raw_result, dict) and "error" in raw_result:
+                    log.warning("agent_tool_error tool=%s run_id=%s error=%s", name, run_id, raw_result["error"])
+                    tool_results_for_history.append((name, {
+                        "tool_error": raw_result["error"],
+                        "instruction": "This tool call failed. Acknowledge the failure and work with data from other tools, or ask the operator to retry.",
+                    }))
+                    yield _sse({
+                        "type": "tool_result",
+                        "tool": name,
+                        "result": {"tool_error": raw_result["error"]},
+                        "step": step,
+                        "tool_index": ti,
+                    })
+                    continue
+
                 compact = compact_agent_tool_payload(name, raw_result)
                 log.debug("agent_tool_result tool=%s step=%s keys=%s", name, step, list(raw_result.keys())[:8])
                 yield _sse({
@@ -201,7 +220,7 @@ async def run_agent(
             # Edge case: empty content, ask model to summarize
             messages.append({"role": "user", "content": "Summarize your findings in the required format."})
             try:
-                async for chunk in stream_chat_text(messages, model=model):
+                async for chunk in stream_chat_text(messages, model=model, temperature=0.2):
                     yield _sse({"type": "token", "content": chunk})
             except OllamaUnavailableError as e:
                 yield _sse({"type": "error", "detail": e.detail})
@@ -226,6 +245,6 @@ async def run_agent(
         return
 
     # Hit max steps without a final answer
-    log.warning("agent_max_steps run_id=%s mode=%s steps=%s", run_id, mode, MAX_STEPS)
-    yield _sse({"type": "error", "detail": f"Agent reached max steps ({MAX_STEPS}) without a final answer."})
+    log.warning("agent_max_steps run_id=%s mode=%s steps=%s", run_id, mode, settings.AGENT_MAX_STEPS)
+    yield _sse({"type": "error", "detail": f"Agent reached max steps ({settings.AGENT_MAX_STEPS}) without a final answer."})
     agent_runs_total.labels(mode=mode, status="error").inc()

@@ -5,7 +5,6 @@ Analyzes chiller kW/TR against design + industry benchmarks,
 identifies performance bands, and attributes likely loss drivers.
 """
 from dataclasses import dataclass, field
-from typing import Any
 
 # ── Benchmarks (industry standard water-cooled centrifugal chillers) ──────────
 BENCHMARK_GOOD    = 0.55   # IPLV world-class
@@ -56,17 +55,17 @@ def _band(kw_per_tr: float | None) -> tuple[str, str]:
 
 def _avg(rows: list[dict], key: str) -> float | None:
     vals = [float(r[key]) for r in rows if r.get(key) is not None]
-    return round(sum(vals) / len(vals), 4) if vals else None
+    return sum(vals) / len(vals) if vals else None
 
 
 def _best(rows: list[dict], key: str) -> float | None:
     vals = [float(r[key]) for r in rows if r.get(key) is not None and r.get("is_running")]
-    return round(min(vals), 4) if vals else None
+    return min(vals) if vals else None
 
 
 def _worst(rows: list[dict], key: str) -> float | None:
     vals = [float(r[key]) for r in rows if r.get(key) is not None and r.get("is_running")]
-    return round(max(vals), 4) if vals else None
+    return max(vals) if vals else None
 
 
 def analyze_chiller_efficiency(
@@ -159,19 +158,22 @@ def analyze_chiller_efficiency(
         if avg_load is not None:
             observations.append(f"Average load: {avg_load:.1f}%.")
 
+    def _r3(v): return round(v, 3) if v is not None else None
+    def _r1(v): return round(v, 1) if v is not None else None
+
     return EfficiencyResult(
         equipment_id=equipment_id,
         name=name,
         band=band,
         band_color=band_color,
-        kw_per_tr_avg=kw_per_tr_avg,
-        kw_per_tr_best=kw_per_tr_best,
-        kw_per_tr_worst=kw_per_tr_worst,
+        kw_per_tr_avg=_r3(kw_per_tr_avg),
+        kw_per_tr_best=_r3(kw_per_tr_best),
+        kw_per_tr_worst=_r3(kw_per_tr_worst),
         delta_pct=delta_pct,
         running_pct=running_pct,
-        avg_load=avg_load,
-        avg_delta_t=avg_delta_t,
-        avg_approach=avg_approach,
+        avg_load=_r1(avg_load),
+        avg_delta_t=_r3(avg_delta_t),
+        avg_approach=_r3(avg_approach),
         loss_drivers=loss_drivers,
         observations=observations,
         record_count=record_count,

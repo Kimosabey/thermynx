@@ -1,12 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Box, Flex, Text, Textarea, Button, FormControl, FormLabel,
-  HStack, Badge, Spinner, Select, Grid,
+  HStack, Badge, Select, Grid, useDisclosure,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { CitationsPanel } from "./CitationFootnotes";
+import {
+  buildCitationMarkdownComponents,
+  CitationsList,
+  CitationDrawer,
+} from "./CitationFootnotes";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
@@ -84,7 +88,8 @@ export default function AIAnalyzer() {
   const [tsLoading,    setTsLoading]    = useState(false);
   const [streamContent,setStreamContent]= useState("");
   const [citations,   setCitations]   = useState([]);
-  const citationsAPI = CitationsPanel({ chunks: citations });
+  const [activeCitation, setActiveCitation] = useState(null);
+  const { isOpen: drawerOpen, onOpen: openDrawer, onClose: closeDrawer } = useDisclosure();
   const [streaming,    setStreaming]    = useState(false);
   const [streamDone,   setStreamDone]   = useState(false);
   const [streamMeta,   setStreamMeta]   = useState(null);
@@ -94,12 +99,22 @@ export default function AIAnalyzer() {
   const [activeThreadId, setActiveThreadId] = useState("");
   const [threadMessages, setThreadMessages] = useState([]);
 
-  const abortRef   = useRef(null);
-  const bottomRef  = useRef(null);
-  const threadRef  = useRef("");
-  const toast      = useAppToast();
+  const abortRef      = useRef(null);
+  const bottomRef     = useRef(null);
+  const scrollAreaRef = useRef(null);
+  const threadRef     = useRef("");
+  const toast         = useAppToast();
 
   useEffect(() => { threadRef.current = activeThreadId; }, [activeThreadId]);
+
+  // Stable markdown components — only rebuilt when citations list changes.
+  // Must NOT be recomputed every render (causes ReactMarkdown to remount the tree,
+  // breaking mid-stream bold/italic rendering).
+  const openCitation = useCallback((c) => { setActiveCitation(c); openDrawer(); }, [openDrawer]);
+  const markdownComponents = useMemo(
+    () => citations.length ? buildCitationMarkdownComponents(citations, openCitation) : {},
+    [citations, openCitation]
+  );
 
   async function refreshThreads() {
     try {
@@ -156,10 +171,13 @@ export default function AIAnalyzer() {
       .catch(() => setTsLoading(false));
   }, [selectedEq, hours]);
 
-  // Auto-scroll while streaming
+  // Auto-scroll while streaming — only if user hasn't manually scrolled up
   useEffect(() => {
-    if (streaming) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [streamContent]);
+    if (!streaming || !scrollAreaRef.current) return;
+    const el = scrollAreaRef.current;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottom) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [streamContent, streaming]);
 
   async function handleAnalyze() {
     if (!question.trim()) return;
@@ -419,6 +437,17 @@ export default function AIAnalyzer() {
             transition={{ duration: 0.25 }}
           >
             <GlassCard p={0} overflow="hidden" glow={streamDone}>
+              {/* Scrollable response area */}
+              <Box
+                ref={scrollAreaRef}
+                maxH="70vh"
+                overflowY="auto"
+                sx={{
+                  "&::-webkit-scrollbar": { width: "4px" },
+                  "&::-webkit-scrollbar-track": { background: "transparent" },
+                  "&::-webkit-scrollbar-thumb": { background: "rgba(100,100,120,0.3)", borderRadius: "4px" },
+                }}
+              >
               {/* Response header */}
               <Flex
                 px={5} py={3}
@@ -426,6 +455,7 @@ export default function AIAnalyzer() {
                 align="center" justify="space-between"
                 flexWrap="wrap" gap={2}
                 bg="bg.elevated"
+                position="sticky" top={0} zIndex={1}
               >
                 <Flex align="center" gap={2}>
                   {streaming
@@ -485,7 +515,7 @@ export default function AIAnalyzer() {
                 );
               })()}
 
-              {/* Markdown content — live region so screen readers hear streaming output */}
+              {/* Markdown content */}
               <Box
                 px={{ base: 4, md: 6 }}
                 py={5}
@@ -497,19 +527,26 @@ export default function AIAnalyzer() {
                 aria-label="AI analysis response"
               >
                 {streamContent
-                  ? <MarkdownRenderer content={streamContent} components={citationsAPI.markdownComponents} />
+                  ? <MarkdownRenderer content={streamContent} components={markdownComponents} />
                   : streaming && <ThinkingDots />
                 }
-                <div ref={bottomRef} />
               </Box>
-              <Box px={{ base: 4, md: 6 }} pb={5}>
-                <citationsAPI.List />
-              </Box>
+
+              {/* Citations — only shown after stream ends */}
+              {!streaming && citations.length > 0 && (
+                <Box px={{ base: 4, md: 6 }} pb={5}>
+                  <CitationsList chunks={citations} onOpen={openCitation} />
+                </Box>
+              )}
+
+              {/* Scroll anchor — after citations so scroll-to-bottom includes them */}
+              <div ref={bottomRef} />
+              </Box>{/* end scrollable area */}
             </GlassCard>
           </MotionBox>
         )}
       </AnimatePresence>
-      <citationsAPI.Drawer />
+      <CitationDrawer chunk={activeCitation} isOpen={drawerOpen} onClose={closeDrawer} />
     </PageShell>
   );
 }

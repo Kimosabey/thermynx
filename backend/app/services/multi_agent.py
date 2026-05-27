@@ -47,7 +47,7 @@ import httpx
 
 from app.config import settings
 from app.log import get_logger
-from app.services.agent import run_agent, SYSTEM_PROMPTS
+from app.services.agent import run_agent
 
 log = get_logger("services.multi_agent")
 
@@ -218,10 +218,12 @@ async def _plan(goal: str, context: dict | None, model: str) -> dict:
     if not cleaned:
         # Fallback: route the whole question to investigator
         cleaned = [{"specialist": "investigator", "goal": goal}]
+        parsed["_fallback"] = True
 
     return {
         "rationale": parsed.get("rationale", "") or "",
         "subtasks":  cleaned,
+        "_fallback": parsed.get("_fallback", False),
     }
 
 
@@ -288,6 +290,10 @@ async def run_multi_agent(
         yield _sse({"type": "error", "detail": f"Planner HTTP error: {exc}"})
         return
 
+    if plan.get("_fallback"):
+        log.warning("multi_agent_planner_fallback run_id=%s goal_len=%s", run_id, len(goal or ""))
+        yield _sse({"type": "planner_fallback", "reason": "Planner returned no valid subtasks; routing to investigator."})
+
     yield _sse({
         "type":      "plan",
         "rationale": plan["rationale"],
@@ -297,45 +303,77 @@ async def run_multi_agent(
 
     findings: list[dict[str, Any]] = []
 
-    # ── 2. Execute each sub-task sequentially ─────────────────────────────────
-    for idx, st in enumerate(plan["subtasks"]):
-        specialist = st["specialist"]
-        sub_goal   = st["goal"]
+    # ── 2. Execute sub-tasks in parallel ─────────────────────────────────────
+    # Each sub-agent runs concurrently; frames are routed to the frontend via
+    # the `idx` field so the UI fans them into per-specialist panes.
+    queue: asyncio.Queue[tuple[str, Any]] = asyncio.Queue()
 
-        yield _sse({
-            "type":       "delegate_start",
-            "idx":        idx,
-            "specialist": specialist,
-            "goal":       sub_goal,
-        })
-
-        collected_tokens: list[str] = []
+    async def _drain(idx: int, specialist: str, sub_goal: str) -> dict[str, Any]:
+        """Consume one sub-agent's generator, put SSE frames into shared queue."""
+        tokens: list[str] = []
         try:
             async for frame in run_agent(specialist, sub_goal, context, model=used):
                 retagged = _retag_frame(frame, idx, specialist)
                 if retagged:
-                    yield retagged
-                # Track tokens for the synthesizer
+                    await queue.put(("frame", retagged))
                 try:
                     data = json.loads(frame[6:])
                     if data.get("type") == "token":
-                        collected_tokens.append(data.get("content", ""))
+                        tokens.append(data.get("content", ""))
                 except Exception:
                     pass
         except Exception as exc:
             log.exception("multi_agent_subtask_failed idx=%s specialist=%s", idx, specialist)
-            yield _sse({
+            await queue.put(("frame", _sse({
                 "type":       "delegate_error",
                 "idx":        idx,
                 "specialist": specialist,
                 "detail":     f"sub-agent crashed: {exc}",
-            })
+            })))
+        return {"specialist": specialist, "goal": sub_goal, "summary": "".join(tokens).strip()}
 
-        findings.append({
-            "specialist": specialist,
-            "goal":       sub_goal,
-            "summary":    "".join(collected_tokens).strip(),
+    # Emit delegate_start for all sub-tasks up front, then fire them in parallel
+    subtasks = plan["subtasks"]
+    for idx, st in enumerate(subtasks):
+        yield _sse({
+            "type":       "delegate_start",
+            "idx":        idx,
+            "specialist": st["specialist"],
+            "goal":       st["goal"],
         })
+
+    tasks = [
+        asyncio.create_task(_drain(idx, st["specialist"], st["goal"]))
+        for idx, st in enumerate(subtasks)
+    ]
+
+    # Drain queue until all tasks are done
+    pending = len(tasks)
+    finished: list[asyncio.Task] = []
+    while pending > 0 or not queue.empty():
+        # Check for newly-completed tasks
+        for t in tasks:
+            if t not in finished and t.done():
+                finished.append(t)
+                pending -= 1
+        # Yield any queued frames (non-blocking)
+        try:
+            kind, payload = queue.get_nowait()
+            if kind == "frame":
+                yield payload
+        except asyncio.QueueEmpty:
+            if pending > 0:
+                await asyncio.sleep(0.01)  # yield control briefly while sub-agents work
+
+    # Flush any remaining frames after all tasks complete
+    while not queue.empty():
+        kind, payload = queue.get_nowait()
+        if kind == "frame":
+            yield payload
+
+    # Collect results preserving original order
+    for t in tasks:
+        findings.append(t.result())
 
     # ── 3. Synthesise ─────────────────────────────────────────────────────────
     yield _sse({"type": "synthesis_start"})

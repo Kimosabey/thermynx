@@ -8,9 +8,7 @@ Given a query string:
 
 Falls back gracefully if pgvector is unavailable or embeddings table is empty.
 """
-import json
 from dataclasses import dataclass
-from typing import Any
 
 import httpx
 from sqlalchemy import text
@@ -22,7 +20,7 @@ from app.log import get_logger
 log = get_logger("services.rag")
 
 EMBED_MODEL = "nomic-embed-text"
-EMBED_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
+EMBED_TIMEOUT = httpx.Timeout(10.0, connect=5.0)
 
 
 @dataclass
@@ -112,7 +110,7 @@ async def retrieve(
                 equipment_tags=r["equipment_tags"] or "",
             )
             for r in rows
-            if float(r["score"]) > 0.4   # relevance threshold
+            if float(r["score"]) > 0.55  # relevance threshold — 0.4 allows near-random matches
         ]
         log.info("rag_retrieved query_chars=%s chunks=%s top_score=%s",
                  len(query), len(chunks), chunks[0].score if chunks else None)

@@ -4,9 +4,9 @@ import { Sun, Moon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, MessageSquareText, Activity, TriangleAlert,
-  TrendingUp, Columns2, Wrench, IndianRupee, FileText, Bot,
-  BookOpen, ChevronLeft, ChevronRight, Wind, Zap,
+  LayoutDashboard, BrainCircuit, TriangleAlert,
+  TrendingUp, Columns2, Wrench, IndianRupee, FileText,
+  BookOpen, ChevronLeft, Zap,
   Sparkles, BellRing, Network, Camera, ScrollText, Server, ClipboardList,
 } from "lucide-react";
 import { GraylinxLogo } from "./GraylinxLogo";
@@ -20,7 +20,7 @@ const NAV_GROUPS = [
     label: "Monitor",
     items: [
       { label: "Dashboard",   to: "/dashboard",   Icon: LayoutDashboard },
-      { label: "AI Analyzer", to: "/analyzer",    Icon: MessageSquareText },
+      { label: "AI",          to: "/ai",          Icon: BrainCircuit },
       { label: "NL Query",    to: "/nl-query",    Icon: Sparkles },
     ],
   },
@@ -47,7 +47,7 @@ const NAV_GROUPS = [
   {
     label: "AI & Knowledge",
     items: [
-      { label: "AI Agents",   to: "/agent",       Icon: Bot },
+      { label: "Know",        to: "/know",        Icon: BookOpen },
       { label: "Knowledge",   to: "/rag",         Icon: BookOpen },
       { label: "Vision",      to: "/vision",      Icon: Camera },
       { label: "Audit Log",   to: "/audit",       Icon: ScrollText },
@@ -73,9 +73,7 @@ const navItemVariants = {
 
 function NavItem({ label, to, Icon, collapsed, onNavigate }) {
   const { pathname } = useLocation();
-  const isActive = to === "/dashboard"
-    ? pathname === "/dashboard"
-    : pathname === to || pathname.startsWith(`${to}/`);
+  const isActive = pathname === to || pathname.startsWith(`${to}/`);
 
   return (
     <Tooltip label={collapsed ? label : ""} placement="right" hasArrow isDisabled={!collapsed}>

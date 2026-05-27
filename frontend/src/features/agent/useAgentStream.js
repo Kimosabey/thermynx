@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 
 export function useAgentStream() {
   const [trace,       setTrace]       = useState([]);
@@ -11,7 +11,9 @@ export function useAgentStream() {
   const [plan,        setPlan]        = useState(null);
   const [delegations, setDelegations] = useState([]);
   const [synthesis,   setSynthesis]   = useState("");
-  const abortRef = useRef(null);
+  const abortRef      = useRef(null);
+  const tokenBuf      = useRef("");
+  const flushTimer    = useRef(null);
 
   async function start(mode, goal, context = null) {
     abortRef.current?.abort();
@@ -19,6 +21,9 @@ export function useAgentStream() {
     abortRef.current = ctrl;
 
     const isOrchestrator = mode === "orchestrator";
+    // Cancel any pending token flush
+    if (flushTimer.current) { clearTimeout(flushTimer.current); flushTimer.current = null; }
+    tokenBuf.current = "";
     setTrace([]);
     setOutput("");
     setPlan(null);
@@ -72,7 +77,16 @@ export function useAgentStream() {
                 setTrace((p) => [...p, frame]);
               }
             } else if (t === "token") {
-              setOutput((p) => p + frame.content);
+              // Buffer tokens and flush at most every 40ms to avoid re-rendering on every word
+              tokenBuf.current += frame.content;
+              if (!flushTimer.current) {
+                flushTimer.current = setTimeout(() => {
+                  const chunk = tokenBuf.current;
+                  tokenBuf.current = "";
+                  flushTimer.current = null;
+                  setOutput((p) => p + chunk);
+                }, 40);
+              }
             } else if (t === "plan") {
               setPlan({ rationale: frame.rationale, subtasks: frame.subtasks, run_id: frame.run_id });
               setDelegations(frame.subtasks.map((s, i) => ({
@@ -105,7 +119,15 @@ export function useAgentStream() {
             } else if (t === "synthesis_start") {
               // marker — UI can switch focus to the synthesis pane
             } else if (t === "synthesis_token") {
-              setSynthesis((p) => p + frame.content);
+              tokenBuf.current += frame.content;
+              if (!flushTimer.current) {
+                flushTimer.current = setTimeout(() => {
+                  const chunk = tokenBuf.current;
+                  tokenBuf.current = "";
+                  flushTimer.current = null;
+                  setSynthesis((p) => p + chunk);
+                }, 40);
+              }
             } else if (t === "done") {
               setMeta(frame);
               setDone(true);
@@ -118,6 +140,13 @@ export function useAgentStream() {
     } catch (e) {
       if (e.name !== "AbortError") setError(e.message);
     } finally {
+      // Flush any tokens that didn't fire before the stream closed
+      if (flushTimer.current) { clearTimeout(flushTimer.current); flushTimer.current = null; }
+      if (tokenBuf.current) {
+        const remaining = tokenBuf.current;
+        tokenBuf.current = "";
+        setOutput((p) => p + remaining);
+      }
       setRunning(false);
     }
   }

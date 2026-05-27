@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 import time
 import uuid
 from datetime import datetime
@@ -244,7 +245,7 @@ async def _sse_stream(
         if thr:
             thr.updated_at = datetime.utcnow()
             if thr.title in (None, "", "Conversation"):
-                thr.title = req.question[:200]
+                thr.title = re.sub(r"\s+", " ", req.question.strip())[:200]
         await pg.commit()
 
 

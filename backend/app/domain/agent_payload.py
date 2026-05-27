@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 # Approximate ceiling for serialized tool result text (plan P2-5).
-DEFAULT_MAX_TOOL_PAYLOAD_CHARS = 18_000
+DEFAULT_MAX_TOOL_PAYLOAD_CHARS = 12_000
 
 
 def compact_agent_tool_payload(
@@ -34,8 +34,8 @@ def compact_agent_tool_payload(
         "_original_chars": len(raw),
         "_preview": preview + ("..." if len(raw) > keep else ""),
         "_warning": (
-            "Tool output exceeded context budget and was truncated. "
-            "Use narrower time ranges or fewer equipment calls if you need full detail."
+            f"Tool '{tool_name}' output exceeded context budget ({len(raw):,} chars) and was truncated. "
+            "Use narrower time ranges or fewer equipment items to get the full result."
         ),
     }
 

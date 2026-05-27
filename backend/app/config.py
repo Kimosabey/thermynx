@@ -54,6 +54,22 @@ class Settings(BaseSettings):
     # Minimum severity that should be posted to Slack (info / warning / critical).
     SLACK_ALARM_MIN_SEVERITY: Literal["info", "warning", "critical"] = "critical"
 
+    # AI tuning — agent loop, NL query, vision timeouts
+    # These used to be hardcoded module-level constants; moving them here lets
+    # operators tune without touching code or restarting the container.
+    AGENT_MAX_STEPS:        int   = 8      # max ReAct iterations before forced stop
+    NL_QUERY_LLM_TIMEOUT_S: float = 25.0  # Ollama SQL generation timeout
+    NL_QUERY_DB_TIMEOUT_S:  float = 10.0  # MySQL execution timeout
+    NL_QUERY_MAX_ROWS:      int   = 1000  # hard row cap (LIMIT)
+    VISION_TIMEOUT_S:       float = 90.0  # Ollama vision call timeout
+
+    # Ollama HTTP timeouts for the agent/analyzer chat paths
+    OLLAMA_CHAT_TIMEOUT_S:   float = 60.0   # non-streaming /api/chat (tool calls)
+    OLLAMA_STREAM_TIMEOUT_S: float = 120.0  # streaming /api/chat and /api/generate
+
+    # Ollama vision model (separate from default text model)
+    OLLAMA_VISION_MODEL: str = "llama3.2-vision"
+
     # Logging — DEBUG | INFO | WARNING | ERROR
     LOG_LEVEL: str = "INFO"
     LOG_JSON: bool = False

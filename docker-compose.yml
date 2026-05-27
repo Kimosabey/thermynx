@@ -47,7 +47,7 @@ services:
     image: prom/prometheus:v2.47.0
     profiles: [obs]
     ports:
-      - "9090:9090"
+      - "9292:9090"   # host 9292 — 9090 ghost-held by Docker Desktop WSL2 proxy
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/prometheus.alerts.yml:/etc/prometheus/prometheus.alerts.yml:ro
@@ -60,7 +60,7 @@ services:
     image: prom/alertmanager:v0.27.0
     profiles: [obs]
     ports:
-      - "9093:9093"
+      - "9394:9093"   # host 9394 — 9093 ghost-held by Docker Desktop WSL2 proxy
     volumes:
       - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager_data:/alertmanager
@@ -72,6 +72,7 @@ services:
   loki:
     image: grafana/loki:2.9.0
     profiles: [obs]
+    user: "0"   # root — avoids volume ownership issues on Docker Desktop for Windows
     ports:
       - "3100:3100"
     volumes:
@@ -83,6 +84,8 @@ services:
   promtail:
     image: grafana/promtail:2.9.0
     profiles: [obs]
+    ports:
+      - "9080:9080"
     volumes:
       - ./monitoring/promtail.yml:/etc/promtail/config.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -96,7 +99,7 @@ services:
     image: grafana/grafana:10.0.0
     profiles: [obs]
     ports:
-      - "3000:3000"
+      - "3030:3000"   # host 3030 — native grafana.exe service holds 3000
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin

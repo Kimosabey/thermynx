@@ -1,12 +1,9 @@
-/**
- * System — operator-facing service directory.
- * One pane to find every running port, dashboard, and API endpoint.
- */
-import { useEffect, useState } from "react";
-import { Box, Flex, Text, Grid, Badge, useToast } from "@chakra-ui/react";
+import { useEffect, useState, useCallback } from "react";
+import { Box, Flex, Text, Grid, Badge, Spinner, Tooltip, useToast } from "@chakra-ui/react";
 import {
   Server, Database, HardDrive, BookOpen, Cpu, ExternalLink, Copy,
   ScrollText, Activity, Settings as SettingsIcon, ShieldCheck,
+  BarChart2, Bell, FileText, Radio, RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
@@ -17,44 +14,111 @@ import Eyebrow from "../../shared/ui/Eyebrow";
 
 const MotionBox = motion.create(Box);
 
+// healthUrl: endpoint to GET for liveness. null = not HTTP-checkable (DB conn strings).
 const SERVICES = [
   {
     group: "Frontend",
     items: [
-      { Icon: Server,     label: "Frontend dev",      url: "http://localhost:5174",                          port: 5174, role: "Vite dev server (this app)" },
-      { Icon: Server,     label: "Frontend (prod)",   url: "http://localhost:4173",                          port: 4173, role: "Vite preview build" },
+      { Icon: Server,       label: "Frontend",         url: "http://localhost:5173",                         port: 5173,  healthUrl: "http://localhost:5173",                        role: "Vite dev server (this app)" },
+      { Icon: Server,       label: "Frontend (preview)",url: "http://localhost:4173",                        port: 4173,  healthUrl: "http://localhost:4173",                        role: "Vite preview build (npm run preview)" },
     ],
   },
   {
     group: "Backend API",
     items: [
-      { Icon: Server,     label: "API base",          url: "http://localhost:8000",                          port: 8000, role: "FastAPI app root" },
-      { Icon: BookOpen,   label: "API docs (Swagger)",url: "http://localhost:8000/docs",                     port: 8000, role: "Interactive OpenAPI explorer" },
-      { Icon: BookOpen,   label: "API docs (ReDoc)",  url: "http://localhost:8000/redoc",                    port: 8000, role: "Read-only OpenAPI view" },
-      { Icon: ScrollText, label: "OpenAPI spec (json)", url: "http://localhost:8000/openapi.json",           port: 8000, role: "Machine-readable schema" },
-      { Icon: Activity,   label: "Health",            url: "http://localhost:8000/api/v1/health",            port: 8000, role: "Backend liveness + dependency state" },
-      { Icon: SettingsIcon, label: "Capabilities",    url: "http://localhost:8000/api/v1/capabilities",      port: 8000, role: "Self-describing feature catalogue" },
-      { Icon: Activity,   label: "Metrics",           url: "http://localhost:8000/metrics",                  port: 8000, role: "Prometheus metrics scrape" },
-      { Icon: ShieldCheck,label: "Slack health",      url: "http://localhost:8000/api/v1/slack/health",      port: 8000, role: "Slack integration status" },
+      { Icon: Activity,     label: "Health",            url: "http://localhost:8000/healthz",                port: 8000,  healthUrl: "http://localhost:8000/healthz",                role: "Backend liveness" },
+      { Icon: Activity,     label: "Full health",       url: "http://localhost:8000/api/v1/health",          port: 8000,  healthUrl: "http://localhost:8000/api/v1/health",          role: "Backend + DB + Ollama state" },
+      { Icon: BookOpen,     label: "Swagger UI",        url: "http://localhost:8000/docs",                   port: 8000,  healthUrl: "http://localhost:8000/healthz",                role: "Interactive OpenAPI explorer" },
+      { Icon: BookOpen,     label: "ReDoc",             url: "http://localhost:8000/redoc",                  port: 8000,  healthUrl: "http://localhost:8000/healthz",                role: "Read-only OpenAPI view" },
+      { Icon: ScrollText,   label: "OpenAPI JSON",      url: "http://localhost:8000/openapi.json",           port: 8000,  healthUrl: "http://localhost:8000/openapi.json",           role: "Machine-readable schema" },
+      { Icon: BarChart2,    label: "Metrics",           url: "http://localhost:8000/metrics",                port: 8000,  healthUrl: "http://localhost:8000/metrics",                role: "Prometheus scrape endpoint" },
+      { Icon: SettingsIcon, label: "Capabilities",      url: "http://localhost:8000/api/v1/capabilities",    port: 8000,  healthUrl: "http://localhost:8000/api/v1/capabilities",    role: "Self-describing feature catalogue" },
+      { Icon: ShieldCheck,  label: "Slack health",      url: "http://localhost:8000/api/v1/slack/health",    port: 8000,  healthUrl: "http://localhost:8000/api/v1/slack/health",    role: "Slack integration status" },
+    ],
+  },
+  {
+    group: "Observability",
+    items: [
+      { Icon: BarChart2,    label: "Grafana",           url: "http://localhost:3030",                        port: 3030,  healthUrl: "http://localhost:3030/api/health",             role: "Dashboards — API Overview + AI Operations" },
+      { Icon: Radio,        label: "Prometheus",        url: "http://localhost:9292",                        port: 9292,  healthUrl: "http://localhost:9292/-/healthy",              role: "Metrics store + alert evaluation" },
+      { Icon: Bell,         label: "Alertmanager",      url: "http://localhost:9394",                        port: 9394,  healthUrl: "http://localhost:9394/-/healthy",              role: "Alert routing + silences" },
+      { Icon: FileText,     label: "Loki",              url: "http://localhost:3100",                        port: 3100,  healthUrl: "http://localhost:3100/ready",                  role: "Log aggregation (Promtail → Loki)" },
+      { Icon: Radio,        label: "Promtail targets",  url: "http://localhost:9080/targets",                port: 9080,  healthUrl: "http://localhost:9080/ready",                  role: "Log scrape agent — target list" },
     ],
   },
   {
     group: "Datastores",
     items: [
-      { Icon: Database,   label: "Unicharm MySQL",    url: "mysql://localhost:3307",                         port: 3307, role: "Telemetry source (read-only)" },
-      { Icon: Database,   label: "Postgres (pgvector)", url: "postgres://localhost:5442",                    port: 5442, role: "App state + RAG embeddings" },
-      { Icon: HardDrive,  label: "Redis",             url: "redis://localhost:6380",                         port: 6380, role: "Cache + arq queue" },
-      { Icon: HardDrive,  label: "Redis Commander",   url: "http://localhost:8181",                          port: 8181, role: "Browser UI for Redis" },
+      { Icon: Database,     label: "Unicharm MySQL",    url: "mysql://localhost:3307",                       port: 3307,  healthUrl: null,                                           role: "Telemetry source (read-only)" },
+      { Icon: Database,     label: "Postgres (pgvector)",url: "postgres://localhost:5442",                   port: 5442,  healthUrl: null,                                           role: "App state + RAG embeddings" },
+      { Icon: HardDrive,    label: "Redis",             url: "redis://localhost:6380",                       port: 6380,  healthUrl: null,                                           role: "Cache + arq queue" },
+      { Icon: HardDrive,    label: "Redis Commander",   url: "http://localhost:8181",                        port: 8181,  healthUrl: "http://localhost:8181",                        role: "Browser UI for Redis" },
     ],
   },
   {
-    group: "AI runtime",
+    group: "AI Runtime",
     items: [
-      { Icon: Cpu,        label: "Ollama API",        url: "http://100.125.103.28:11434",                    port: 11434, role: "On-prem LLM server (qwen / llama / nomic / vision)" },
-      { Icon: Cpu,        label: "Ollama tags",       url: "http://100.125.103.28:11434/api/tags",           port: 11434, role: "List installed models" },
+      { Icon: Cpu,          label: "Ollama API",        url: "http://100.125.103.28:11434",                  port: 11434, healthUrl: "http://100.125.103.28:11434/api/tags",         role: "On-prem LLM server (qwen2.5:14b)" },
+      { Icon: Cpu,          label: "Ollama models",     url: "http://100.125.103.28:11434/api/tags",         port: 11434, healthUrl: "http://100.125.103.28:11434/api/tags",         role: "List installed models" },
     ],
   },
 ];
+
+// Collect all unique healthUrls for bulk polling
+const HEALTH_URLS = [...new Set(
+  SERVICES.flatMap(g => g.items.map(i => i.healthUrl)).filter(Boolean)
+)];
+
+function useLiveStatus() {
+  const [status, setStatus] = useState({}); // url → "up"|"down"|"pending"
+  const [lastChecked, setLastChecked] = useState(null);
+
+  const poll = useCallback(async () => {
+    setStatus(prev => Object.fromEntries(HEALTH_URLS.map(u => [u, prev[u] ?? "pending"])));
+    const results = await Promise.allSettled(
+      HEALTH_URLS.map(url =>
+        fetch(url, { method: "GET", signal: AbortSignal.timeout(4000) })
+          .then(r => ({ url, ok: r.status < 500 }))
+          .catch(() => ({ url, ok: false }))
+      )
+    );
+    const next = {};
+    results.forEach(r => {
+      if (r.status === "fulfilled") next[r.value.url] = r.value.ok ? "up" : "down";
+    });
+    setStatus(next);
+    setLastChecked(new Date());
+  }, []);
+
+  useEffect(() => {
+    poll();
+    const id = setInterval(poll, 30_000);
+    return () => clearInterval(id);
+  }, [poll]);
+
+  return { status, poll, lastChecked };
+}
+
+function StatusDot({ healthUrl, status }) {
+  if (!healthUrl) return (
+    <Tooltip label="Not HTTP-checkable" hasArrow placement="top">
+      <Box w="8px" h="8px" borderRadius="full" bg="rgba(255,255,255,0.15)" flexShrink={0} />
+    </Tooltip>
+  );
+  const s = status[healthUrl] ?? "pending";
+  const map = {
+    up:      { bg: "#10b981", shadow: "0 0 6px rgba(16,185,129,0.55)", label: "Reachable" },
+    down:    { bg: "#ef4444", shadow: "0 0 6px rgba(239,68,68,0.55)",  label: "Unreachable" },
+    pending: { bg: "rgba(255,255,255,0.25)", shadow: "none",           label: "Checking…" },
+  };
+  const { bg, shadow, label } = map[s];
+  return (
+    <Tooltip label={label} hasArrow placement="top">
+      <Box w="8px" h="8px" borderRadius="full" bg={bg} boxShadow={shadow} flexShrink={0}
+        transition="background 0.3s, box-shadow 0.3s" />
+    </Tooltip>
+  );
+}
 
 function copyText(t, toast) {
   navigator.clipboard.writeText(t).then(
@@ -63,65 +127,56 @@ function copyText(t, toast) {
   );
 }
 
-function ServiceRow({ Icon, label, url, port, role, idx }) {
+function ServiceRow({ Icon, label, url, port, role, healthUrl, status, idx }) {
   const toast = useToast();
   const isHttp = url.startsWith("http");
   return (
-    <MotionBox initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, delay: Math.min(idx, 12) * 0.015 }}>
-      <Flex
-        align="center" gap={3}
-        px={3} py="10px"
-        borderRadius="10px"
-        _hover={{ bg: "rgba(31,63,254,0.04)" }}
-        transition="background 0.15s"
-      >
-        <Box
-          w="32px" h="32px" borderRadius="9px" flexShrink={0}
+    <MotionBox initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18, delay: Math.min(idx, 12) * 0.015 }}>
+      <Flex align="center" gap={3} px={3} py="10px" borderRadius="10px"
+        _hover={{ bg: "rgba(31,63,254,0.04)" }} transition="background 0.15s">
+
+        {/* Status dot */}
+        <StatusDot healthUrl={healthUrl} status={status} />
+
+        {/* Icon */}
+        <Box w="32px" h="32px" borderRadius="9px" flexShrink={0}
           display="flex" alignItems="center" justifyContent="center"
-          bg="accent.glow" border="1px solid" borderColor="border.brand" color="accent.primary"
-        >
+          bg="accent.glow" border="1px solid" borderColor="border.brand" color="accent.primary">
           <Icon size={15} strokeWidth={2} />
         </Box>
+
+        {/* Label + role */}
         <Box flex="1" minW={0}>
           <Flex align="center" gap={2}>
             <Text fontSize="sm" fontWeight={700} color="text.primary">{label}</Text>
-            <Badge fontSize="9px" bg="bg.chip" color="text.muted" border="1px solid" borderColor="border.subtle" borderRadius="6px" px={2} py="2px" sx={{ fontVariantNumeric: "tabular-nums" }}>
+            <Badge fontSize="9px" bg="bg.chip" color="text.muted"
+              border="1px solid" borderColor="border.subtle"
+              borderRadius="6px" px={2} py="2px" sx={{ fontVariantNumeric: "tabular-nums" }}>
               :{port}
             </Badge>
           </Flex>
           <Text fontSize="11px" color="text.muted" mt="2px">{role}</Text>
         </Box>
+
+        {/* URL + actions */}
         <Flex gap={2} align="center">
-          <Text fontSize="10px" fontFamily="mono" color="text.faint" maxW="240px" noOfLines={1} title={url}>
-            {url}
-          </Text>
-          <Box
-            as="button"
-            aria-label={`Copy ${url}`}
-            onClick={() => copyText(url, toast)}
-            w="28px" h="28px" borderRadius="8px"
-            display="flex" alignItems="center" justifyContent="center"
-            border="1px solid" borderColor="border.subtle"
-            color="text.muted"
+          <Text fontSize="10px" fontFamily="mono" color="text.faint"
+            maxW="240px" noOfLines={1} title={url}>{url}</Text>
+          <Box as="button" aria-label={`Copy ${url}`} onClick={() => copyText(url, toast)}
+            w="28px" h="28px" borderRadius="8px" display="flex" alignItems="center" justifyContent="center"
+            border="1px solid" borderColor="border.subtle" color="text.muted"
             _hover={{ color: "accent.primary", borderColor: "border.brand", bg: "accent.glow" }}
-            transition="all 0.15s"
-          >
+            transition="all 0.15s">
             <Copy size={12} strokeWidth={2} />
           </Box>
           {isHttp && (
-            <Box
-              as="a"
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Box as="a" href={url} target="_blank" rel="noopener noreferrer"
               aria-label={`Open ${url}`}
-              w="28px" h="28px" borderRadius="8px"
-              display="flex" alignItems="center" justifyContent="center"
-              border="1px solid" borderColor="border.subtle"
-              color="text.muted"
+              w="28px" h="28px" borderRadius="8px" display="flex" alignItems="center" justifyContent="center"
+              border="1px solid" borderColor="border.subtle" color="text.muted"
               _hover={{ color: "accent.primary", borderColor: "border.brand", bg: "accent.glow" }}
-              transition="all 0.15s"
-            >
+              transition="all 0.15s">
               <ExternalLink size={12} strokeWidth={2} />
             </Box>
           )}
@@ -131,38 +186,68 @@ function ServiceRow({ Icon, label, url, port, role, idx }) {
   );
 }
 
+function SummaryBar({ status, poll, lastChecked, loading }) {
+  const total  = HEALTH_URLS.length;
+  const up     = HEALTH_URLS.filter(u => status[u] === "up").length;
+  const down   = HEALTH_URLS.filter(u => status[u] === "down").length;
+  const pending = total - up - down;
+
+  return (
+    <Flex align="center" gap={3} flexWrap="wrap">
+      <Flex align="center" gap="6px">
+        <Box w="8px" h="8px" borderRadius="full" bg="#10b981" boxShadow="0 0 5px rgba(16,185,129,0.5)" />
+        <Text fontSize="12px" color="text.muted">{up} up</Text>
+      </Flex>
+      {down > 0 && (
+        <Flex align="center" gap="6px">
+          <Box w="8px" h="8px" borderRadius="full" bg="#ef4444" boxShadow="0 0 5px rgba(239,68,68,0.5)" />
+          <Text fontSize="12px" color="#ef4444">{down} down</Text>
+        </Flex>
+      )}
+      {pending > 0 && (
+        <Flex align="center" gap="6px">
+          <Box w="8px" h="8px" borderRadius="full" bg="rgba(255,255,255,0.2)" />
+          <Text fontSize="12px" color="text.faint">{pending} checking</Text>
+        </Flex>
+      )}
+      {lastChecked && (
+        <Text fontSize="10px" color="text.faint">
+          checked {lastChecked.toLocaleTimeString()}
+        </Text>
+      )}
+      <Box as="button" onClick={poll} aria-label="Refresh status"
+        display="flex" alignItems="center" gap="5px"
+        px={2} py="3px" borderRadius="7px"
+        border="1px solid" borderColor="border.subtle" color="text.muted"
+        _hover={{ color: "accent.primary", borderColor: "border.brand", bg: "accent.glow" }}
+        transition="all 0.15s" fontSize="11px">
+        {loading ? <Spinner size="xs" /> : <RefreshCw size={11} strokeWidth={2} />}
+        Refresh
+      </Box>
+    </Flex>
+  );
+}
+
 export default function SystemPage() {
-  const [health, setHealth] = useState(null);
-
-  useEffect(() => {
-    fetch("/api/v1/health")
-      .then(r => r.ok ? r.json() : null)
-      .then(setHealth)
-      .catch(() => {});
-  }, []);
-
-  const liveBadge = health
-    ? <Badge fontSize="9px" bg="rgba(16,185,129,0.12)" color="#10b981" border="1px solid rgba(16,185,129,0.32)" borderRadius="6px" px={2} py="2px">Backend reachable</Badge>
-    : <Badge fontSize="9px" bg="rgba(239,68,68,0.12)" color="#ef4444" border="1px solid rgba(239,68,68,0.32)" borderRadius="6px" px={2} py="2px">Backend offline</Badge>;
+  const { status, poll, lastChecked } = useLiveStatus();
+  const loading = Object.values(status).some(s => s === "pending");
 
   return (
     <PageShell>
       <PageHeader
         title="System"
         icon={<PageHeaderIcon icon={<Server size={20} strokeWidth={1.85} />} />}
-        subtitle="Every running service, port, and endpoint — one click to open or copy"
-        actions={liveBadge}
+        subtitle="Every running service, port, and endpoint — live status, one click to open or copy"
+        actions={<SummaryBar status={status} poll={poll} lastChecked={lastChecked} loading={loading} />}
       />
 
-      {SERVICES.map((group, gi) => (
+      {SERVICES.map((group) => (
         <Box key={group.group} mb={5}>
           <Eyebrow mb={2}>{group.group}</Eyebrow>
           <GlassCard p={2}>
-            <Box>
-              {group.items.map((s, i) => (
-                <ServiceRow key={s.label} idx={i} {...s} />
-              ))}
-            </Box>
+            {group.items.map((s, i) => (
+              <ServiceRow key={s.label} idx={i} {...s} status={status} />
+            ))}
           </GlassCard>
         </Box>
       ))}
@@ -170,8 +255,10 @@ export default function SystemPage() {
       <GlassCard p={4}>
         <Eyebrow mb={2}>Tip</Eyebrow>
         <Text fontSize="sm" color="text.muted">
-          The Postgres / MySQL / Redis rows are connection strings, not browser URLs — use the copy
-          button and paste them into your DB client. Everything else opens in a new tab.
+          MySQL / Postgres / Redis rows are connection strings — use Copy and paste into your DB client.
+          Status dots poll every 30 s automatically; hit <strong>Refresh</strong> for an instant check.
+          Obs stack ports are remapped: Grafana → 3030, Prometheus → 9292, Alertmanager → 9394
+          (9090/9093/3000 ghost-held by Docker Desktop on this machine).
         </Text>
       </GlassCard>
     </PageShell>

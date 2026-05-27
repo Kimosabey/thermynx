@@ -418,5 +418,5 @@ async def execute_tool(
         log.warning("tool_bad_args name=%s err=%s args=%s", name, e, args)
         return {"error": f"Invalid arguments for '{name}'. Expected valid parameters — got keys {list((args or {}).keys())}. {e}"}
     except Exception as e:
-        log.exception("tool_failed name=%s", name)
+        log.exception("tool_failed name=%s args=%s", name, list((args or {}).keys()))
         return {"error": str(e)}

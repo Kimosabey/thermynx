@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5174,
+    port: 5173,
     proxy: {
       "/api": {
         target: "http://localhost:8000",
@@ -21,11 +21,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          echarts: ["echarts", "echarts-for-react"],
-          react:   ["react", "react-dom", "react-router-dom"],
-          chakra:  ["@chakra-ui/react", "@chakra-ui/icons", "@emotion/react", "@emotion/styled"],
-          motion:  ["framer-motion"],
-          markdown:["react-markdown", "remark-gfm"],
+          echarts_core:    ["echarts"],
+          echarts_react:   ["echarts-for-react"],
+          react:           ["react", "react-dom", "react-router-dom"],
+          chakra:          ["@chakra-ui/react", "@chakra-ui/icons", "@emotion/react", "@emotion/styled"],
+          motion:          ["framer-motion"],
+          markdown:        ["react-markdown", "remark-gfm"],
         },
       },
     },

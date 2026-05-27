@@ -12,7 +12,7 @@ receivers:
   # Default receiver: writes alerts to a log via webhook stub. Replace `url`
   # with a real Slack/Teams/email/PagerDuty webhook when you wire up real
   # delivery. For now, alerts fire silently and can be inspected at the
-  # Alertmanager UI (http://localhost:9093).
+  # Alertmanager UI (http://localhost:9394).
   - name: default
     webhook_configs:
       - url: http://host.docker.internal:9099/alert-sink

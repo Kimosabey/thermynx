@@ -5,6 +5,7 @@ All functions accept an AsyncSession from MySQLSession.
 For historical dumps, ``latest_in_db`` uses each table's ``MAX(slot_time)`` as the window
 end (see ``resolve_telemetry_until``); plant-wide max is only used for UI hints.
 """
+import asyncio
 from datetime import datetime, timedelta
 from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -142,13 +143,23 @@ async def fetch_all_hvac_context(
     When ``until`` is omitted, each asset uses its own table's latest ``slot_time`` under
     ``latest_in_db`` — required when normalized tables end at different timestamps.
     """
+    (
+        ch1, ch2, ct1, ct2, cp1, cp3
+    ) = await asyncio.gather(
+        fetch_chiller_data(db, "chiller_1_normalized", hours, until=until),
+        fetch_chiller_data(db, "chiller_2_normalized", hours, until=until),
+        fetch_equipment_data(db, "cooling_tower_1_normalized", COOLING_TOWER_COLS, hours, until=until),
+        fetch_equipment_data(db, "cooling_tower_2_normalized", COOLING_TOWER_COLS, hours, until=until),
+        fetch_equipment_data(db, "condenser_pump_0102_normalized", PUMP_COLS, hours, until=until),
+        fetch_equipment_data(db, "condenser_pump_03_normalized", PUMP_COLS, hours, until=until),
+    )
     return {
-        "chiller_1":        await fetch_chiller_data(db, "chiller_1_normalized", hours, until=until),
-        "chiller_2":        await fetch_chiller_data(db, "chiller_2_normalized", hours, until=until),
-        "cooling_tower_1":  await fetch_equipment_data(db, "cooling_tower_1_normalized", COOLING_TOWER_COLS, hours, until=until),
-        "cooling_tower_2":  await fetch_equipment_data(db, "cooling_tower_2_normalized", COOLING_TOWER_COLS, hours, until=until),
-        "condenser_pump_1": await fetch_equipment_data(db, "condenser_pump_0102_normalized", PUMP_COLS, hours, until=until),
-        "condenser_pump_3": await fetch_equipment_data(db, "condenser_pump_03_normalized", PUMP_COLS, hours, until=until),
+        "chiller_1":        ch1,
+        "chiller_2":        ch2,
+        "cooling_tower_1":  ct1,
+        "cooling_tower_2":  ct2,
+        "condenser_pump_1": cp1,
+        "condenser_pump_3": cp3,
         "fetched_at":       datetime.utcnow().isoformat(),
         "hours_window":     hours,
     }

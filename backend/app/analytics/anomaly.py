@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any
 import math
 
-Z_THRESHOLD = 3.0   # standard deviations
+Z_THRESHOLD = 2.5   # standard deviations — 2.5σ ≈ 98.8th pctile, better recall than 3.0
 MIN_SAMPLES  = 10   # minimum rows needed to compute a meaningful baseline
 
 

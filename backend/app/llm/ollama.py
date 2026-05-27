@@ -10,8 +10,13 @@ from app.observability.context import current_request_id
 
 log = get_logger("llm.ollama")
 
-TIMEOUT      = httpx.Timeout(120.0, connect=10.0)
-TOOL_TIMEOUT = httpx.Timeout(60.0,  connect=10.0)
+
+def _stream_timeout() -> httpx.Timeout:
+    return httpx.Timeout(settings.OLLAMA_STREAM_TIMEOUT_S, connect=10.0)
+
+
+def _chat_timeout() -> httpx.Timeout:
+    return httpx.Timeout(settings.OLLAMA_CHAT_TIMEOUT_S, connect=10.0)
 
 
 def _correlation_headers() -> dict[str, str]:
@@ -23,7 +28,7 @@ def _correlation_headers() -> dict[str, str]:
 
 async def list_models() -> list[str]:
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT, headers=_correlation_headers()) as client:
+        async with httpx.AsyncClient(timeout=_stream_timeout(), headers=_correlation_headers()) as client:
             resp = await client.get(f"{settings.OLLAMA_HOST}/api/tags")
             resp.raise_for_status()
             raw = resp.json().get("models", [])
@@ -42,7 +47,12 @@ async def list_models() -> list[str]:
     return [m["name"] for m in raw]
 
 
-async def stream_generate(prompt: str, model: str | None = None) -> AsyncIterator[str]:
+async def stream_generate(
+    prompt: str,
+    model: str | None = None,
+    *,
+    temperature: float = 0.3,
+) -> AsyncIterator[str]:
     """Yield text chunks via /api/generate (prompt-based, no tool support)."""
     target = model or settings.OLLAMA_DEFAULT_MODEL
     log.debug(
@@ -53,10 +63,10 @@ async def stream_generate(prompt: str, model: str | None = None) -> AsyncIterato
         "model": target,
         "prompt": prompt,
         "stream": True,
-        "options": {"temperature": 0.3, "top_p": 0.9, "num_ctx": 8192},
+        "options": {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192},
     }
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT, headers=_correlation_headers()) as client:
+        async with httpx.AsyncClient(timeout=_stream_timeout(), headers=_correlation_headers()) as client:
             async with client.stream(
                 "POST", f"{settings.OLLAMA_HOST}/api/generate", json=payload
             ) as resp:
@@ -91,22 +101,25 @@ async def chat(
     messages: list[dict],
     tools: list[dict] | None = None,
     model: str | None = None,
+    *,
+    temperature: float = 0.0,
 ) -> dict:
     """
     Single non-streaming chat call via /api/chat.
     Returns the full response dict including tool_calls if present.
+    temperature=0.0 default: tool-selection steps should be deterministic.
     """
     target = model or settings.OLLAMA_DEFAULT_MODEL
     payload: dict[str, Any] = {
         "model": target,
         "messages": messages,
         "stream": False,
-        "options": {"temperature": 0.2, "top_p": 0.9, "num_ctx": 8192},
+        "options": {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192},
     }
     if tools:
         payload["tools"] = tools
 
-    async with httpx.AsyncClient(timeout=TOOL_TIMEOUT, headers=_correlation_headers()) as client:
+    async with httpx.AsyncClient(timeout=_chat_timeout(), headers=_correlation_headers()) as client:
         try:
             resp = await client.post(f"{settings.OLLAMA_HOST}/api/chat", json=payload)
             resp.raise_for_status()
@@ -135,6 +148,8 @@ async def chat(
 async def stream_chat_text(
     messages: list[dict],
     model: str | None = None,
+    *,
+    temperature: float = 0.3,
 ) -> AsyncIterator[str]:
     """Stream text chunks from /api/chat (final answer, no tools)."""
     target = model or settings.OLLAMA_DEFAULT_MODEL
@@ -146,9 +161,9 @@ async def stream_chat_text(
         "model": target,
         "messages": messages,
         "stream": True,
-        "options": {"temperature": 0.3, "top_p": 0.9, "num_ctx": 8192},
+        "options": {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192},
     }
-    async with httpx.AsyncClient(timeout=TIMEOUT, headers=_correlation_headers()) as client:
+    async with httpx.AsyncClient(timeout=_stream_timeout(), headers=_correlation_headers()) as client:
         try:
             async with client.stream("POST", f"{settings.OLLAMA_HOST}/api/chat", json=payload) as resp:
                 resp.raise_for_status()

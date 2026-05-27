@@ -8,6 +8,7 @@ import Layout from "./Layout";
 // markdown vendor libs are pinned into shared chunks via vite.config.js
 // manualChunks so the second page load reuses them from cache.
 const Dashboard     = lazy(() => import("../features/dashboard"));
+const AIPage        = lazy(() => import("../features/ai"));
 const AIAnalyzer    = lazy(() => import("../features/analyzer"));
 const Efficiency    = lazy(() => import("../features/efficiency"));
 const Anomalies     = lazy(() => import("../features/anomalies"));
@@ -40,7 +41,9 @@ export default function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"   element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
-        <Route path="analyzer"    element={<Suspense fallback={<PageFallback />}><AIAnalyzer /></Suspense>} />
+        <Route path="ai"          element={<Suspense fallback={<PageFallback />}><AIPage /></Suspense>} />
+        {/* Legacy redirects — keep old bookmarks working */}
+        <Route path="analyzer"    element={<Navigate to="/ai" replace />} />
         <Route path="nl-query"    element={<Suspense fallback={<PageFallback />}><NLQuery /></Suspense>} />
         <Route path="efficiency"  element={<Suspense fallback={<PageFallback />}><Efficiency /></Suspense>} />
         <Route path="anomalies"   element={<Suspense fallback={<PageFallback />}><Anomalies /></Suspense>} />
@@ -51,8 +54,9 @@ export default function App() {
         <Route path="topology"    element={<Suspense fallback={<PageFallback />}><Topology /></Suspense>} />
         <Route path="cost"        element={<Suspense fallback={<PageFallback />}><CostAnalytics /></Suspense>} />
         <Route path="reports"     element={<Suspense fallback={<PageFallback />}><Reports /></Suspense>} />
-        <Route path="agent"       element={<Suspense fallback={<PageFallback />}><AgentHub /></Suspense>} />
+        <Route path="agent"       element={<Navigate to="/ai?mode=agent" replace />} />
         <Route path="rag"         element={<Suspense fallback={<PageFallback />}><RAGKnowledge /></Suspense>} />
+        <Route path="know"        element={<Suspense fallback={<PageFallback />}><RAGKnowledge /></Suspense>} />
         <Route path="vision"      element={<Suspense fallback={<PageFallback />}><Vision /></Suspense>} />
         <Route path="audit"       element={<Suspense fallback={<PageFallback />}><Audit /></Suspense>} />
         <Route path="system"      element={<Suspense fallback={<PageFallback />}><SystemPage /></Suspense>} />

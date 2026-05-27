@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -27,10 +28,13 @@ from app.log import get_logger
 
 log = get_logger("services.nl_to_sql")
 
-_TIMEOUT_S          = 25.0
-_QUERY_TIMEOUT_S    = 10.0
-_MAX_ROWS           = 1000
 _DEFAULT_TEMP       = 0.0
+
+# Timeouts and row cap are now in settings so operators can tune via env vars
+# without touching code. Module-level aliases kept for readability below.
+def _llm_timeout()  -> float: return settings.NL_QUERY_LLM_TIMEOUT_S
+def _db_timeout()   -> float: return settings.NL_QUERY_DB_TIMEOUT_S
+def _max_rows()     -> int:   return settings.NL_QUERY_MAX_ROWS
 
 _ALLOWED_TABLES = set(NORMALIZED_TABLES.values())
 
@@ -128,14 +132,14 @@ def _validate(sql: str) -> tuple[str, list[str]]:
 
     warnings: list[str] = []
     if not re.search(r"\blimit\b", cleaned, re.IGNORECASE):
-        cleaned = f"{cleaned} LIMIT {_MAX_ROWS}"
-        warnings.append(f"Added implicit LIMIT {_MAX_ROWS}.")
+        cleaned = f"{cleaned} LIMIT {_max_rows()}"
+        warnings.append(f"Added implicit LIMIT {_max_rows()}.")
     else:
-        # Cap explicit LIMITs above _MAX_ROWS
+        # Cap explicit LIMITs above _max_rows()
         m = re.search(r"\blimit\s+(\d+)\b", cleaned, re.IGNORECASE)
-        if m and int(m.group(1)) > _MAX_ROWS:
-            cleaned = re.sub(r"\blimit\s+\d+\b", f"LIMIT {_MAX_ROWS}", cleaned, flags=re.IGNORECASE)
-            warnings.append(f"Capped LIMIT to {_MAX_ROWS}.")
+        if m and int(m.group(1)) > _max_rows():
+            cleaned = re.sub(r"\blimit\s+\d+\b", f"LIMIT {_max_rows()}", cleaned, flags=re.IGNORECASE)
+            warnings.append(f"Capped LIMIT to {_max_rows()}.")
 
     return cleaned, warnings
 
@@ -148,7 +152,7 @@ async def _ollama_generate_sql(question: str, model: str) -> str:
         "stream":  False,
         "options": {"temperature": _DEFAULT_TEMP},
     }
-    async with httpx.AsyncClient(timeout=_TIMEOUT_S) as client:
+    async with httpx.AsyncClient(timeout=_llm_timeout()) as client:
         r = await client.post(url, json=body)
         r.raise_for_status()
         data = r.json()
@@ -170,7 +174,7 @@ async def run_nl_query(
     try:
         raw_sql = await asyncio.wait_for(
             _ollama_generate_sql(question.strip(), used_model),
-            timeout=_TIMEOUT_S,
+            timeout=_llm_timeout(),
         )
     except asyncio.TimeoutError as exc:
         raise NLQueryError("LLM timed out generating SQL.") from exc
@@ -181,19 +185,22 @@ async def run_nl_query(
     sql, warnings = _validate(raw_sql)
 
     # 3) Execute (read-only, hard timeout)
-    started = asyncio.get_event_loop().time()
+    started = time.monotonic()
     try:
         result = await asyncio.wait_for(
             db.execute(text(sql)),
-            timeout=_QUERY_TIMEOUT_S,
+            timeout=_db_timeout(),
         )
     except asyncio.TimeoutError as exc:
-        raise NLQueryError(f"Query exceeded {_QUERY_TIMEOUT_S:.0f}s timeout.") from exc
+        raise NLQueryError(f"Query exceeded {_db_timeout():.0f}s timeout.") from exc
+    except Exception as exc:
+        log.error(f"SQL execution failed: {exc} | Query: {sql}")
+        raise NLQueryError(f"Database error executing query: {str(exc)}") from exc
 
     rows_mapping = result.mappings().all()
-    elapsed_ms   = int((asyncio.get_event_loop().time() - started) * 1000)
+    elapsed_ms   = int((time.monotonic() - started) * 1000)
 
-    rows: list[dict[str, Any]] = [dict(r) for r in rows_mapping][:_MAX_ROWS]
+    rows: list[dict[str, Any]] = [dict(r) for r in rows_mapping][:_max_rows()]
     columns = list(rows[0].keys()) if rows else []
 
     return NLQueryResult(

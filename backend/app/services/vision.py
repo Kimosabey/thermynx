@@ -15,6 +15,7 @@ import asyncio
 import base64
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -25,11 +26,8 @@ from app.log import get_logger
 
 log = get_logger("services.vision")
 
-_VISION_TIMEOUT_S    = 90.0
 _VISION_TEMPERATURE  = 0.1
 _MAX_IMAGE_BYTES     = 6 * 1024 * 1024  # 6 MiB hard cap
-
-_DEFAULT_VISION_MODEL = "llama3.2-vision"
 
 
 @dataclass
@@ -139,7 +137,7 @@ async def _ollama_vision_call(model: str, prompt: str, images: list[str]) -> str
         "stream":  False,
         "options": {"temperature": _VISION_TEMPERATURE},
     }
-    async with httpx.AsyncClient(timeout=_VISION_TIMEOUT_S) as client:
+    async with httpx.AsyncClient(timeout=settings.VISION_TIMEOUT_S) as client:
         r = await client.post(url, json=body)
         if r.status_code >= 400:
             # Surface the actual Ollama error message to make debugging clearer.
@@ -154,19 +152,19 @@ async def _ollama_vision_call(model: str, prompt: str, images: list[str]) -> str
 
 async def describe_scene(image_b64: str, *, model: str | None = None) -> VisionResult:
     img      = _validate_image(image_b64)
-    used     = model or getattr(settings, "OLLAMA_VISION_MODEL", None) or _DEFAULT_VISION_MODEL
-    started  = asyncio.get_event_loop().time()
+    used     = model or settings.OLLAMA_VISION_MODEL
+    started  = time.monotonic()
     try:
         raw = await asyncio.wait_for(
             _ollama_vision_call(used, _SCENE_PROMPT, [img]),
-            timeout=_VISION_TIMEOUT_S,
+            timeout=settings.VISION_TIMEOUT_S,
         )
     except asyncio.TimeoutError as exc:
         raise VisionError("Vision model timed out.") from exc
     except httpx.HTTPError as exc:
         raise VisionError(f"Vision model error: {exc}") from exc
 
-    elapsed = int((asyncio.get_event_loop().time() - started) * 1000)
+    elapsed = int((time.monotonic() - started) * 1000)
     parsed  = _parse_vision_json(raw) or {}
     return VisionResult(
         model       = used,
@@ -186,19 +184,19 @@ async def compare_images(
 ) -> VisionResult:
     ref     = _validate_image(reference_b64)
     cur     = _validate_image(current_b64)
-    used    = model or getattr(settings, "OLLAMA_VISION_MODEL", None) or _DEFAULT_VISION_MODEL
-    started = asyncio.get_event_loop().time()
+    used    = model or settings.OLLAMA_VISION_MODEL
+    started = time.monotonic()
     try:
         raw = await asyncio.wait_for(
             _ollama_vision_call(used, _COMPARE_PROMPT, [ref, cur]),
-            timeout=_VISION_TIMEOUT_S,
+            timeout=settings.VISION_TIMEOUT_S,
         )
     except asyncio.TimeoutError as exc:
         raise VisionError("Vision model timed out comparing images.") from exc
     except httpx.HTTPError as exc:
         raise VisionError(f"Vision model error: {exc}") from exc
 
-    elapsed = int((asyncio.get_event_loop().time() - started) * 1000)
+    elapsed = int((time.monotonic() - started) * 1000)
     parsed  = _parse_vision_json(raw) or {}
     return VisionResult(
         model       = used,

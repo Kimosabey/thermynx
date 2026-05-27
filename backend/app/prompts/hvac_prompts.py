@@ -81,13 +81,20 @@ def build_analyze_prompt(
             if not content:
                 continue
             if len(content) > 4000:
-                content = content[:4000] + "\n… (truncated)"
+                # Skip messages that are too long rather than truncating mid-sentence —
+                # a cut-off message causes the LLM to hallucinate on incomplete context.
+                continue
             sections.append(f"### {role}\n{content}\n")
         sections.append("---\n")
 
     sections.extend([SYSTEM_CONTEXT, "\n---\n## LIVE PLANT DATA\n"])
 
-    for key in ["chiller_1", "chiller_2"]:
+    # Render all equipment present in context — chillers first, then auxiliaries.
+    # Keys are sorted so output order is stable regardless of dict insertion order.
+    chiller_keys = sorted(k for k in context if k.startswith("chiller"))
+    aux_keys     = sorted(k for k in context if not k.startswith("chiller"))
+
+    for key in chiller_keys:
         rows = context.get(key, [])
         if rows:
             sections.append(f"### {key.replace('_', ' ').title()} ({len(rows)} records)\n")
@@ -95,7 +102,7 @@ def build_analyze_prompt(
             if key in summary:
                 sections.append(_fmt_summary(f"{key} summary", summary[key]) + "\n")
 
-    for key in ["cooling_tower_1", "cooling_tower_2", "condenser_pump_1", "condenser_pump_3"]:
+    for key in aux_keys:
         rows = context.get(key, [])
         if rows:
             sections.append(f"### {key.replace('_', ' ').title()} ({len(rows)} records)\n")

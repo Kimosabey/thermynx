@@ -9,7 +9,14 @@ MYSQL_URL = (
     f"@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 )
 
-mysql_engine = create_async_engine(MYSQL_URL, echo=settings.LOG_SQL_ECHO, pool_pre_ping=True)
+mysql_engine = create_async_engine(
+    MYSQL_URL,
+    echo=settings.LOG_SQL_ECHO,
+    pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=5,
+    pool_recycle=1800,
+)
 
 MySQLSession = sessionmaker(
     bind=mysql_engine, class_=AsyncSession, expire_on_commit=False
@@ -23,7 +30,12 @@ async def get_db():
 
 # ── Postgres thermynx_app (app data) ─────────────────────────────────────────
 pg_engine = create_async_engine(
-    settings.POSTGRES_URL, echo=settings.LOG_SQL_ECHO, pool_pre_ping=True
+    settings.POSTGRES_URL,
+    echo=settings.LOG_SQL_ECHO,
+    pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=5,
+    pool_recycle=1800,
 )
 
 PGSession = sessionmaker(
