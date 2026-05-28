@@ -44,6 +44,13 @@ def _parse_form(raw: bytes) -> dict[str, str]:
 
 async def _run_analyze(question: str, response_url: str) -> None:
     """Collect a full analyzer answer and post to Slack via response_url."""
+    # Layer 1 — pre-flight: catch unknown equipment / off-topic before LLM call.
+    from app.services.preflight import check_equipment_mentions, topic_gate
+    refusal = check_equipment_mentions(question) or topic_gate(question)
+    if refusal:
+        log.info("slack_preflight_refused reason=%s", refusal[:120])
+        await post_response_url(response_url, refusal, in_channel=False)
+        return
     try:
         async with MySQLSession() as db:
             context = await fetch_all_hvac_context(db, hours=24)

@@ -146,6 +146,15 @@ class OrchestrateRequest(BaseModel):
 
 async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: AsyncSession):
     """Multi-agent stream — same persistence model as `_stream`, mode='orchestrator'."""
+    # Layer 1 — pre-flight: catch unknown equipment before planner + N sub-agents fire.
+    from app.services.preflight import check_equipment_mentions
+    refusal = check_equipment_mentions(req.goal)
+    if refusal:
+        log.info("orchestrate_preflight_refused reason=%s", refusal[:120])
+        yield f"data: {json.dumps({'type':'token','content': refusal})}\n\n"
+        yield f"data: {json.dumps({'type':'done','subtasks':0,'preflight_refused':True})}\n\n"
+        return
+
     run_id = str(uuid.uuid4())
     model  = req.model or settings.OLLAMA_DEFAULT_MODEL
 
