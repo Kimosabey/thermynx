@@ -34,6 +34,15 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
         yield f"data: {json.dumps({'type':'error','detail':f'Unknown mode: {req.mode}'})}\n\n"
         return
 
+    # Layer 1 — pre-flight: catch unknown equipment before paying for the ReAct loop.
+    from app.services.preflight import check_equipment_mentions
+    refusal = check_equipment_mentions(req.goal)
+    if refusal:
+        log.info("agent_preflight_refused mode=%s reason=%s", req.mode, refusal[:120])
+        yield f"data: {json.dumps({'type':'token','content': refusal})}\n\n"
+        yield f"data: {json.dumps({'type':'done','steps':0,'preflight_refused':True})}\n\n"
+        return
+
     run_id = str(uuid.uuid4())
     model  = req.model or settings.OLLAMA_DEFAULT_MODEL
 

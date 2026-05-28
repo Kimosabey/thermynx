@@ -52,6 +52,17 @@ async def _sse_stream(
     model = req.model or settings.OLLAMA_DEFAULT_MODEL
     start_ms = int(time.time() * 1000)
 
+    # Layer 1 — pre-flight: reject obvious bad input before any LLM/DB work.
+    # Saves 30-60s per refused request and is 100% deterministic.
+    from app.services.preflight import check_equipment_mentions, topic_gate
+    refusal = check_equipment_mentions(req.question) or topic_gate(req.question, equipment_id=req.equipment_id)
+    if refusal:
+        log.info("analyze_preflight_refused audit_id=%s reason=%s", audit_id, refusal[:120])
+        yield f"data: {json.dumps({'type': 'token', 'content': refusal})}\n\n"
+        total_ms = int(time.time() * 1000) - start_ms
+        yield f"data: {json.dumps({'type': 'done', 'audit_id': audit_id, 'model': model, 'total_ms': total_ms, 'preflight_refused': True})}\n\n"
+        return
+
     audit = AnalysisAudit(
         id=audit_id,
         equipment_id=req.equipment_id,

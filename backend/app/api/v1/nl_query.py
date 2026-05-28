@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.limiter import limiter
 from app.log import get_logger
 from app.services.nl_to_sql import NLQueryError, run_nl_query
+from app.services.preflight import check_equipment_mentions, topic_gate
 
 router = APIRouter()
 log = get_logger("api.nl_query")
@@ -26,6 +27,12 @@ async def nl_query(
     body: NLQueryRequest,
     db: AsyncSession = Depends(get_db),
 ):
+    # Layer 1 — pre-flight: catch unknown equipment / off-topic before paying for SQL gen.
+    refusal = check_equipment_mentions(body.question) or topic_gate(body.question)
+    if refusal:
+        log.info("nl_query_preflight_refused reason=%s", refusal[:120])
+        raise HTTPException(status_code=422, detail=refusal)
+
     try:
         result = await run_nl_query(body.question, db, model=body.model)
     except NLQueryError as e:
