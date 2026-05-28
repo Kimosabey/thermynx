@@ -74,4 +74,4 @@ If you wish to avoid manual hardware upgrades, purchase a workstation pre-config
   - NVIDIA RTX 4000 Ada (20GB VRAM) or RTX 4080 (16GB VRAM)
   - 750W or 1000W Power Supply Unit
 
-For general deployment setup, refer back to the [ON_PREMISE_DEPLOYMENT_GUIDE.md](file:///d:/Harshan/HVAC%20AI%20Operations%20Intelligence%20Platform/docs/operations/ON_PREMISE_DEPLOYMENT_GUIDE.md).
+For general deployment setup, refer back to the [ON_PREMISE_DEPLOYMENT_GUIDE.md](../deployment/ON_PREMISE_DEPLOYMENT_GUIDE.md).

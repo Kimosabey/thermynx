@@ -116,10 +116,10 @@ Explicitly **not** in the AI-first queue unless blocking AI work:
 | Optional API key gate | [`backend/main.py`](../../backend/main.py) |
 | Frontend fetch wrapper | [`frontend/src/shared/api/client.js`](../../frontend/src/shared/api/client.js) |
 | Agent UX | [`frontend/src/features/agent/AgentRunner.jsx`](../../frontend/src/features/agent/AgentRunner.jsx), [`frontend/src/shared/ui/TraceStep.jsx`](../../frontend/src/shared/ui/TraceStep.jsx) |
-| Full backlog & severity | [`docs/planning/FLAWS_AND_IMPROVEMENT_PLAN.md`](./FLAWS_AND_IMPROVEMENT_PLAN.md) |
-| Agent design reference | [`docs/reference/AGENT_REFERENCE.md`](../reference/AGENT_REFERENCE.md) |
-| Prompt catalogue | [`docs/reference/PROMPTS.md`](../reference/PROMPTS.md) |
-| AI stack narrative | [`docs/architecture/AI_ARCHITECTURE_REFERENCE.md`](../architecture/AI_ARCHITECTURE_REFERENCE.md) |
+| Full backlog & severity | [`docs/planning/general/FLAWS_AND_IMPROVEMENT_PLAN.md`](../general/FLAWS_AND_IMPROVEMENT_PLAN.md) |
+| Agent design reference | [`docs/reference/ai/AGENT_REFERENCE.md`](../../reference/ai/AGENT_REFERENCE.md) |
+| Prompt catalogue | [`docs/reference/ai/PROMPTS.md`](../../reference/ai/PROMPTS.md) |
+| AI stack narrative | [`docs/architecture/AI_ARCHITECTURE_REFERENCE.md`](../../architecture/AI_ARCHITECTURE_REFERENCE.md) |
 
 ---
 

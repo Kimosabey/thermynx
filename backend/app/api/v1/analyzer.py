@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_pg, MySQLSession
 from app.db.models import AnalysisAudit, Message, Thread
 from app.db.telemetry import fetch_all_hvac_context, compute_summary, fetch_chiller_data
-from app.domain.equipment import get_by_id
+from app.domain.equipment import EQUIPMENT_CATALOG, get_by_id
 from app.llm.ollama import stream_generate
 from app.prompts.hvac_prompts import build_analyze_prompt
 from app.services.rag import retrieve, format_rag_context
@@ -159,6 +159,10 @@ async def _sse_stream(
         req.question, context, summary,
         conversation_history=conversation_history,
         rag_context=rag_context,
+        available_equipment=[
+            {"id": e["id"], "name": e["name"], "type": e["type"]}
+            for e in EQUIPMENT_CATALOG
+        ],
     )
     prompt_hash = _hash(prompt)
 

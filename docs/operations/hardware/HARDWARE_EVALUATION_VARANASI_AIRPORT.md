@@ -64,4 +64,4 @@ Given the typical limitations of standard Intel i5 office desktops (low-power po
 - **GPU**: NVIDIA RTX 4060 Ti 16GB or NVIDIA RTX 4000 Ada (20GB VRAM)
 - **Power Supply**: 650W or higher
 
-For general deployment setup, refer back to the [ON_PREMISE_DEPLOYMENT_GUIDE.md](file:///d:/Harshan/HVAC%20AI%20Operations%20Intelligence%20Platform/docs/operations/ON_PREMISE_DEPLOYMENT_GUIDE.md).
+For general deployment setup, refer back to the [ON_PREMISE_DEPLOYMENT_GUIDE.md](../deployment/ON_PREMISE_DEPLOYMENT_GUIDE.md).

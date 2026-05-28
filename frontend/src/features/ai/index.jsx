@@ -7,7 +7,7 @@
  * Old routes /analyzer and /agent redirect here (see App.jsx).
  */
 import { useSearchParams } from "react-router-dom";
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Box, Flex, Text, useColorModeValue } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { MessageSquareText, Bot } from "lucide-react";
 import { lazy, Suspense } from "react";
@@ -37,12 +37,19 @@ const MODES = [
 ];
 
 function ModeSwitcher({ active, onChange }) {
+  const switcherBg = useColorModeValue("rgba(0,0,0,0.04)", "rgba(255,255,255,0.04)");
+  const switcherBorder = useColorModeValue("rgba(0,0,0,0.08)", "rgba(255,255,255,0.08)");
+  const unselectedColor = useColorModeValue("rgba(0,0,0,0.55)", "rgba(255,255,255,0.45)");
+  const unselectedHover = useColorModeValue("rgba(0,0,0,0.8)", "rgba(255,255,255,0.75)");
+  const unselectedTagline = useColorModeValue("rgba(0,0,0,0.4)", "rgba(255,255,255,0.28)");
+
   return (
     <Flex
       gap={2}
       p="3px"
-      bg="rgba(255,255,255,0.04)"
-      border="1px solid rgba(255,255,255,0.08)"
+      bg={switcherBg}
+      border="1px solid"
+      borderColor={switcherBorder}
       borderRadius="14px"
       w="fit-content"
       mb={6}
@@ -69,9 +76,9 @@ function ModeSwitcher({ active, onChange }) {
             border="1px solid"
             borderColor={selected ? `${m.color}44` : "transparent"}
             bg={selected ? `${m.color}14` : "transparent"}
-            color={selected ? m.color : "rgba(255,255,255,0.45)"}
+            color={selected ? m.color : unselectedColor}
             cursor="pointer"
-            whileHover={{ color: selected ? m.color : "rgba(255,255,255,0.75)" }}
+            whileHover={{ color: selected ? m.color : unselectedHover }}
             transition={{ duration: 0.15 }}
             minH="40px"
           >
@@ -80,7 +87,7 @@ function ModeSwitcher({ active, onChange }) {
               <Text fontSize="13px" fontWeight={selected ? 700 : 500} letterSpacing="-0.01em" lineHeight={1.2}>
                 {m.label}
               </Text>
-              <Text fontSize="10px" color={selected ? `${m.color}BB` : "rgba(255,255,255,0.28)"} lineHeight={1.3} mt="1px">
+              <Text fontSize="10px" color={selected ? `${m.color}BB` : unselectedTagline} lineHeight={1.3} mt="1px">
                 {m.tagline}
               </Text>
             </Box>

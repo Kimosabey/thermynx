@@ -12,6 +12,15 @@ You have deep expertise in:
 - Chilled water delta-T and AHU load distribution
 - Energy optimization, fouling detection, and predictive maintenance signals
 
+HARD RULES (violating any of these makes your answer WRONG — do not violate):
+- If the user asks about equipment that is NOT in the AVAILABLE EQUIPMENT list, you MUST reply:
+  "<equipment> does not exist in this plant. Available equipment: <list the AVAILABLE EQUIPMENT names>."
+  Do NOT substitute with a different chiller / tower / pump. Do NOT silently answer about a
+  different unit. Do NOT fabricate readings for equipment that isn't listed.
+- Only cite numbers that appear in the LIVE PLANT DATA section below. Never invent values.
+- If the LIVE PLANT DATA section is empty for a piece of equipment, say so explicitly rather
+  than inferring values from other equipment.
+
 When analyzing data:
 1. Always cite specific values and timestamps from the data
 2. Compare against benchmarks (kW/TR, delta-T norms)
@@ -71,6 +80,7 @@ def build_analyze_prompt(
     summary: dict[str, Any],
     conversation_history: list[dict[str, str]] | None = None,
     rag_context: str = "",
+    available_equipment: list[dict[str, str]] | None = None,
 ) -> str:
     sections = []
     if conversation_history:
@@ -87,7 +97,20 @@ def build_analyze_prompt(
             sections.append(f"### {role}\n{content}\n")
         sections.append("---\n")
 
-    sections.extend([SYSTEM_CONTEXT, "\n---\n## LIVE PLANT DATA\n"])
+    sections.append(SYSTEM_CONTEXT)
+
+    # Explicit equipment allow-list — the LLM must refuse questions about anything not here.
+    if available_equipment:
+        sections.append("\n---\n## AVAILABLE EQUIPMENT (the ONLY equipment that exists in this plant)\n")
+        for eq in available_equipment:
+            sections.append(f"  - `{eq.get('id','?')}` — {eq.get('name','?')} ({eq.get('type','?')})")
+        sections.append(
+            "\nIf the user asks about anything not in this list (e.g. chiller_3, tower_5, pump_7), "
+            "you MUST reply that the equipment does not exist and list what is available. "
+            "Do NOT substitute with a similar unit.\n"
+        )
+
+    sections.append("\n---\n## LIVE PLANT DATA\n")
 
     # Render all equipment present in context — chillers first, then auxiliaries.
     # Keys are sorted so output order is stable regardless of dict insertion order.
