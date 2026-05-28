@@ -63,7 +63,11 @@ async def _run_analyze(question: str, response_url: str) -> None:
         prompt  = build_analyze_prompt(question, context, summary, rag_context=rag_ctx)
 
         chunks_out: list[str] = []
-        async for tok in stream_generate(prompt, model=settings.OLLAMA_DEFAULT_MODEL):
+        async for tok in stream_generate(
+            prompt,
+            model=settings.OLLAMA_MODEL_TEXT or settings.OLLAMA_DEFAULT_MODEL,
+            num_predict=settings.OLLAMA_MAX_TOKENS_ANALYZE,
+        ):
             chunks_out.append(tok)
         text = "".join(chunks_out).strip() or "(no answer)"
         # Slack message limit is ~40000 chars; safe to be conservative

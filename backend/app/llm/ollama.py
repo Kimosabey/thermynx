@@ -52,18 +52,25 @@ async def stream_generate(
     model: str | None = None,
     *,
     temperature: float = 0.3,
+    num_predict: int | None = None,
 ) -> AsyncIterator[str]:
-    """Yield text chunks via /api/generate (prompt-based, no tool support)."""
+    """Yield text chunks via /api/generate (prompt-based, no tool support).
+
+    num_predict: hard cap on generated tokens. None = model default (~unbounded).
+    """
     target = model or settings.OLLAMA_DEFAULT_MODEL
     log.debug(
-        "stream_generate_start model=%s prompt_chars=%s request_id=%s",
-        target, len(prompt), current_request_id.get(),
+        "stream_generate_start model=%s prompt_chars=%s num_predict=%s request_id=%s",
+        target, len(prompt), num_predict, current_request_id.get(),
     )
+    options: dict[str, Any] = {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192}
+    if num_predict is not None and num_predict > 0:
+        options["num_predict"] = num_predict
     payload = {
         "model": target,
         "prompt": prompt,
         "stream": True,
-        "options": {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192},
+        "options": options,
     }
     try:
         async with httpx.AsyncClient(timeout=_stream_timeout(), headers=_correlation_headers()) as client:
@@ -103,6 +110,7 @@ async def chat(
     model: str | None = None,
     *,
     temperature: float = 0.0,
+    num_predict: int | None = None,
 ) -> dict:
     """
     Single non-streaming chat call via /api/chat.
@@ -110,11 +118,14 @@ async def chat(
     temperature=0.0 default: tool-selection steps should be deterministic.
     """
     target = model or settings.OLLAMA_DEFAULT_MODEL
+    opts: dict[str, Any] = {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192}
+    if num_predict is not None and num_predict > 0:
+        opts["num_predict"] = num_predict
     payload: dict[str, Any] = {
         "model": target,
         "messages": messages,
         "stream": False,
-        "options": {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192},
+        "options": opts,
     }
     if tools:
         payload["tools"] = tools
@@ -150,18 +161,22 @@ async def stream_chat_text(
     model: str | None = None,
     *,
     temperature: float = 0.3,
+    num_predict: int | None = None,
 ) -> AsyncIterator[str]:
     """Stream text chunks from /api/chat (final answer, no tools)."""
     target = model or settings.OLLAMA_DEFAULT_MODEL
     log.debug(
-        "stream_chat_text_start model=%s messages=%s request_id=%s",
-        target, len(messages), current_request_id.get(),
+        "stream_chat_text_start model=%s messages=%s num_predict=%s request_id=%s",
+        target, len(messages), num_predict, current_request_id.get(),
     )
+    options: dict[str, Any] = {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192}
+    if num_predict is not None and num_predict > 0:
+        options["num_predict"] = num_predict
     payload = {
         "model": target,
         "messages": messages,
         "stream": True,
-        "options": {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192},
+        "options": options,
     }
     async with httpx.AsyncClient(timeout=_stream_timeout(), headers=_correlation_headers()) as client:
         try:

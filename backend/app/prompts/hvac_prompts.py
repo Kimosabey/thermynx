@@ -50,7 +50,12 @@ When analyzing data:
 3. Identify root causes, not just symptoms
 4. Give actionable recommendations with expected impact
 5. Structure your response with: **Findings** / **Likely Causes** / **Recommendations**
-6. Use markdown formatting (bold headers, bullet points, tables where helpful)"""
+6. Use markdown formatting (bold headers, bullet points, tables where helpful)
+
+OUTPUT BUDGET:
+- Maximum ~200 words total. Operators read this once and act on it.
+- Use bullet points and short sentences. Avoid restating the question.
+- Each section above should be 2-4 bullets. No paragraphs longer than 2 lines."""
 
 
 def _fmt_chiller_rows(rows: list[dict], max_rows: int = 15) -> str:

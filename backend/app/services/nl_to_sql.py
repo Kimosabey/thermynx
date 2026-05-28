@@ -173,7 +173,8 @@ async def run_nl_query(
     if not question or not question.strip():
         raise NLQueryError("Question is empty.")
 
-    used_model = model or settings.OLLAMA_DEFAULT_MODEL
+    # SQL generation can use a smaller/faster model — structured output, no narration
+    used_model = model or settings.OLLAMA_MODEL_SQL or settings.OLLAMA_DEFAULT_MODEL
 
     # 1) Generate
     try:

@@ -168,14 +168,24 @@ async def _ollama_generate_json(model: str, prompt: str, *, temperature: float, 
         return (r.json().get("response") or "").strip()
 
 
-async def _ollama_stream(model: str, prompt: str, *, temperature: float, timeout: float) -> AsyncIterator[str]:
+async def _ollama_stream(
+    model: str,
+    prompt: str,
+    *,
+    temperature: float,
+    timeout: float,
+    num_predict: int | None = None,
+) -> AsyncIterator[str]:
     """Stream raw response text from Ollama /api/generate."""
     url = f"{settings.OLLAMA_HOST.rstrip('/')}/api/generate"
+    options: dict[str, Any] = {"temperature": temperature}
+    if num_predict is not None and num_predict > 0:
+        options["num_predict"] = num_predict
     body = {
         "model":   model,
         "prompt":  prompt,
         "stream":  True,
-        "options": {"temperature": temperature},
+        "options": options,
     }
     async with httpx.AsyncClient(timeout=timeout) as client:
         async with client.stream("POST", url, json=body) as resp:
@@ -284,14 +294,18 @@ async def run_multi_agent(
 ) -> AsyncIterator[str]:
     """Orchestrate a multi-agent run end-to-end. Yields SSE frames."""
     run_id   = str(uuid.uuid4())
-    used     = model or settings.OLLAMA_DEFAULT_MODEL
+    # Right-size: planner uses a small JSON-friendly model; sub-agents inherit
+    # their own routing; synthesiser uses the big narration model.
+    planner_model = model or settings.OLLAMA_MODEL_PLANNER or settings.OLLAMA_DEFAULT_MODEL
+    text_model    = model or settings.OLLAMA_MODEL_TEXT    or settings.OLLAMA_DEFAULT_MODEL
+    used     = text_model   # kept for log messages / `done` frame
     started  = time.time()
 
     log.info("multi_agent_begin run_id=%s model=%s goal_len=%s", run_id, used, len(goal or ""))
 
     # ── 1. Plan ───────────────────────────────────────────────────────────────
     try:
-        plan = await _plan(goal, context, used)
+        plan = await _plan(goal, context, planner_model)
     except asyncio.TimeoutError:
         yield _sse({"type": "error", "detail": "Planner timed out."})
         return
@@ -398,7 +412,13 @@ async def run_multi_agent(
     )
 
     try:
-        async for chunk in _ollama_stream(used, synth_prompt, temperature=_SYNTH_TEMPERATURE, timeout=_SYNTHESIS_TIMEOUT_S):
+        async for chunk in _ollama_stream(
+            text_model,
+            synth_prompt,
+            temperature=_SYNTH_TEMPERATURE,
+            timeout=_SYNTHESIS_TIMEOUT_S,
+            num_predict=settings.OLLAMA_MAX_TOKENS_SYNTH,
+        ):
             yield _sse({"type": "synthesis_token", "content": chunk})
     except asyncio.TimeoutError:
         yield _sse({"type": "error", "detail": "Synthesiser timed out."})

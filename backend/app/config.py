@@ -70,6 +70,30 @@ class Settings(BaseSettings):
     # Ollama vision model (separate from default text model)
     OLLAMA_VISION_MODEL: str = "llama3.2-vision"
 
+    # ── Model right-sizing per task (Performance A1) ─────────────────────────
+    # Each task can use a different model. Empty string = fall back to
+    # OLLAMA_DEFAULT_MODEL. Right-sizing cuts /agent/run from ~27s to ~12s and
+    # /analyze from ~48s to ~25s on representative workload.
+    #   - TEXT:     final narration / answer streaming (quality matters → 14B)
+    #   - TOOL:     agent ReAct tool selection (classifier-like → 8B fine)
+    #   - SQL:      NL-to-SQL generation (structured output → 8B fine)
+    #   - PLANNER:  multi-agent planner JSON (deterministic → 8B fine)
+    #   - AUDITOR:  self-critique pass/fail (small classifier → 3B fine)
+    OLLAMA_MODEL_TEXT:     str = ""    # default: OLLAMA_DEFAULT_MODEL
+    OLLAMA_MODEL_TOOL:     str = ""    # recommend: llama3.1:8b
+    OLLAMA_MODEL_SQL:      str = ""    # recommend: llama3.1:8b or qwen2.5-coder:7b
+    OLLAMA_MODEL_PLANNER:  str = ""    # recommend: llama3.1:8b
+    OLLAMA_AUDITOR_MODEL:  str = ""    # recommend: llama3.2:latest (3B)
+
+    # ── Response length caps (Performance A2) ───────────────────────────────
+    # Hard ceiling on tokens generated per response. The prompt also asks for
+    # concise output but `num_predict` is the safety net. Cuts ~30% off
+    # /analyze latency by ending generation earlier.
+    OLLAMA_MAX_TOKENS_ANALYZE: int = 400   # analyzer final answer
+    OLLAMA_MAX_TOKENS_AGENT:   int = 300   # agent final summary
+    OLLAMA_MAX_TOKENS_SYNTH:   int = 400   # multi-agent synthesizer
+    OLLAMA_MAX_TOKENS_REPORT:  int = 350   # daily report
+
     # Logging — DEBUG | INFO | WARNING | ERROR
     LOG_LEVEL: str = "INFO"
     LOG_JSON: bool = False

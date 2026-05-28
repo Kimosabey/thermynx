@@ -114,7 +114,8 @@ async def build_daily_report(
                 {"role": "system", "content": REPORT_SUMMARY_SYSTEM},
                 {"role": "user", "content": user_msg},
             ],
-            model=settings.OLLAMA_DEFAULT_MODEL,
+            model=settings.OLLAMA_MODEL_TEXT or settings.OLLAMA_DEFAULT_MODEL,
+            num_predict=settings.OLLAMA_MAX_TOKENS_REPORT,
         )
         exec_summary = (resp.get("message") or {}).get("content") or ""
     except Exception as e:

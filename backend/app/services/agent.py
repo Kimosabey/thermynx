@@ -30,6 +30,7 @@ log = get_logger("services.agent")
 
 # Cross-cutting rules prefixed to every mode. Keep these short — every token costs latency.
 _COMMON_RULES = """HARD RULES (non-negotiable):
+- Be concise. Final answer ≤150 words. Use bullets, not paragraphs. No restating the goal.
 - READ-ONLY: you cannot control equipment, send notifications, or modify work orders/alarms.
   If asked to act, refuse with: "I cannot take that action. Use the relevant page or contact the operator."
   Never claim to have performed an action.
@@ -100,8 +101,12 @@ async def run_agent(
     context: optional {equipment_id, hours, anomaly_id, ...}
     """
     run_id = str(uuid.uuid4())
-    model  = model or settings.OLLAMA_DEFAULT_MODEL
-    start  = time.time()
+    # Right-size: tool selection on a small model, final narration on the big one.
+    # If the caller explicitly passes `model`, use it for both (override).
+    tool_model = model or settings.OLLAMA_MODEL_TOOL or settings.OLLAMA_DEFAULT_MODEL
+    text_model = model or settings.OLLAMA_MODEL_TEXT or settings.OLLAMA_DEFAULT_MODEL
+    model      = text_model   # kept for log messages
+    start      = time.time()
 
     if mode not in SYSTEM_PROMPTS:
         log.warning("agent_unknown_mode run_id=%s mode=%s falling_back=investigator", run_id, mode)
@@ -130,7 +135,7 @@ async def run_agent(
     for _ in range(settings.AGENT_MAX_STEPS):
         step += 1
         try:
-            response = await chat(messages, tools=TOOL_SCHEMAS, model=model, temperature=0.0)
+            response = await chat(messages, tools=TOOL_SCHEMAS, model=tool_model, temperature=0.0)
         except OllamaUnavailableError as e:
             log.warning("agent_ollama_unavailable run_id=%s step=%s", run_id, step)
             yield _sse({"type": "error", "detail": e.detail})
@@ -237,7 +242,12 @@ async def run_agent(
             # Edge case: empty content, ask model to summarize
             messages.append({"role": "user", "content": "Summarize your findings in the required format."})
             try:
-                async for chunk in stream_chat_text(messages, model=model, temperature=0.2):
+                async for chunk in stream_chat_text(
+                    messages,
+                    model=text_model,
+                    temperature=0.2,
+                    num_predict=settings.OLLAMA_MAX_TOKENS_AGENT,
+                ):
                     yield _sse({"type": "token", "content": chunk})
             except OllamaUnavailableError as e:
                 yield _sse({"type": "error", "detail": e.detail})

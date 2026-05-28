@@ -49,7 +49,7 @@ async def _sse_stream(
     pg: AsyncSession,
 ) -> AsyncIterator[str]:
     audit_id = str(uuid.uuid4())
-    model = req.model or settings.OLLAMA_DEFAULT_MODEL
+    model = req.model or settings.OLLAMA_MODEL_TEXT or settings.OLLAMA_DEFAULT_MODEL
     start_ms = int(time.time() * 1000)
 
     # Layer 1 — pre-flight: reject obvious bad input before any LLM/DB work.
@@ -180,7 +180,11 @@ async def _sse_stream(
     full_response: list[str] = []
     status = "error"
     try:
-        async for chunk in stream_generate(prompt, model=model):
+        async for chunk in stream_generate(
+            prompt,
+            model=model,
+            num_predict=settings.OLLAMA_MAX_TOKENS_ANALYZE,
+        ):
             if await request.is_disconnected():
                 status = "cancelled"
                 break
