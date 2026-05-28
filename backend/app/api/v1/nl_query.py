@@ -7,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.limiter import limiter
+from app.log import get_logger
 from app.services.nl_to_sql import NLQueryError, run_nl_query
 
 router = APIRouter()
+log = get_logger("api.nl_query")
 
 
 class NLQueryRequest(BaseModel):
@@ -28,6 +30,11 @@ async def nl_query(
         result = await run_nl_query(body.question, db, model=body.model)
     except NLQueryError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+    except Exception as e:
+        # Don't let unexpected errors fall through to the global 500 handler —
+        # surface the real cause so the operator can see what actually broke.
+        log.exception("nl_query_unhandled question=%r", body.question[:200])
+        raise HTTPException(status_code=502, detail=f"NL-query failed: {type(e).__name__}: {e}") from e
     return {
         "sql":        result.sql,
         "rows":       result.rows,

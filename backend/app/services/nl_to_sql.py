@@ -154,8 +154,13 @@ async def _ollama_generate_sql(question: str, model: str) -> str:
     }
     async with httpx.AsyncClient(timeout=_llm_timeout()) as client:
         r = await client.post(url, json=body)
-        r.raise_for_status()
-        data = r.json()
+        if r.status_code >= 400:
+            # Surface Ollama's own error body (e.g. "model not found") instead of a bare HTTP status.
+            raise NLQueryError(f"Ollama {r.status_code}: {r.text[:300]}")
+        try:
+            data = r.json()
+        except ValueError as exc:
+            raise NLQueryError(f"Ollama returned non-JSON response: {r.text[:200]}") from exc
         return (data.get("response") or "").strip()
 
 
@@ -197,11 +202,15 @@ async def run_nl_query(
         log.error(f"SQL execution failed: {exc} | Query: {sql}")
         raise NLQueryError(f"Database error executing query: {str(exc)}") from exc
 
-    rows_mapping = result.mappings().all()
-    elapsed_ms   = int((time.monotonic() - started) * 1000)
+    try:
+        rows_mapping = result.mappings().all()
+        rows: list[dict[str, Any]] = [dict(r) for r in rows_mapping][:_max_rows()]
+        columns = list(rows[0].keys()) if rows else []
+    except Exception as exc:
+        log.exception("nl_query_result_extract_failed sql=%s", sql)
+        raise NLQueryError(f"Could not read query result: {exc}") from exc
 
-    rows: list[dict[str, Any]] = [dict(r) for r in rows_mapping][:_max_rows()]
-    columns = list(rows[0].keys()) if rows else []
+    elapsed_ms = int((time.monotonic() - started) * 1000)
 
     return NLQueryResult(
         sql=sql,

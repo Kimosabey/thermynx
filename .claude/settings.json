@@ -2,7 +2,26 @@
   "permissions": {
     "allow": [
       "Bash(../.venv/Scripts/python -m pytest tests/test_agent_payload.py -q --no-header)",
-      "Bash(../.venv/Scripts/python -c ' *)"
+      "Bash(../.venv/Scripts/python -c ' *)",
+      "Bash(curl -s --max-time 5 http://localhost:5173 -o /dev/null -w \"HTTP %{http_code}\\\\n\")",
+      "Bash(curl -s --max-time 30 -X POST http://100.125.103.28:11434/api/generate -H \"Content-Type: application/json\" -d '{\"model\":\"qwen2.5:14b\",\"prompt\":\"Say OK\",\"stream\":false,\"options\":{\"num_predict\":4,\"temperature\":0}}')",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('text:', d.get\\('response',''\\).strip\\(\\)[:80], '| eval_ms:', d.get\\('eval_duration',0\\)//1_000_000\\)\")",
+      "Bash(curl -s --max-time 30 -X POST http://100.125.103.28:11434/api/embeddings -H \"Content-Type: application/json\" -d '{\"model\":\"nomic-embed-text\",\"prompt\":\"test embedding\"}')",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); e=d.get\\('embedding',[]\\); print\\('embed dim:', len\\(e\\), '| first 3:', [round\\(x,3\\) for x in e[:3]]\\)\")",
+      "Bash(curl -s --max-time 90 -X POST http://100.125.103.28:11434/api/generate -H \"Content-Type: application/json\" -d '{\"model\":\"llama3.2-vision\",\"prompt\":\"What single color is this pixel? Reply with one word.\",\"images\":[\"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==\"],\"stream\":false,\"options\":{\"num_predict\":8,\"temperature\":0}}')",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('vision:', d.get\\('response',''\\).strip\\(\\)[:120], '| eval_ms:', d.get\\('eval_duration',0\\)//1_000_000\\)\")",
+      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" --max-time 60 -X POST http://localhost:8000/api/v1/nl-query -H \"Content-Type: application/json\" -d '{\"question\":\"give a comparison of chiller performance for the last 1 week\"}')",
+      "Bash(curl -s --max-time 8 -X POST \"http://localhost:3100/loki/api/v1/query_range\" --data-urlencode 'query={service=\"backend\"} |= \"69cbec05\"' --data-urlencode \"limit=20\")",
+      "Bash(netstat -ano)",
+      "Bash(powershell -Command \"Get-CimInstance Win32_Process -Filter 'ProcessId=14720' | Select-Object CommandLine | Format-List\")",
+      "Bash(powershell -Command 'Get-CimInstance Win32_Process -Filter \"Name='\\\\''python.exe'\\\\'' OR Name='\\\\''uvicorn.exe'\\\\''\" | Where-Object { $_.CommandLine -like '\\\\''*main:app*'\\\\'' -or $_.CommandLine -like '\\\\''*uvicorn*main*'\\\\'' } | Select-Object ProcessId, ParentProcessId, @{N='\\\\''Cmd'\\\\'';E={$_.CommandLine.Substring\\(0,[Math]::Min\\(120,$_.CommandLine.Length\\)\\)}} | Format-Table -AutoSize')",
+      "Bash(taskkill /F /PID 14720)",
+      "PowerShell($pids = @\\(14720, 27440, 2040\\); foreach \\($p in $pids\\) { try { Stop-Process -Id $p -Force -ErrorAction Stop; Write-Output \"killed $p\" } catch { Write-Output \"skip $p : $\\($_.Exception.Message\\)\" } }; Start-Sleep -Seconds 3; $tcp = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue; if \\($tcp\\) { Write-Output \"still listening on PID $\\($tcp.OwningProcess\\)\" } else { Write-Output \"port 8000 is free\" })",
+      "PowerShell(Get-Process -Id 14720 -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime; Write-Output \"---\"; Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue | Format-Table LocalAddress, LocalPort, State, OwningProcess; Write-Output \"---\"; \\(Invoke-WebRequest -Uri http://localhost:8000/api/v1/health -UseBasicParsing -TimeoutSec 5 -ErrorAction SilentlyContinue\\).StatusCode)",
+      "Bash(nohup \"../.venv/Scripts/uvicorn.exe\" main:app --reload --port 8000)",
+      "Bash(echo \"started PID $!\")",
+      "Bash(curl -s --max-time 3 http://localhost:8000/api/v1/health)",
+      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" --max-time 90 -X POST http://100.125.103.28:11434/api/generate -H \"Content-Type: application/json\" -d '{\"model\":\"qwen2.5:14b\",\"prompt\":\"Reply with just: SELECT 1 FROM chiller_1_normalized LIMIT 1\",\"stream\":false,\"options\":{\"num_predict\":40,\"temperature\":0}}')"
     ]
   }
 }
