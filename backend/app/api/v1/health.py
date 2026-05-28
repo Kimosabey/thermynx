@@ -5,7 +5,7 @@ from sqlalchemy import text
 from app.db.session import get_db
 from app.db.telemetry import fetch_plant_latest_slot_time, check_data_freshness
 from app.config import settings
-from app.llm.ollama import check_ollama_health
+from app.llm.ollama import check_ollama_health, circuit_state
 from app.log import get_logger
 from app.observability.metrics import telemetry_data_age_seconds, telemetry_freshness_check_total
 
@@ -54,6 +54,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
             "host": settings.OLLAMA_HOST,
             "default_model": settings.OLLAMA_DEFAULT_MODEL,
             "available_models": models,
+            "circuit": circuit_state(),
         },
         "telemetry": {
             "anchor": settings.TELEMETRY_TIME_ANCHOR,

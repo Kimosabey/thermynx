@@ -11,6 +11,7 @@ import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
+import { AIHealthBanner } from "../../shared/ui/AIHealthBanner";
 
 const MotionBox = motion.create(Box);
 
@@ -177,6 +178,7 @@ export default function NLQueryPage() {
         icon={<PageHeaderIcon icon={<Sparkles size={20} strokeWidth={1.85} />} />}
         subtitle="Ask the plant in plain English — agent generates safe read-only SQL and returns results"
       />
+      <AIHealthBanner />
 
       <GlassCard p={5} mb={6}>
         <Eyebrow mb={2}>Your question</Eyebrow>

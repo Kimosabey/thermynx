@@ -9,6 +9,7 @@ import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
+import { AIHealthBanner } from "../../shared/ui/AIHealthBanner";
 
 const MotionBox = motion.create(Box);
 
@@ -184,6 +185,7 @@ export default function VisionPage() {
           </Flex>
         }
       />
+      <AIHealthBanner />
 
       <Grid templateColumns={mode === "compare" ? { base: "1fr", md: "1fr 1fr" } : { base: "1fr" }} gap={4} mb={4}>
         {mode === "compare" && (

@@ -11,6 +11,7 @@ import {
   CitationsList,
   CitationDrawer,
 } from "./CitationFootnotes";
+import { AuditPanel } from "./AuditPanel";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
@@ -88,6 +89,8 @@ export default function AIAnalyzer() {
   const [tsLoading,    setTsLoading]    = useState(false);
   const [streamContent,setStreamContent]= useState("");
   const [citations,   setCitations]   = useState([]);
+  const [auditResult, setAuditResult] = useState(null);
+  const [verification, setVerification] = useState(null);
   const [activeCitation, setActiveCitation] = useState(null);
   const { isOpen: drawerOpen, onOpen: openDrawer, onClose: closeDrawer } = useDisclosure();
   const [streaming,    setStreaming]    = useState(false);
@@ -191,6 +194,8 @@ export default function AIAnalyzer() {
     setStreamMeta(null);
     setError(null);
     setCitations([]);
+    setAuditResult(null);
+    setVerification(null);
 
     try {
       const res = await fetch("/api/v1/analyze", {
@@ -226,6 +231,8 @@ export default function AIAnalyzer() {
           }
           if (evt.type === "token") setStreamContent((p) => p + evt.content);
           if (evt.type === "citations") setCitations(evt.chunks || []);
+          if (evt.type === "audit") setAuditResult(evt.audit || null);
+          if (evt.type === "verification") setVerification(evt.verdict || null);
           if (evt.type === "done") {
             setStreamMeta(evt);
             setStreamDone(true);
@@ -532,9 +539,16 @@ export default function AIAnalyzer() {
                 }
               </Box>
 
+              {/* Audit panel — post-gen hallucination flags + LLM critique */}
+              {!streaming && (auditResult || verification) && (
+                <Box px={{ base: 4, md: 6 }} pt={2}>
+                  <AuditPanel audit={auditResult} verification={verification} />
+                </Box>
+              )}
+
               {/* Citations — only shown after stream ends */}
               {!streaming && citations.length > 0 && (
-                <Box px={{ base: 4, md: 6 }} pb={5}>
+                <Box px={{ base: 4, md: 6 }} pb={5} pt={auditResult || verification ? 2 : 0}>
                   <CitationsList chunks={citations} onOpen={openCitation} />
                 </Box>
               )}

@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { MessageSquareText, Bot } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { Spinner } from "@chakra-ui/react";
+import { AIHealthBanner } from "../../shared/ui/AIHealthBanner";
 
 // Re-use the existing pages unchanged — just render them below the switcher
 const AIAnalyzer = lazy(() => import("../analyzer"));
@@ -116,8 +117,13 @@ export default function AIPage() {
 
   return (
     <Box>
-      {/* Mode switcher sits above whichever page is rendered */}
+      {/* AI degraded-mode warning — only renders when Ollama is down or breaker is open */}
       <Box px={{ base: 4, md: 6 }} pt={5}>
+        <AIHealthBanner />
+      </Box>
+
+      {/* Mode switcher sits above whichever page is rendered */}
+      <Box px={{ base: 4, md: 6 }} pt={1}>
         <ModeSwitcher active={mode} onChange={switchMode} />
       </Box>
 
