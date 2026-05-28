@@ -2,7 +2,33 @@
   "permissions": {
     "allow": [
       "Bash(curl -sv \"http://localhost:8000/api/v1/threads\" -X POST -H \"Content-Type: application/json\" -d '{}')",
-      "Bash(powershell -Command \"\\(Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1\\).OwningProcess\")"
+      "Bash(powershell -Command \"\\(Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1\\).OwningProcess\")",
+      "Bash(curl -s --max-time 4 http://localhost:8000/api/v1/health)",
+      "Bash(curl -s -w ' HTTP %{http_code} | %{time_total}s\\\\n' --max-time 8 -X POST http://localhost:8000/api/v1/nl-query -H 'Content-Type: application/json' -d '{\"question\":\"tell me about chiller 3\"}')",
+      "Bash(curl -s -w ' HTTP %{http_code} | %{time_total}s\\\\n' --max-time 8 -X POST http://localhost:8000/api/v1/nl-query -H 'Content-Type: application/json' -d '{\"question\":\"give me efficiency of tower 5\"}')",
+      "Bash(curl -s -w ' HTTP %{http_code} | %{time_total}s\\\\n' --max-time 8 -X POST http://localhost:8000/api/v1/nl-query -H 'Content-Type: application/json' -d '{\"question\":\"tell me a joke please\"}')",
+      "Bash(curl -s -w ' HTTP %{http_code} | %{time_total}s\\\\n' --max-time 30 -X POST http://localhost:8000/api/v1/nl-query -H 'Content-Type: application/json' -d '{\"question\":\"show 3 latest kW for chiller 1\"}')",
+      "Bash(git commit -m ' *)",
+      "Bash(curl -s -w '  HTTP %{http_code} | %{time_total}s\\\\n' --max-time 8 -X POST http://localhost:8000/api/v1/nl-query -H 'Content-Type: application/json' -d '{\"question\":\"tell me about chiller 3\"}')",
+      "Bash(curl -s -w '  HTTP %{http_code} | %{time_total}s\\\\n' --max-time 8 -X POST http://localhost:8000/api/v1/nl-query -H 'Content-Type: application/json' -d '{\"question\":\"give me efficiency of tower 5\"}')",
+      "Bash(curl -s -w '  HTTP %{http_code} | %{time_total}s\\\\n' --max-time 8 -X POST http://localhost:8000/api/v1/nl-query -H 'Content-Type: application/json' -d '{\"question\":\"tell me a joke please\"}')",
+      "Bash(git add *)",
+      "Bash(../.venv/Scripts/python.exe -c ' *)",
+      "Bash(\"../.venv/Scripts/python.exe\" -m pytest tests/eval/test_golden.py -v --tb=short -k \"refusal or claim or topic or injection\")",
+      "Bash(\"../.venv/Scripts/python.exe\" -m pytest tests/eval/test_golden.py -v --tb=line -k \"refusal or claim or injection\")",
+      "Bash(\"../.venv/Scripts/python.exe\" -m pytest tests/eval/test_golden.py --tb=line)",
+      "PowerShell($tcp = Get-NetTCPConnection -LocalPort 8000 -State Listen | Select-Object -First 1; if \\($tcp\\) { $proc = Get-Process -Id $tcp.OwningProcess -ErrorAction SilentlyContinue; if \\($proc\\) { Write-Output \"alive PID $\\($tcp.OwningProcess\\) \\($\\($proc.ProcessName\\)\\) started $\\($proc.StartTime\\)\"; try { Stop-Process -Id $tcp.OwningProcess -Force; Write-Output \"killed\" } catch { Write-Output \"kill failed: $\\($_.Exception.Message\\)\" } } else { Write-Output \"ghost PID $\\($tcp.OwningProcess\\) — TIME_WAIT will clear\" } } else { Write-Output \"no listener\" }; Start-Sleep -Seconds 4; $left = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue; Write-Output \"remaining listeners: $\\($left.Count\\)\")",
+      "Bash(curl -s -w '\\\\n HTTP %{http_code} | %{time_total}s\\\\n' --max-time 5 -X POST http://localhost:8000/api/v1/nl-query -H 'Content-Type: application/json' -d '{\"question\":\"tell me about chiller 3\"}')",
+      "Bash(curl -sv --max-time 5 http://localhost:8000/api/v1/health)",
+      "PowerShell($pids = @\\(28448, 44616, 20864, 40756, 38876, 45240, 39260, 14720\\); foreach \\($p in $pids\\) { try { Stop-Process -Id $p -Force -ErrorAction Stop; Write-Output \"killed $p\" } catch { Write-Output \"skip $p \\($\\($_.Exception.Message.Substring\\(0,[Math]::Min\\(50,$_.Exception.Message.Length\\)\\)\\)\\)\" } }; Start-Sleep -Seconds 5; $netstat = \\(netstat -ano | Select-String \":8000 \" | Select-String \"LISTENING\"\\); Write-Output \"remaining LISTENING entries: $\\($netstat.Count\\)\"; $netstat | ForEach-Object { Write-Output $_.ToString\\(\\).Substring\\(0,80\\) })",
+      "Bash(curl -s --max-time 3 http://localhost:8001/)",
+      "Bash(curl -s --max-time 2 http://localhost:8003/api/v1/health)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'  circuit field present: {\\\\\"circuit\\\\\" in d.get\\(\\\\\"ollama\\\\\",{}\\)}'\\); print\\(f'  ollama connected: {d[\\\\\"ollama\\\\\"][\\\\\"connected\\\\\"]}'\\); print\\(f'  models: {len\\(d[\\\\\"ollama\\\\\"][\\\\\"available_models\\\\\"]\\)}'\\)\")",
+      "Bash(curl -s -w '\\\\n  HTTP %{http_code} | time=%{time_total}s\\\\n' --max-time 5 -X POST http://localhost:8003/api/v1/nl-query -H 'Content-Type: application/json' -d '{\"question\":\"tell me about chiller 3\"}')",
+      "Bash(EVAL_BASE_URL=http://localhost:8003 \"../.venv/Scripts/python.exe\" -m pytest tests/eval/test_golden.py --tb=line)",
+      "Bash(\"../.venv/Scripts/python.exe\")",
+      "PowerShell($tcp = Get-NetTCPConnection -LocalPort 8003 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; if \\($tcp\\) { try { Stop-Process -Id $tcp.OwningProcess -Force -ErrorAction Stop; Write-Output \"killed PID $\\($tcp.OwningProcess\\) on :8003\" } catch { Write-Output \"kill failed\" } } else { Write-Output \"no listener on :8003\" }; Start-Sleep -Seconds 3)",
+      "Bash(\"../.venv/Scripts/uvicorn.exe\" main:app --port 8003)"
     ]
   }
 }

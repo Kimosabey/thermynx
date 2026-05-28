@@ -21,7 +21,12 @@
       "Bash(nohup \"../.venv/Scripts/uvicorn.exe\" main:app --reload --port 8000)",
       "Bash(echo \"started PID $!\")",
       "Bash(curl -s --max-time 3 http://localhost:8000/api/v1/health)",
-      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" --max-time 90 -X POST http://100.125.103.28:11434/api/generate -H \"Content-Type: application/json\" -d '{\"model\":\"qwen2.5:14b\",\"prompt\":\"Reply with just: SELECT 1 FROM chiller_1_normalized LIMIT 1\",\"stream\":false,\"options\":{\"num_predict\":40,\"temperature\":0}}')"
+      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" --max-time 90 -X POST http://100.125.103.28:11434/api/generate -H \"Content-Type: application/json\" -d '{\"model\":\"qwen2.5:14b\",\"prompt\":\"Reply with just: SELECT 1 FROM chiller_1_normalized LIMIT 1\",\"stream\":false,\"options\":{\"num_predict\":40,\"temperature\":0}}')",
+      "PowerShell($tcp = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; if \\($tcp\\) { Stop-Process -Id $tcp.OwningProcess -Force -ErrorAction SilentlyContinue; Write-Output \"killed backend PID $\\($tcp.OwningProcess\\)\" } else { Write-Output \"no backend running\" }; $tcp2 = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; if \\($tcp2\\) { Stop-Process -Id $tcp2.OwningProcess -Force -ErrorAction SilentlyContinue; Write-Output \"killed frontend PID $\\($tcp2.OwningProcess\\)\" } else { Write-Output \"no frontend running\" }; Start-Sleep -Seconds 3)",
+      "PowerShell($conns = Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue; foreach \\($c in $conns\\) { try { Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue } catch {} }; Start-Sleep -Seconds 3; Write-Output \"port 8000 cleared\")",
+      "Bash(curl -s --max-time 2 http://localhost:8000/api/v1/health)",
+      "Bash(curl -s --max-time 2 http://localhost:5173)",
+      "Bash(curl -s --max-time 3 http://localhost:3100/ready)"
     ]
   }
 }
