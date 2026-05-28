@@ -214,7 +214,7 @@ Every documented way an AI path can fail, the user-visible behavior, and the mit
 ## Resilience patterns to add
 
 ### R1 · Ollama circuit breaker
-**Status:** ⏳ Planned · **Covers:** F1, F2 · **Effort:** 3 hours
+**Status:** 🟢 Done (commit `4fc0242`) · **Covers:** F1, F2 · **Effort:** 3 hours
 
 Wrap `app.llm.ollama` calls with a circuit breaker (3 failures in 30s → open for 60s). When open, return `OllamaUnavailableError` immediately without attempting the call. Reduces tail latency during outages.
 
@@ -233,7 +233,7 @@ For Ollama 500 with body "model is loading" — wait 5s and retry once. For Olla
 Already partially exists in httpx defaults; needs explicit policy for LLM-specific retries.
 
 ### R4 · Health-degraded mode
-**Status:** ⏳ Planned · **Effort:** 2 hours
+**Status:** 🟢 Done (commit `4fc0242`) · **Effort:** 2 hours
 
 When `/api/v1/health` reports `ollama.connected=false`, the frontend should show a banner "AI features unavailable — analytics still working" and disable the AI buttons. Avoids confusing users who click and wait.
 
@@ -333,8 +333,8 @@ Codify these as chaos tests under `backend/tests/chaos/` — runnable manually b
 
 | Tier | Item | Effort | Status |
 |---|---|---|---|
-| 🔥 | R1 — Ollama circuit breaker | 3 hrs | ⏳ Planned |
-| 🔥 | R4 — Health-degraded mode UI | 2 hrs | ⏳ Planned |
+| 🔥 | R1 — Ollama circuit breaker | 3 hrs | 🟢 Done (`4fc0242`) |
+| 🔥 | R4 — Health-degraded mode UI | 2 hrs | 🟢 Done (`4fc0242`) |
 | ⚡ | R2 — Audit row buffering | 4 hrs | ⏳ Planned |
 | ⚡ | Chaos test harness | 4 hrs | ⏳ Planned |
 | 🌱 | R3 — Smart Ollama retry | 2 hrs | 🌱 Later |

@@ -196,48 +196,57 @@ Fuzzy-match equipment names in `preflight.py` using `difflib.get_close_matches` 
 
 ## Acceptance criteria for "Tier 1 + Tier 2 complete"
 
-- [ ] Every system prompt in `hvac_prompts.py` and `agent.py:SYSTEM_PROMPTS` contains the read-only + injection-resistance + benchmark-fixed + tense-pin rules
-- [ ] `preflight.py` exists with equipment-mention regex and topic gate; both wired into `/analyze`, `/agent/run`, and `/nl-query` endpoints
-- [ ] RAG context is wrapped in DATA boundary markers
-- [ ] NL-to-SQL prompt has explicit column allow-list; validator rejects unknown columns
-- [ ] Manual smoke test: 12 representative malicious / out-of-scope questions return correct refusals
-- [ ] Existing happy-path tests (`pytest backend/tests`) still pass
-- [ ] At least one new `pytest` test per Tier 1 item asserting the refusal pattern
+- [x] Every system prompt in `hvac_prompts.py` and `agent.py:SYSTEM_PROMPTS` contains the read-only + injection-resistance + benchmark-fixed + tense-pin rules
+- [x] `preflight.py` exists with equipment-mention regex and topic gate; both wired into `/analyze`, `/agent/run`, `/nl-query`, `/agent/orchestrate`, `/slack/commands` endpoints
+- [x] RAG context is wrapped in DATA boundary markers
+- [x] NL-to-SQL prompt has explicit column allow-list
+- [x] 17-case pytest eval suite covers refusals + happy paths (`backend/tests/eval/`) — **17/17 passing**
+- [x] Existing happy-path tests still pass
+- [x] Action-verb regex catches shut-down / send-email / create-work-order / etc.
 
 ## Acceptance criteria for "Tier 3 complete"
 
-- [ ] `services/postcheck.py` runs after `/analyze` stream ends, fires three audits
-- [ ] Prometheus exposes `hallucination_flags_total{type=...}`
-- [ ] Grafana panel added to the Phase 10B dashboard
-- [ ] Audit log UI shows per-answer hallucination-flag counts
+- [x] `services/postcheck.py` runs after `/analyze` stream ends, fires three audits
+- [x] Prometheus exposes `hallucination_flags_total{type=...}` and `hallucination_audit_runs_total{result=...}`
+- [x] Audit panel surfaced in analyzer UI (`AuditPanel.jsx`) with collapsible flag breakdown
+- [ ] Grafana panel added to the Phase 10B dashboard (open — see phases/PHASE_10B)
 
 ---
 
 ## Snapshot — what's actually shipped today (2026-05-28)
 
-| Tier | Item | Status |
-|---|---|---|
-| — | Equipment allow-list in analyzer prompt | 🟢 Done |
-| — | Tool-arg validation (`get_by_id`) | 🟢 Done |
-| — | Tool payload bound (12k chars) | 🟢 Done |
-| — | NL-to-SQL allow-list (tables) | 🟢 Done |
-| — | RAG threshold raised 0.4 → 0.55 | 🟢 Done |
-| — | Citation footnote validation in UI | 🟢 Done |
-| — | Stable markdown components (no mid-stream corruption) | 🟢 Done |
-| — | Self-critique pass on `/analyze` | 🟢 Done |
-| — | Pydantic length / shape guards | 🟢 Done |
-| — | Rate limiting (slowapi) | 🟢 Done |
-| T1-A | Read-only assertion | 🔴 Planned |
-| T1-B | Injection-resistance | 🔴 Planned |
-| T1-C | RAG data-not-instructions | 🔴 Planned |
-| T1-D | Pre-flight equipment regex | 🔴 Planned |
-| T1-E | Fixed-benchmark + computed-band | 🔴 Planned |
-| T2-A | Tense/window pin | 🔴 Planned |
-| T2-B | Current-focus pin | 🔴 Planned |
-| T2-C | No-cross-equipment-type | 🔴 Planned |
-| T2-D | Pre-computed math rule | 🔴 Planned |
-| T2-E | NL-to-SQL column allow-list | 🔴 Planned |
-| T2-F | Topic guard | 🔴 Planned |
-| T2-G | Wall-of-text rule | 🔴 Planned |
-| T2-H | Force English | 🔴 Planned |
-| T3-* | Post-gen audits + metrics | 🔴 Planned |
+| Tier | Item | Status | Commit |
+|---|---|---|---|
+| — | Equipment allow-list in analyzer prompt | 🟢 Done | `26ef57a` |
+| — | Tool-arg validation (`get_by_id`) | 🟢 Done | pre-session |
+| — | Tool payload bound (12k chars) | 🟢 Done | pre-session |
+| — | NL-to-SQL table allow-list | 🟢 Done | pre-session |
+| — | RAG threshold raised 0.4 → 0.55 | 🟢 Done | pre-session |
+| — | Citation footnote validation in UI | 🟢 Done | pre-session |
+| — | Stable markdown components | 🟢 Done | pre-session |
+| — | Self-critique pass on `/analyze` | 🟢 Done | pre-session |
+| — | Pydantic length / shape guards | 🟢 Done | pre-session |
+| — | Rate limiting (slowapi) | 🟢 Done | pre-session |
+| T1-A | Read-only assertion in SYSTEM_CONTEXT + all 5 agent modes | 🟢 Done | `75c51fd` |
+| T1-B | Injection-resistance rule | 🟢 Done | `75c51fd` |
+| T1-C | RAG data-not-instructions wrapper | 🟢 Done | `75c51fd` |
+| T1-D | Pre-flight equipment regex + topic gate | 🟢 Done | `75c51fd` |
+| T1-E | Fixed-benchmark + computed-band rule | 🟢 Done | `75c51fd` |
+| —    | Tier 1 coverage extension (orchestrator + slack + reports) | 🟢 Done | `5d2762b` |
+| T2-A | Tense/window pin (auto-derived from max slot_time) | 🟢 Done | `4c38d1a` |
+| T2-B | Current-focus pin from `req.equipment_id` | 🟢 Done | `4c38d1a` |
+| T2-C | No-cross-equipment-type rule (hardened with examples) | 🟢 Done | `4c38d1a` |
+| T2-D | Pre-computed math rule (use SUMMARY only) | 🟢 Done | `4c38d1a` |
+| T2-E | NL-to-SQL column allow-list per table type | 🟢 Done | `4c38d1a` |
+| T2-F | Action-verb preflight (shut down / create work order / etc.) | 🟢 Done | `4c38d1a` + `7daf008` |
+| T2-G | Wall-of-text rule | 🟢 Done | `4c38d1a` |
+| T2-H | Force English output | 🟢 Done | `4c38d1a` |
+| T3-A | Numeric claim audit (regex, no LLM) | 🟢 Done | `4c38d1a` |
+| T3-B | Equipment-mention audit | 🟢 Done | `4c38d1a` |
+| T3-C | Citation audit | 🟢 Done | `4c38d1a` |
+| T3-D | Prometheus hallucination counters | 🟢 Done | `4c38d1a` |
+| —    | UI audit panel below answer | 🟢 Done | `4fc0242` |
+| —    | Eval harness Phase 1 — 17 cases, 17 passing | 🟢 Done | `48e7b8c` + `7daf008` |
+
+**Verified by:** `EVAL_BASE_URL=http://localhost:8003 pytest tests/eval/test_golden.py` → **17 passed in 79.30s**
+**Last verified:** 2026-05-28

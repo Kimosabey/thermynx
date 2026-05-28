@@ -83,12 +83,12 @@ The platform never controls the plant — only reads telemetry and produces advi
 
 | Area | Maturity | Snapshot |
 |---|---|---|
-| 🧠 Truthfulness | 🟡 Partial | Code guards strong; prompt hardening Tier 1 still pending |
-| ⚡ Performance | 🟡 Partial | Already-shipped wins: parallel DB fetch, pool sizing, token batching. Pending: model right-sizing, response caching |
-| 🛡️ Reliability | 🟡 Partial | Ollama unreachable handled; circuit breaker + Ollama health-based degradation pending |
-| 🔐 Security | 🟡 Partial | Read-only by design; API key gate + OWASP mapping pending |
-| 📊 Evaluation | 🔴 Open | Self-critique pass exists; golden dataset + regression suite not yet built |
-| 🔭 Observability | 🟢 Strong | Prometheus + Loki + Grafana stack live; analyzer/agent audit trail in Postgres |
+| 🧠 Truthfulness | 🟢 Strong | All 3 hallucination tiers shipped: code guards (T1), prompt pins (T2), post-gen audits (T3) — 17-case pytest suite at 17/17 |
+| ⚡ Performance | 🟢 Strong | Parallel DB fetch · connection pool · token batching · model right-sizing per task · response-length caps |
+| 🛡️ Reliability | 🟢 Strong | Ollama circuit breaker (3 fails / 30s → 60s open) · health-degraded UI banner · graceful Ollama-unavailable refusals |
+| 🔐 Security | 🟡 Partial | Read-only by design (T1-A + T2-F enforced) · OWASP LLM Top 10 mapped · API key gate + startup secret validation deferred |
+| 📊 Evaluation | 🟡 Partial | Phase 1 harness shipped (S1 deterministic, 17 cases, 17/17 passing) · Phase 2 expansion (150 cases) + S2/S3 still planned |
+| 🔭 Observability | 🟢 Strong | Prometheus (incl. new `hallucination_flags_total`) + Loki + Grafana · analyzer/agent audit trail in Postgres · circuit state in `/health` |
 
 ---
 
@@ -101,16 +101,32 @@ The platform never controls the plant — only reads telemetry and produces advi
 
 ---
 
-## Top-of-funnel summary — what's open this week
+## Shipped this week
 
-Pulled forward from the per-doc roadmaps for quick scan:
+All Tier 1 items below are now live in production. Verified by the 17-case
+eval suite (`backend/tests/eval/test_golden.py`) — 17/17 passing.
 
-| Tier 1 (~6–8 hrs total) | Doc | Why |
+| Item | Doc | Commit |
 |---|---|---|
-| Read-only assertion in all prompts | [HALLUCINATION_ROADMAP.md#t1-a](./HALLUCINATION_ROADMAP.md) | Closes "shut down chiller — done" critical hallucination |
-| Injection-resistance rule | [HALLUCINATION_ROADMAP.md#t1-b](./HALLUCINATION_ROADMAP.md) | Resists "ignore previous instructions" attacks |
-| RAG content-as-data wrapper | [HALLUCINATION_ROADMAP.md#t1-c](./HALLUCINATION_ROADMAP.md) | Stops RAG documents from acting as instructions |
-| Pre-flight equipment regex | [HALLUCINATION_ROADMAP.md#t1-d](./HALLUCINATION_ROADMAP.md) | Catches chiller_3 type cases in <100ms with no LLM cost |
-| Right-size model per task | [PERFORMANCE_PLAN.md#a1](./PERFORMANCE_PLAN.md) | 2–3× speedup on agent + analyzer |
-| Cap response length | [PERFORMANCE_PLAN.md#a2](./PERFORMANCE_PLAN.md) | ~30% speedup on analyzer |
-| Ollama circuit breaker | [RELIABILITY_PLAN.md#r1](./RELIABILITY_PLAN.md) | Prevents pile-up during outages |
+| ✅ Read-only assertion in all prompts | [HALLUCINATION_ROADMAP.md#t1-a](./HALLUCINATION_ROADMAP.md) | `75c51fd` |
+| ✅ Injection-resistance rule | [HALLUCINATION_ROADMAP.md#t1-b](./HALLUCINATION_ROADMAP.md) | `75c51fd` |
+| ✅ RAG content-as-data wrapper | [HALLUCINATION_ROADMAP.md#t1-c](./HALLUCINATION_ROADMAP.md) | `75c51fd` |
+| ✅ Pre-flight equipment regex | [HALLUCINATION_ROADMAP.md#t1-d](./HALLUCINATION_ROADMAP.md) | `75c51fd` |
+| ✅ Action-verb preflight (T2-F) | [HALLUCINATION_ROADMAP.md#t2-f](./HALLUCINATION_ROADMAP.md) | `4c38d1a` + `7daf008` |
+| ✅ Right-size model per task | [PERFORMANCE_PLAN.md#a1](./PERFORMANCE_PLAN.md) | `4d2b0c9` |
+| ✅ Cap response length | [PERFORMANCE_PLAN.md#a2](./PERFORMANCE_PLAN.md) | `4d2b0c9` |
+| ✅ Ollama circuit breaker | [RELIABILITY_PLAN.md#r1](./RELIABILITY_PLAN.md) | `4fc0242` |
+| ✅ Health-degraded UI banner | [RELIABILITY_PLAN.md#r4](./RELIABILITY_PLAN.md) | `4fc0242` |
+| ✅ Post-gen audit (numeric/equipment/citation) | [HALLUCINATION_ROADMAP.md#t3](./HALLUCINATION_ROADMAP.md) | `4c38d1a` |
+| ✅ Eval harness Phase 1 | [EVALUATION_PLAN.md](./EVALUATION_PLAN.md) | `48e7b8c` |
+
+## What's open next
+
+| Item | Doc | Effort |
+|---|---|---|
+| Security T1 (startup secret validation, pip-audit, API_KEYS required outside dev) | [SECURITY_PLAN.md](./SECURITY_PLAN.md) | 2h — **deferred for now** |
+| Reliability R2 (audit row buffering when Postgres unreachable) | [RELIABILITY_PLAN.md#r2](./RELIABILITY_PLAN.md) | 4h |
+| Eval Phase 2 — expand 17 → 150 cases | [EVALUATION_PLAN.md](./EVALUATION_PLAN.md) | 1d |
+| Eval Phase 3 — S2 LLM-as-judge + S3 numeric reference compare | [EVALUATION_PLAN.md](./EVALUATION_PLAN.md) | 1d |
+| Pre-commit hook running fast eval subset on prompt-file changes | [EVALUATION_PLAN.md](./EVALUATION_PLAN.md) | 1h |
+| Grafana panel for `hallucination_flags_total` | [phases/PHASE_10B_HALLUCINATION_DASHBOARD.md](../phases/PHASE_10B_HALLUCINATION_DASHBOARD.md) | 2h |

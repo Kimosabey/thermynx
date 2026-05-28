@@ -60,7 +60,7 @@ Where time *actually* goes on the slow paths:
 ### Layer A — Reduce work (most impact)
 
 #### A1 · Right-size the model per task
-**Status:** ⏳ Planned · **Impact:** 🔥 Huge — 2–3× speedup
+**Status:** 🟢 Done (commit `4d2b0c9`) · **Impact:** 🔥 Huge — 2–3× speedup
 
 Use the smallest model that meets quality. Current monoculture (qwen2.5:14b everywhere) is wasteful.
 
@@ -77,7 +77,7 @@ Use the smallest model that meets quality. Current monoculture (qwen2.5:14b ever
 Implementation: add `OLLAMA_MODEL_FOR_<TASK>` env vars to `config.py`, plumb through. Acceptance: P50 latency on `/agent/run` < 15s.
 
 #### A2 · Cap response length per endpoint
-**Status:** ⏳ Planned · **Impact:** 🔥 Huge — directly cuts inference time
+**Status:** 🟢 Done (commit `4d2b0c9`) · **Impact:** 🔥 Huge — directly cuts inference time
 
 Operators read once. Long markdown is wasted tokens.
 
@@ -171,8 +171,8 @@ curl -X POST http://100.125.103.28:11434/api/generate \
 
 | Tier | Item | Effort | Impact | Status |
 |---|---|---|---|---|
-| 🔥 | A1 — right-size model per task | 3 hours | 2–3× speedup | ⏳ Planned |
-| 🔥 | A2 — cap response length | 1 hour | ~30% speedup on /analyze | ⏳ Planned |
+| 🔥 | A1 — right-size model per task | 3 hours | 2–3× speedup | 🟢 Done (`4d2b0c9`) |
+| 🔥 | A2 — cap response length | 1 hour | ~30% speedup on /analyze | 🟢 Done (`4d2b0c9`) |
 | ⚡ | A3 — Redis response cache | 4 hours | High hit rate cuts to ~100ms | ⏳ Planned |
 | ⚡ | B1 — local Ollama (if hardware) | 1 hour | 0.5–1s saved per call | ⏳ Env-dependent |
 | 🌱 | B2 — prompt compression | 2 hours | 20% prompt-eval speedup | 🌱 Later |
