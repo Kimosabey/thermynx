@@ -2,13 +2,20 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+// Backend port the frontend's /api proxy points at. Override per-run with:
+//   set VITE_BACKEND_PORT=8003 && npm run dev      (Windows cmd)
+//   $env:VITE_BACKEND_PORT=8003; npm run dev       (PowerShell)
+// Default 8000 is the canonical port; bump if zombies hold it (see
+// docs/operations/runbooks/OLLAMA_SERVER_TUNING.md for the TCP-zombie issue).
+const BACKEND_PORT = process.env.VITE_BACKEND_PORT || "8000";
+
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: `http://localhost:${BACKEND_PORT}`,
         changeOrigin: true,
       },
     },

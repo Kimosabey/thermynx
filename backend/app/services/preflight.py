@@ -121,12 +121,26 @@ _HVAC_KEYWORDS = re.compile(
 # Action verbs the platform CANNOT perform — flagged so the LLM doesn't have to
 # decide whether to refuse. Lets us return a deterministic read-only refusal
 # without paying for an LLM round-trip.
+#
+# `_FW` is the filler-word group between verb and object — handles natural English
+# like "create a work order", "send an email", "shut down the chiller", "open
+# the valve". Up to 3 filler words allowed.
+_FW = r"(?:[\s_-]+(?:a|an|the|new|this|that|all|one|some)){0,3}[\s_-]+"
+
 _ACTION_VERB_RE = re.compile(
-    r"\b(shut[\s_-]*down|shutdown|start[\s_-]*up|restart|reboot|turn[\s_-]*off|"
-    r"turn[\s_-]*on|stop|kill|disable|enable|modify[\s_-]*setpoint|change[\s_-]*setpoint|"
-    r"dismiss[\s_-]*alarm|close[\s_-]*alarm|create[\s_-]*work[\s_-]*order|"
-    r"send[\s_-]*email|send[\s_-]*slack|notify|page[\s_-]*on[\s_-]*call|"
-    r"open[\s_-]*valve|close[\s_-]*valve|adjust[\s_-]*flow)\b",
+    r"\b("
+    # Single-word verbs (or hyphenated)
+    r"shutdown|shut[\s_-]*down|start[\s_-]*up|restart|reboot|"
+    r"turn[\s_-]*off|turn[\s_-]*on|kill|disable|enable|"
+    r"dismiss|notify|page[\s_-]*on[\s_-]*call|"
+    # Two-word verb + object, filler words allowed between
+    rf"modify{_FW}setpoint|change{_FW}setpoint|"
+    rf"dismiss{_FW}alarm|close{_FW}alarm|acknowledge{_FW}alarm|"
+    rf"create{_FW}work[\s_-]*order|create{_FW}ticket|file{_FW}ticket|"
+    rf"send{_FW}(email|slack|message|notification|alert|page)|"
+    rf"open{_FW}valve|close{_FW}valve|adjust{_FW}flow|"
+    rf"shut{_FW}down|stop{_FW}(chiller|tower|pump|equipment|machine|unit)"
+    r")\b",
     re.IGNORECASE,
 )
 
