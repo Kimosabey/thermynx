@@ -34,9 +34,10 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
         yield f"data: {json.dumps({'type':'error','detail':f'Unknown mode: {req.mode}'})}\n\n"
         return
 
-    # Layer 1 — pre-flight: catch unknown equipment before paying for the ReAct loop.
-    from app.services.preflight import check_equipment_mentions
-    refusal = check_equipment_mentions(req.goal)
+    # Layer 1 — pre-flight: catch unknown equipment + action requests before
+    # paying for the ReAct loop (saves 15-30s per refused goal).
+    from app.services.preflight import check_action_request, check_equipment_mentions
+    refusal = check_action_request(req.goal) or check_equipment_mentions(req.goal)
     if refusal:
         log.info("agent_preflight_refused mode=%s reason=%s", req.mode, refusal[:120])
         yield f"data: {json.dumps({'type':'token','content': refusal})}\n\n"
@@ -146,9 +147,10 @@ class OrchestrateRequest(BaseModel):
 
 async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: AsyncSession):
     """Multi-agent stream — same persistence model as `_stream`, mode='orchestrator'."""
-    # Layer 1 — pre-flight: catch unknown equipment before planner + N sub-agents fire.
-    from app.services.preflight import check_equipment_mentions
-    refusal = check_equipment_mentions(req.goal)
+    # Layer 1 — pre-flight: catch action requests + unknown equipment before
+    # planner + N sub-agents fire (saves 60-90s per refused orchestration).
+    from app.services.preflight import check_action_request, check_equipment_mentions
+    refusal = check_action_request(req.goal) or check_equipment_mentions(req.goal)
     if refusal:
         log.info("orchestrate_preflight_refused reason=%s", refusal[:120])
         yield f"data: {json.dumps({'type':'token','content': refusal})}\n\n"

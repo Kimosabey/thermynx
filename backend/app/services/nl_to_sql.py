@@ -79,12 +79,23 @@ HARD RULES (violating any of these makes your output unusable):
 {table_list}
   * Always include a LIMIT (max 1000).
   * If filtering by recent data, use slot_time >= NOW() - INTERVAL N HOUR (or DAY).
-  * Use the canonical column names: slot_time, is_running, kw, tr, kw_per_tr,
-    chiller_load, evap_entering_temp, evap_leaving_temp, chw_delta_t,
-    cond_entering_temp, cond_leaving_temp, ambient_temp, kwh, trh,
-    cumulative_kwh, run_hours.
-  * Chiller tables expose: kw, tr, kw_per_tr, chiller_load, the temps, kwh, trh, run_hours
-  * Tower / pump tables expose: kw, kwh, cumulative_kwh, run_hours
+  * Refuse equipment that isn't in the table list above (no chiller_3, tower_5, etc.) —
+    instead return a SELECT against an existing table that matches the user's intent.
+
+COLUMN ALLOW-LIST (these are the ONLY columns that exist — do NOT invent others):
+  * Chiller tables (chiller_*_normalized):
+      slot_time, is_running, kw, tr, kw_per_tr, chiller_load,
+      evap_entering_temp, evap_leaving_temp, chw_delta_t,
+      cond_entering_temp, cond_leaving_temp, ambient_temp,
+      kwh, trh, cumulative_kwh, run_hours
+  * Cooling-tower tables (cooling_tower_*_normalized):
+      slot_time, is_running, kw, kwh, cumulative_kwh, run_hours, ambient_temp
+  * Pump tables (condenser_pump_*_normalized):
+      slot_time, is_running, kw, kwh, cumulative_kwh, run_hours
+
+If asked for a column NOT in this list (e.g. power_factor, voltage, current, vibration,
+oil_temp), do NOT invent it — return a SELECT against the closest available column or
+omit the metric. The validator and MySQL will reject unknown columns anyway.
 
 Return ONLY the SQL statement — nothing else."""
 

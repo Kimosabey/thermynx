@@ -27,8 +27,14 @@ async def nl_query(
     body: NLQueryRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    # Layer 1 — pre-flight: catch unknown equipment / off-topic before paying for SQL gen.
-    refusal = check_equipment_mentions(body.question) or topic_gate(body.question)
+    # Layer 1 — pre-flight: catch action verbs + unknown equipment + off-topic
+    # before paying for SQL generation.
+    from app.services.preflight import check_action_request
+    refusal = (
+        check_action_request(body.question)
+        or check_equipment_mentions(body.question)
+        or topic_gate(body.question)
+    )
     if refusal:
         log.info("nl_query_preflight_refused reason=%s", refusal[:120])
         raise HTTPException(status_code=422, detail=refusal)

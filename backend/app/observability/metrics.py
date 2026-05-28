@@ -50,3 +50,17 @@ anomalies_detected_total = Counter(
     "Number of statistical anomalies detected, partitioned by equipment.",
     ["equipment_id", "severity"],
 )
+
+# ── Hallucination audits (Tier 3 — post-generation) ──────────────────────────
+
+hallucination_flags_total = Counter(
+    "graylinx_hallucination_flags_total",
+    "Number of hallucination flags raised by post-generation audit checks.",
+    ["type"],   # type = number | equipment | citation
+)
+
+hallucination_audit_runs_total = Counter(
+    "graylinx_hallucination_audit_runs_total",
+    "Number of post-generation audit passes that ran, partitioned by clean/dirty.",
+    ["result"], # clean = no flags · dirty = ≥1 flag · skipped = empty answer
+)

@@ -118,6 +118,33 @@ _HVAC_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
+# Action verbs the platform CANNOT perform — flagged so the LLM doesn't have to
+# decide whether to refuse. Lets us return a deterministic read-only refusal
+# without paying for an LLM round-trip.
+_ACTION_VERB_RE = re.compile(
+    r"\b(shut[\s_-]*down|shutdown|start[\s_-]*up|restart|reboot|turn[\s_-]*off|"
+    r"turn[\s_-]*on|stop|kill|disable|enable|modify[\s_-]*setpoint|change[\s_-]*setpoint|"
+    r"dismiss[\s_-]*alarm|close[\s_-]*alarm|create[\s_-]*work[\s_-]*order|"
+    r"send[\s_-]*email|send[\s_-]*slack|notify|page[\s_-]*on[\s_-]*call|"
+    r"open[\s_-]*valve|close[\s_-]*valve|adjust[\s_-]*flow)\b",
+    re.IGNORECASE,
+)
+
+
+def check_action_request(question: str) -> str | None:
+    """Return a refusal string if the question asks for a write-action,
+    else None. Lets us short-circuit with the canonical read-only phrase."""
+    if not question:
+        return None
+    m = _ACTION_VERB_RE.search(question)
+    if m:
+        verb = m.group(0).strip()
+        return (
+            f'I cannot take that action ("{verb}"). I am a read-only assistant — '
+            "please use the relevant control panel or contact the on-shift operator."
+        )
+    return None
+
 
 def is_on_topic(question: str) -> bool:
     """Heuristic — does the question look like it's about HVAC operations?"""

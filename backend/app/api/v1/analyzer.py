@@ -54,8 +54,14 @@ async def _sse_stream(
 
     # Layer 1 — pre-flight: reject obvious bad input before any LLM/DB work.
     # Saves 30-60s per refused request and is 100% deterministic.
-    from app.services.preflight import check_equipment_mentions, topic_gate
-    refusal = check_equipment_mentions(req.question) or topic_gate(req.question, equipment_id=req.equipment_id)
+    from app.services.preflight import (
+        check_action_request, check_equipment_mentions, topic_gate,
+    )
+    refusal = (
+        check_action_request(req.question)
+        or check_equipment_mentions(req.question)
+        or topic_gate(req.question, equipment_id=req.equipment_id)
+    )
     if refusal:
         log.info("analyze_preflight_refused audit_id=%s reason=%s", audit_id, refusal[:120])
         yield f"data: {json.dumps({'type': 'token', 'content': refusal})}\n\n"
@@ -174,6 +180,8 @@ async def _sse_stream(
             {"id": e["id"], "name": e["name"], "type": e["type"]}
             for e in EQUIPMENT_CATALOG
         ],
+        focus_equipment_id=req.equipment_id,
+        focus_hours=req.hours,
     )
     prompt_hash = _hash(prompt)
 
@@ -212,6 +220,35 @@ async def _sse_stream(
     total_ms = int(time.time() * 1000) - start_ms
     response_text = "".join(full_response)
     yield f"data: {json.dumps({'type': 'done', 'audit_id': audit_id, 'model': model, 'total_ms': total_ms})}\n\n"
+
+    # ── Post-generation audit (Tier 3 — regex-based, no LLM call) ──────────
+    # Fast (<50ms) check for: orphan numeric claims, fabricated equipment names,
+    # and unmatched citations. Increments Prometheus counters either way.
+    if status == "ok" and response_text.strip():
+        try:
+            from app.services.postcheck import run_postcheck
+            audit_result = run_postcheck(
+                response_text,
+                context=context,
+                summary=summary,
+                equipment_catalog=EQUIPMENT_CATALOG,
+                retrieved_chunks=[
+                    {"source_id": c.source_id, "chunk_idx": c.chunk_idx}
+                    for c in (rag_chunks or [])
+                ],
+            )
+            yield f"data: {json.dumps({'type': 'audit', 'audit': audit_result})}\n\n"
+            if audit_result.get("flag_count", 0) > 0:
+                log.warning(
+                    "analyze_postcheck_flags audit_id=%s flags=%s n=%s e=%s c=%s",
+                    audit_id,
+                    audit_result["flag_count"],
+                    len(audit_result.get("numeric_flags", [])),
+                    len(audit_result.get("equipment_flags", [])),
+                    len(audit_result.get("citation_flags", [])),
+                )
+        except Exception:
+            log.exception("analyze_postcheck_failed audit_id=%s", audit_id)
 
     # ── Self-critique pass ─────────────────────────────────────────────────
     # Runs after the synthesised answer is complete. The auditor LLM checks
