@@ -3,6 +3,12 @@
 Complete checklist for verifying Graylinx works correctly.
 Run top-to-bottom before tagging any release. Mark each item: OK / FAIL / SKIP.
 
+> **AI surface testing?** See [`AI_MANUAL_TEST_PLAN.md`](./AI_MANUAL_TEST_PLAN.md)
+> for the focused walkthrough covering Quick Ask, Autonomous Agents, the
+> Multi-Agent Orchestrator, NL-Query, Vision and the new Audit/Health UI panels.
+> The automated suite at [`backend/tests/eval/test_golden.py`](../../../backend/tests/eval/test_golden.py)
+> auto-checks ~17 of the 80+ manual cases — run it first.
+
 ---
 
 ## PART 1 -- Infrastructure Setup
