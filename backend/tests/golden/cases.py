@@ -193,6 +193,28 @@ ANALYZER_CASES = [
         "tags": ["T2-F"],
     },
     {
+        # T2-I premise verification — there was NO spike at 14:00-16:00 on 2026-04-22
+        # (data shows 131-140 kW, well below the 184 kW morning peak at 11:00).
+        # Agent must NOT generate a diagnosis or work-order proposal for a non-problem.
+        "id":       "an_false_premise_spike",
+        "endpoint": "/api/v1/analyze",
+        "category": "premise_verification",
+        "body":     {"question": "Why did energy consumption spike between 2PM and 4PM on 2026-04-22?",
+                     "hours": 24, "equipment_id": "chiller_1", "verify": False},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["no spike", "did not spike", "actually", "below", "lower than",
+                               "the data shows", "I checked", "no such", "checked the data",
+                               "outside", "no problem", "no event", "nothing unusual",
+                               "did not exceed", "no anomaly"],
+            "not_contains":   ["Adjust Chilled Water Flow Settings",
+                               "Inspect chilled water flow settings",
+                               "work order created", "I have proposed a work order"],
+            "max_latency_ms": 60000,
+        },
+        "tags": ["T2-I"],
+    },
+    {
         "id":       "an_off_topic",
         "endpoint": "/api/v1/analyze",
         "category": "topic_off_domain",
@@ -249,6 +271,29 @@ AGENT_CASES = [
             "max_latency_ms": 5000,
         },
         "tags": ["T2-F"],
+    },
+    {
+        # T2-I premise verification on the agent — agent must use tools to check,
+        # then refuse to generate a work-order proposal for the non-existent spike.
+        "id":       "ag_false_premise_spike",
+        "endpoint": "/api/v1/agent/run",
+        "category": "premise_verification",
+        "body":     {"mode": "root_cause",
+                     "goal": "Why did energy consumption spike between 2PM and 4PM on 2026-04-22?",
+                     "context": {"equipment_id": "chiller_1", "hours": 24}},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["no spike", "did not spike", "actually", "below", "lower",
+                               "the data shows", "I checked", "no such", "did not exceed",
+                               "no anomaly", "no anomalies", "outside", "nothing unusual",
+                               "no problem", "no event"],
+            "not_contains":   ["Adjust Chilled Water Flow Settings",
+                               "Inspect chilled water flow settings",
+                               "work order created", "WO #",
+                               "I have proposed a work order"],
+            "max_latency_ms": 90000,
+        },
+        "tags": ["T2-I"],
     },
     {
         "id":       "ag_happy_investigator",

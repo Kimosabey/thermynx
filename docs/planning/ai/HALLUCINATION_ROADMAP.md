@@ -241,6 +241,7 @@ Fuzzy-match equipment names in `preflight.py` using `difflib.get_close_matches` 
 | T2-F | Action-verb preflight (shut down / create work order / etc.) | 🟢 Done | `4c38d1a` + `7daf008` |
 | T2-G | Wall-of-text rule | 🟢 Done | `4c38d1a` |
 | T2-H | Force English output | 🟢 Done | `4c38d1a` |
+| **T2-I** | **Premise-verification rule** (refuses to fix non-existent problems) | 🟢 Done | this commit |
 | T3-A | Numeric claim audit (regex, no LLM) | 🟢 Done | `4c38d1a` |
 | T3-B | Equipment-mention audit | 🟢 Done | `4c38d1a` |
 | T3-C | Citation audit | 🟢 Done | `4c38d1a` |

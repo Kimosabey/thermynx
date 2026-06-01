@@ -335,6 +335,17 @@ async def _exec_search_knowledge_base(
     }
 
 
+import re as _re
+
+# Match a kW/TR/kWh value with a unit — a "concrete data point" the diagnosis
+# must reference. Prevents propose_work_order from being called on vague
+# "investigate the chiller" type recommendations.
+_DIAGNOSIS_NUMBER_RE = _re.compile(
+    r"\b\d{1,4}(?:\.\d+)?\s*(?:kw/tr|kw|kwh|tr|hr|°c|%|σ|delta[\s_-]*t)",
+    _re.IGNORECASE,
+)
+
+
 async def _exec_propose_work_order(
     equipment_id: str,
     title: str,
@@ -344,12 +355,33 @@ async def _exec_propose_work_order(
 ) -> dict:
     """Validate + echo. Does NOT persist — the UI surfaces the proposal with
     a one-click confirm; persistence happens through /api/v1/work-orders
-    when the operator approves."""
+    when the operator approves.
+
+    Code-side guard (T2-I): the diagnosis must cite at least one concrete
+    numeric data point (kW, kW/TR, kWh, TR, etc.) — vague "investigate" /
+    "inspect settings" proposals are rejected so the agent can't generate
+    fake work orders for non-existent problems.
+    """
     eq = get_by_id(equipment_id)
     if not eq:
         return {"status": "rejected", "reason": f"Unknown equipment '{equipment_id}'."}
     if priority not in {"low", "normal", "high", "critical"}:
         priority = "normal"
+
+    diag = diagnosis.strip()
+    if not _DIAGNOSIS_NUMBER_RE.search(diag):
+        return {
+            "status": "rejected",
+            "reason": (
+                "Diagnosis must cite at least one concrete data point "
+                "(kW, kW/TR, kWh, TR, °C, %, σ) from your tool results. "
+                "Generic diagnoses like 'investigate inefficiency' or 'inspect "
+                "settings' cannot become work orders. Re-call this tool with a "
+                "diagnosis that includes the specific value and timestamp that "
+                "justifies the action — or do not propose a work order."
+            ),
+        }
+
     return {
         "status":   "proposed",
         "proposal": {
@@ -357,7 +389,7 @@ async def _exec_propose_work_order(
             "equipment_name":      eq["name"],
             "title":               title.strip()[:256],
             "priority":            priority,
-            "diagnosis":           diagnosis.strip()[:2000],
+            "diagnosis":           diag[:2000],
             "recommended_actions": (recommended_actions or "").strip()[:2000] or None,
         },
         "note": "Human review required — proposal will not be created until the operator confirms.",

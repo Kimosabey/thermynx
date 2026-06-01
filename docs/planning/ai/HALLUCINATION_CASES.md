@@ -36,8 +36,9 @@ Sibling docs: [Guardrails overview](./HALLUCINATION_GUARDRAILS.md) · [Defenses]
 | P3 | Cross-equipment-type compare | Compares chiller kW (300) to pump kW (5) as if same scale | LLM may produce nonsensical efficiency comparisons | 🟡 Medium | 🔴 Open — needs explicit prompt rule |
 | P4 | Empty-data confabulation | Says "no anomalies" when context has zero rows | Prompt has "say so explicitly" rule | 🟡 Medium | 🟢 Mitigated |
 | P5 | Tense/freshness drift | Says "running now" when telemetry is months old | Health endpoint reports freshness; LLM may still drift | 🟡 Medium | 🔴 Open — needs explicit window inject |
-| P6 | Math errors | Recomputes delta-T wrong from raw rows | LLM does its own arithmetic | 🟡 Medium | 🔴 Open — needs "use pre-computed values from SUMMARY" rule |
-| P7 | Long-thread context drift | Forgets which equipment in turn 5 of conversation | Conversation history is included but unfocused | 🟢 Low | 🔴 Open — needs CURRENT FOCUS pin |
+| P6 | Math errors | Recomputes delta-T wrong from raw rows | LLM does its own arithmetic | 🟡 Medium | 🟢 Mitigated — T2-D rule live |
+| P7 | Long-thread context drift | Forgets which equipment in turn 5 of conversation | Conversation history is included but unfocused | 🟢 Low | 🟢 Mitigated — T2-B CURRENT FOCUS pin live |
+| **P8** | **False-premise acceptance (sycophantic agreement)** | User: "Why did energy spike at 2-4 PM today?" — agent generates remediation plan for a non-existent spike. Caught in live testing 2026-05-28: agent proposed "Adjust Chilled Water Flow Settings" when 14:00-16:00 actually showed 131-140 kW vs morning peak of 184 kW. | **🔴 Critical** — operator trust killer, wastes time on fake problems | 🟢 Mitigated — **T2-I premise-verification rule** added to analyzer + all 5 agent modes + synthesizer. Eval cases `an_false_premise_spike` + `ag_false_premise_spike`. |
 
 ## C. Off-topic / out-of-domain
 
