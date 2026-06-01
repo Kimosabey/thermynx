@@ -60,7 +60,10 @@ Where time *actually* goes on the slow paths:
 ### Layer A — Reduce work (most impact)
 
 #### A1 · Right-size the model per task
-**Status:** 🟢 Done (commit `4d2b0c9`) · **Impact:** 🔥 Huge — 2–3× speedup
+**Status:** 🟢 Done (commits `4d2b0c9` + `5f8b38e`) · **Impact:** 🔥 Huge — 2–3× speedup
+**Decision record:** [MODEL_SIZING_DECISION.md](./MODEL_SIZING_DECISION.md) — captures the final
+per-task mapping, the alternatives we rejected (coder:32b for SQL, retry-chain, revert), and
+when to revisit.
 
 Use the smallest model that meets quality. Current monoculture (qwen2.5:14b everywhere) is wasteful.
 
