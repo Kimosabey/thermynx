@@ -3,6 +3,7 @@
 Complete checklist for verifying Graylinx works correctly.
 Run top-to-bottom before tagging any release. Mark each item: OK / FAIL / SKIP.
 
+> **Demoing the platform?** See [`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md) — 12-min live demo with pre-flight checklist + Q&A cheat sheet.
 > **AI surface testing?** See [`AI_MANUAL_TEST_PLAN.md`](./AI_MANUAL_TEST_PLAN.md)
 > for the focused walkthrough covering Quick Ask, Autonomous Agents, the
 > Multi-Agent Orchestrator, NL-Query, Vision and the new Audit/Health UI panels.
