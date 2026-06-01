@@ -20,6 +20,7 @@ This is the index for the **AI platform excellence** doc set under [`docs/planni
 | 🛡️ **Reliability** | [RELIABILITY_PLAN.md](./RELIABILITY_PLAN.md) | Failure modes, retries, circuit breakers, DR runbook |
 | 🔐 **Security** | [SECURITY_PLAN.md](./SECURITY_PLAN.md) | OWASP LLM Top 10 mapping, auth, secrets, supply chain |
 | 📊 **Evaluation** | [EVALUATION_PLAN.md](./EVALUATION_PLAN.md) | Quality framework, golden datasets, regression suite |
+| 🎯 **Next round** | [AGENT_UX_AND_EVAL_LOCKIN.md](./AGENT_UX_AND_EVAL_LOCKIN.md) | Focused ~4hr plan: lock today's fixes into eval + Agent UI parity (audit panel + tool trace) |
 
 ## Related docs (outside this folder)
 
