@@ -25,14 +25,9 @@ import TimeseriesChart from "./TimeseriesChart";
 
 const MotionBox = motion.create(Box);
 
-const QUICK_PROMPTS = [
-  "Analyze chiller efficiency and identify performance issues",
-  "Why is kW/TR outside optimal range?",
-  "Compare Chiller 1 vs Chiller 2 performance",
-  "Are there any anomalies or alerts right now?",
-  "Maintenance recommendations based on current data",
-  "Summarize energy consumption and cooling output",
-];
+import { buildAnalyzerPrompts } from "../../shared/ai/promptTemplates";
+// `QUICK_PROMPTS` is now derived dynamically from the selected equipment via
+// `buildAnalyzerPrompts(selectedEqObj)` — see render block below.
 
 function MarkdownRenderer({ content, components }) {
   return (
@@ -353,12 +348,26 @@ export default function AIAnalyzer() {
         <TimeseriesChart data={tsData} equipmentName={selectedEqObj?.name} loading={tsLoading} />
       </Box>
 
-      {/* Quick prompts */}
-      <Flex flexWrap="wrap" gap={{ base: 1.5, md: 2 }} mb={5}>
-        {QUICK_PROMPTS.map((p, i) => (
-          <Chip key={i} onClick={() => setQuestion(p)}>{p}</Chip>
-        ))}
-      </Flex>
+      {/* Quick prompts — tailored to the selected equipment, or plant-wide */}
+      {(() => {
+        const prompts = buildAnalyzerPrompts(selectedEqObj || null);
+        return (
+          <Box mb={5}>
+            <Eyebrow mb={2}>
+              {selectedEqObj
+                ? `Quick prompts for ${selectedEqObj.name}`
+                : "Plant-wide quick prompts"}
+            </Eyebrow>
+            <Flex flexWrap="wrap" gap={{ base: 1.5, md: 2 }}>
+              {prompts.map((p, i) => (
+                <Chip key={`${selectedEqObj?.id || "all"}-${i}`} onClick={() => setQuestion(p)}>
+                  {p}
+                </Chip>
+              ))}
+            </Flex>
+          </Box>
+        );
+      })()}
 
       {/* Input */}
       <GlassCard p={4} mb={4}>

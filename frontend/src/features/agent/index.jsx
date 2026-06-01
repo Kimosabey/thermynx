@@ -17,6 +17,7 @@ import BackgroundBeams from "../../shared/ui/BackgroundBeams";
 import AgentRunner from "./AgentRunner";
 import MultiAgentRunner from "./MultiAgentRunner";
 import { useAgentStream } from "./useAgentStream";
+import { buildAgentPrompts } from "../../shared/ai/promptTemplates";
 
 const MotionBox = motion.create(Box);
 
@@ -360,12 +361,34 @@ export default function AgentHub() {
               </Flex>
             )}
 
-            {/* Preset chips */}
-            <Flex flexWrap="wrap" gap={2} mb={4}>
-              {mode?.presets.map((p, i) => (
-                <Chip key={i} accentColor={mode?.color} onClick={() => setGoal(p)}>{p}</Chip>
-              ))}
-            </Flex>
+            {/* Preset chips — equipment-aware: switch between per-equipment and plant-wide
+                templates based on the dropdown selection. Falls back to mode's static
+                presets only if the template module returns nothing (shouldn't happen). */}
+            {(() => {
+              const selectedEqObj = mode?.hasEquipment
+                ? equipment.find((e) => e.id === selectedEq) || null
+                : null;
+              const dynamic = buildAgentPrompts(mode?.id, selectedEqObj);
+              const chips = dynamic.length ? dynamic : (mode?.presets || []);
+              return (
+                <Box mb={4}>
+                  <Eyebrow mb={2}>
+                    {selectedEqObj
+                      ? `Quick goals for ${selectedEqObj.name} (${mode?.label})`
+                      : `Plant-wide goals (${mode?.label})`}
+                  </Eyebrow>
+                  <Flex flexWrap="wrap" gap={2}>
+                    {chips.map((p, i) => (
+                      <Chip key={`${selectedEqObj?.id || "all"}-${mode?.id}-${i}`}
+                            accentColor={mode?.color}
+                            onClick={() => setGoal(p)}>
+                        {p}
+                      </Chip>
+                    ))}
+                  </Flex>
+                </Box>
+              );
+            })()}
 
             {/* Goal input */}
             <FormControl mb={3}>
