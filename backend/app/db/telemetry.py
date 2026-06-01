@@ -134,7 +134,7 @@ async def fetch_equipment_data(
 
 
 async def fetch_all_hvac_context(
-    db: AsyncSession,
+    _db: AsyncSession,   # accepted for API compat; each parallel task opens its own session
     hours: int = 24,
     *,
     until: datetime | None = None,
@@ -142,16 +142,31 @@ async def fetch_all_hvac_context(
     """
     When ``until`` is omitted, each asset uses its own table's latest ``slot_time`` under
     ``latest_in_db`` — required when normalized tables end at different timestamps.
+
+    Each of the 6 fetches uses its OWN MySQLSession — SQLAlchemy AsyncSession is
+    NOT safe for concurrent operations on a shared session ("This session is
+    provisioning a new connection; concurrent operations are not permitted").
+    The connection pool (pool_size=10) handles 6 simultaneous connections fine.
     """
+    from app.db.session import MySQLSession  # local import to avoid cycle
+
+    async def _ch(table: str) -> list[dict[str, Any]]:
+        async with MySQLSession() as s:
+            return await fetch_chiller_data(s, table, hours, until=until)
+
+    async def _eq(table: str, cols: list[str]) -> list[dict[str, Any]]:
+        async with MySQLSession() as s:
+            return await fetch_equipment_data(s, table, cols, hours, until=until)
+
     (
         ch1, ch2, ct1, ct2, cp1, cp3
     ) = await asyncio.gather(
-        fetch_chiller_data(db, "chiller_1_normalized", hours, until=until),
-        fetch_chiller_data(db, "chiller_2_normalized", hours, until=until),
-        fetch_equipment_data(db, "cooling_tower_1_normalized", COOLING_TOWER_COLS, hours, until=until),
-        fetch_equipment_data(db, "cooling_tower_2_normalized", COOLING_TOWER_COLS, hours, until=until),
-        fetch_equipment_data(db, "condenser_pump_0102_normalized", PUMP_COLS, hours, until=until),
-        fetch_equipment_data(db, "condenser_pump_03_normalized", PUMP_COLS, hours, until=until),
+        _ch("chiller_1_normalized"),
+        _ch("chiller_2_normalized"),
+        _eq("cooling_tower_1_normalized", COOLING_TOWER_COLS),
+        _eq("cooling_tower_2_normalized", COOLING_TOWER_COLS),
+        _eq("condenser_pump_0102_normalized", PUMP_COLS),
+        _eq("condenser_pump_03_normalized", PUMP_COLS),
     )
     return {
         "chiller_1":        ch1,

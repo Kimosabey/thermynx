@@ -205,9 +205,12 @@ def build_analyze_prompt(
     sections.append("\n---\n## LIVE PLANT DATA\n")
 
     # Render all equipment present in context — chillers first, then auxiliaries.
-    # Keys are sorted so output order is stable regardless of dict insertion order.
-    chiller_keys = sorted(k for k in context if k.startswith("chiller"))
-    aux_keys     = sorted(k for k in context if not k.startswith("chiller"))
+    # Filter to keys whose value is a list of rows; `context` also carries
+    # non-equipment metadata like "fetched_at" (str) and "hours_window" (int)
+    # that must not be iterated as equipment data.
+    _equipment_keys = [k for k, v in context.items() if isinstance(v, list)]
+    chiller_keys = sorted(k for k in _equipment_keys if k.startswith("chiller"))
+    aux_keys     = sorted(k for k in _equipment_keys if not k.startswith("chiller"))
 
     for key in chiller_keys:
         rows = context.get(key, [])
