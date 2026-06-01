@@ -79,11 +79,15 @@ class Settings(BaseSettings):
     #   - SQL:      NL-to-SQL generation (structured output → 8B fine)
     #   - PLANNER:  multi-agent planner JSON (deterministic → 8B fine)
     #   - AUDITOR:  self-critique pass/fail (small classifier → 3B fine)
-    OLLAMA_MODEL_TEXT:     str = ""    # default: OLLAMA_DEFAULT_MODEL
-    OLLAMA_MODEL_TOOL:     str = ""    # recommend: llama3.1:8b
-    OLLAMA_MODEL_SQL:      str = ""    # recommend: llama3.1:8b or qwen2.5-coder:7b
-    OLLAMA_MODEL_PLANNER:  str = ""    # recommend: llama3.1:8b
-    OLLAMA_AUDITOR_MODEL:  str = ""    # recommend: llama3.2:latest (3B)
+    # Defaults assume the standard model set is loaded on the Ollama host
+    # (qwen2.5:14b, llama3.1:8b, llama3.2:latest, llama3.2-vision, nomic-embed-text).
+    # Override any one via env var to swap or fall back; set to "" to force
+    # the OLLAMA_DEFAULT_MODEL fallback.
+    OLLAMA_MODEL_TEXT:     str = ""             # narration & analyzer answer — keep 14B for quality
+    OLLAMA_MODEL_TOOL:     str = "llama3.1:8b"  # agent ReAct tool selection — classifier-like, 8B is plenty
+    OLLAMA_MODEL_SQL:      str = "llama3.1:8b"  # NL→SQL — structured output, validator catches errors, speed matters
+    OLLAMA_MODEL_PLANNER:  str = "llama3.1:8b"  # multi-agent planner — short JSON, deterministic temp
+    OLLAMA_AUDITOR_MODEL:  str = "llama3.2:latest"  # self-critique — pure pass/fail classification, 3B is fastest
 
     # ── Response length caps (Performance A2) ───────────────────────────────
     # Hard ceiling on tokens generated per response. The prompt also asks for
