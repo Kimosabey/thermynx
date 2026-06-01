@@ -53,6 +53,26 @@ def _band(kw_per_tr: float | None) -> tuple[str, str]:
     return "critical", "red"
 
 
+# Minimum sensible cooling output. A real water-cooled centrifugal chiller
+# can never produce <10 TR while drawing real power — rows below this are
+# sensor zero, start/stop transients, or telemetry noise. Including them
+# inflates kw_per_tr to physically impossible values (we've seen 109+).
+_MIN_VALID_TR = 10.0
+
+
+def _is_clean_running(r: dict) -> bool:
+    """Row is in a state where kw_per_tr is physically meaningful."""
+    if not r.get("is_running"):
+        return False
+    tr = r.get("tr")
+    if tr is None:
+        return False
+    try:
+        return float(tr) >= _MIN_VALID_TR
+    except (TypeError, ValueError):
+        return False
+
+
 def _avg(rows: list[dict], key: str) -> float | None:
     vals = [float(r[key]) for r in rows if r.get(key) is not None]
     return sum(vals) / len(vals) if vals else None
@@ -76,8 +96,15 @@ def analyze_chiller_efficiency(
     """
     Given a list of normalized chiller data rows, return a full
     EfficiencyResult with band, delta vs benchmark, and loss drivers.
+
+    Outlier filter: rows where tr < 10 are dropped from kw_per_tr / load /
+    delta-t / approach averages — those are sensor zeros or transient
+    spikes that produce physically impossible ratios (we've seen 109+ kW/TR
+    when tr ≈ 1.4). `running_pct` still counts ALL is_running rows so the
+    operator sees the true uptime.
     """
     running = [r for r in rows if r.get("is_running")]
+    clean_running = [r for r in running if _is_clean_running(r)]
     record_count = len(rows)
 
     if not running:
@@ -93,17 +120,20 @@ def analyze_chiller_efficiency(
             record_count=record_count,
         )
 
-    kw_per_tr_avg   = _avg(running, "kw_per_tr")
-    kw_per_tr_best  = _best(running, "kw_per_tr")
-    kw_per_tr_worst = _worst(running, "kw_per_tr")
-    avg_load        = _avg(running, "chiller_load")
-    avg_delta_t     = _avg(running, "chw_delta_t")
+    # Use clean_running (tr >= 10) for kW/TR-derived metrics so sensor-zero
+    # rows don't inflate the average. Uptime % stays over the full running set.
+    kw_per_tr_avg   = _avg(clean_running, "kw_per_tr")
+    kw_per_tr_best  = _best(clean_running, "kw_per_tr")
+    kw_per_tr_worst = _worst(clean_running, "kw_per_tr")
+    avg_load        = _avg(clean_running, "chiller_load")
+    avg_delta_t     = _avg(clean_running, "chw_delta_t")
     running_pct     = round(len(running) / record_count * 100, 1) if record_count else None
+    outlier_count   = len(running) - len(clean_running)
 
-    # Condenser approach: cond_leaving - cond_entering
+    # Condenser approach: cond_leaving - cond_entering (also from clean rows)
     approach_vals = [
         float(r["cond_leaving_temp"]) - float(r["cond_entering_temp"])
-        for r in running
+        for r in clean_running
         if r.get("cond_leaving_temp") is not None and r.get("cond_entering_temp") is not None
     ]
     avg_approach = round(sum(approach_vals) / len(approach_vals), 2) if approach_vals else None
@@ -116,6 +146,14 @@ def analyze_chiller_efficiency(
 
     loss_drivers:    list[str] = []
     observations:    list[str] = []
+
+    # Transparency: tell operators when sensor-noise rows were excluded so the
+    # number doesn't look like it came from nowhere.
+    if outlier_count > 0:
+        observations.append(
+            f"Note: {outlier_count} row(s) excluded as sensor outliers "
+            f"(TR < {_MIN_VALID_TR:g} while running — likely transient or sensor zero)."
+        )
 
     # ── Loss driver analysis ──────────────────────────────────────────────────
     if kw_per_tr_avg is not None and kw_per_tr_avg >= BENCHMARK_DESIGN:
