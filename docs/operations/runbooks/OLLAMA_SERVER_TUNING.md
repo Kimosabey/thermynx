@@ -62,7 +62,7 @@ Every var is documented inline in the script and printed at runtime. Reference t
 | `OLLAMA_KV_CACHE_TYPE` | `q8_0` | Quantizes KV cache → 2× more context per VRAM GB. **Requires `FLASH_ATTENTION=1`** |
 | **Residency** | | |
 | `OLLAMA_KEEP_ALIVE` | `30m` | Model stays in VRAM 30 min after last call (default 5 min). Removes 1.5–2s cold-start |
-| `OLLAMA_MAX_LOADED_MODELS` | `2` | Up to 2 models in VRAM concurrently (qwen2.5:14b + nomic-embed-text fits in ~10 GB) |
+| `OLLAMA_MAX_LOADED_MODELS` | `3` | Hot set is `qwen2.5:14b` (narration) + `llama3.1:8b` (tools/SQL/planner) + `llama3.2:latest` (auditor) — ~16 GB with KV q8_0. Drop to 2 if your GPU has 12 GB |
 | **Throughput** | | |
 | `OLLAMA_NUM_PARALLEL` | `2` | 2 concurrent requests per loaded model |
 | **Logging** | | |
@@ -76,7 +76,7 @@ The defaults assume **~16 GB VRAM minimum**. Adjust before running for your hard
 
 | GPU class | VRAM | Recommended overrides |
 |---|---|---|
-| **High-end** (RTX 4090, A5000, A6000, L40) | 24 GB+ | Keep defaults; bump `MAX_LOADED_MODELS=3` to keep vision hot too |
+| **High-end** (RTX 4090, A5000, A6000, L40) | 24 GB+ | Keep defaults; bump `MAX_LOADED_MODELS=4` to keep vision hot too |
 | **Mid** (RTX 4080, RTX 4070 Ti Super, A4000) | 16 GB | Keep defaults |
 | **Budget** (RTX 4070, RTX 3060) | 12 GB | `MAX_LOADED_MODELS=1`, `NUM_PARALLEL=1`, switch default to `qwen2.5:7b` |
 | **CPU-only** | — | Set `OLLAMA_NUM_GPU=0` (not in script — manual edit) |
@@ -134,7 +134,7 @@ setx OLLAMA_HOST 0.0.0.0
 setx OLLAMA_FLASH_ATTENTION 1
 setx OLLAMA_KV_CACHE_TYPE q8_0
 setx OLLAMA_KEEP_ALIVE 30m
-setx OLLAMA_MAX_LOADED_MODELS 2
+setx OLLAMA_MAX_LOADED_MODELS 3
 setx OLLAMA_NUM_PARALLEL 2
 
 :: OR machine-scope (all users) — needs Run as administrator

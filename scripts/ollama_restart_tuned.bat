@@ -19,7 +19,7 @@ set "DIM=%ESC%[90m"
 cls
 echo.
 echo %CYA%================================================================%C0%
-echo %CYA%   %BLD%OLLAMA TUNED RESTART%C0%%CYA%   ·   GPU + KV-cache + keep-alive       %C0%
+echo %CYA%   %BLD%OLLAMA TUNED RESTART%C0%%CYA%   ·   GPU + KV-cache + 3-model hot   %C0%
 echo %CYA%================================================================%C0%
 echo.
 
@@ -54,8 +54,27 @@ set OLLAMA_ORIGINS=*
 set OLLAMA_FLASH_ATTENTION=1
 set OLLAMA_KV_CACHE_TYPE=q8_0
 set OLLAMA_KEEP_ALIVE=30m
-set OLLAMA_MAX_LOADED_MODELS=2
+
+REM MAX_LOADED_MODELS sized for the THERMYNX per-task model fan-out:
+REM   qwen2.5:14b      ~9 GB  (analyzer/agent narration, orchestrator synth)
+REM   llama3.1:8b      ~5 GB  (agent tool selection, NL-SQL, planner)
+REM   llama3.2:latest  ~2 GB  (self-critique auditor)
+REM   Sum hot:         ~16 GB with KV q8_0
+REM
+REM   Vision (llama3.2-vision ~8 GB) + embeddings (nomic-embed-text ~0.3 GB)
+REM   load on demand and rotate the LRU slot.
+REM
+REM   GPU VRAM tier:
+REM     24 GB+  → keep 3 (recommended; eliminates swap thrash)
+REM     16 GB   → 3 still fits with KV q8_0; tight but works
+REM     12 GB   → drop to 2 (accept NL-SQL cold-load every ~5 min)
+REM     8 GB    → drop to 1 + use OLLAMA_DEFAULT_MODEL=llama3.1:8b for everything
+set OLLAMA_MAX_LOADED_MODELS=3
+
+REM NUM_PARALLEL: concurrent requests per loaded model. Higher = more throughput
+REM but more VRAM per model. Stay at 2 unless you have spare VRAM headroom.
 set OLLAMA_NUM_PARALLEL=2
+
 set OLLAMA_DEBUG=0
 
 echo        %MAG%OLLAMA_HOST%C0%               = %WHT%%OLLAMA_HOST%%C0%
@@ -63,7 +82,7 @@ echo        %MAG%OLLAMA_ORIGINS%C0%            = %WHT%%OLLAMA_ORIGINS%%C0%
 echo        %MAG%OLLAMA_FLASH_ATTENTION%C0%    = %GRN%%OLLAMA_FLASH_ATTENTION%%C0%   %DIM%(faster attention)%C0%
 echo        %MAG%OLLAMA_KV_CACHE_TYPE%C0%      = %GRN%%OLLAMA_KV_CACHE_TYPE%%C0% %DIM%(2x VRAM headroom)%C0%
 echo        %MAG%OLLAMA_KEEP_ALIVE%C0%         = %GRN%%OLLAMA_KEEP_ALIVE%%C0%  %DIM%(no cold-start)%C0%
-echo        %MAG%OLLAMA_MAX_LOADED_MODELS%C0%  = %GRN%%OLLAMA_MAX_LOADED_MODELS%%C0%
+echo        %MAG%OLLAMA_MAX_LOADED_MODELS%C0%  = %GRN%%OLLAMA_MAX_LOADED_MODELS%%C0%    %DIM%(qwen2.5:14b + llama3.1:8b + llama3.2 hot)%C0%
 echo        %MAG%OLLAMA_NUM_PARALLEL%C0%       = %GRN%%OLLAMA_NUM_PARALLEL%%C0%
 echo        %MAG%OLLAMA_DEBUG%C0%              = %DIM%%OLLAMA_DEBUG%%C0%
 echo.
@@ -81,7 +100,22 @@ if !errorlevel!==0 (
     echo %GRN%================================================================%C0%
     echo.
 
-    echo %CYA%--- Loaded models (warm in VRAM) ---%C0%
+    echo %CYA%--- Pre-warming hot model set (single short call per model) ---%C0%
+    echo        %DIM%qwen2.5:14b   ...%C0%
+    curl -s --max-time 60 -X POST http://localhost:11434/api/generate ^
+        -H "Content-Type: application/json" ^
+        -d "{\"model\":\"qwen2.5:14b\",\"prompt\":\"ok\",\"stream\":false,\"options\":{\"num_predict\":1,\"temperature\":0}}" >nul 2>&1
+    echo        %DIM%llama3.1:8b   ...%C0%
+    curl -s --max-time 60 -X POST http://localhost:11434/api/generate ^
+        -H "Content-Type: application/json" ^
+        -d "{\"model\":\"llama3.1:8b\",\"prompt\":\"ok\",\"stream\":false,\"options\":{\"num_predict\":1,\"temperature\":0}}" >nul 2>&1
+    echo        %DIM%llama3.2      ...%C0%
+    curl -s --max-time 60 -X POST http://localhost:11434/api/generate ^
+        -H "Content-Type: application/json" ^
+        -d "{\"model\":\"llama3.2:latest\",\"prompt\":\"ok\",\"stream\":false,\"options\":{\"num_predict\":1,\"temperature\":0}}" >nul 2>&1
+    echo.
+
+    echo %CYA%--- Loaded models (should show 3 warm in VRAM) ---%C0%
     ollama ps
     echo.
 
@@ -103,7 +137,8 @@ if !errorlevel!==0 (
     )
     echo.
 
-    echo %YLW%[8/8]%C0% %GRN%%BLD%Ready.%C0%  Hit the backend; first call should be fast (no cold-start).
+    echo %YLW%[8/8]%C0% %GRN%%BLD%Ready.%C0%  All 3 hot models pre-warmed — first backend call should be fast.
+    echo        %DIM%THERMYNX per-task model mapping is in backend/app/config.py (commit 5f8b38e+).%C0%
     echo.
 ) else (
     echo.
