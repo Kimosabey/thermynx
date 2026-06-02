@@ -28,7 +28,11 @@
       "Bash(EVAL_BASE_URL=http://localhost:8003 \"../.venv/Scripts/python.exe\" -m pytest tests/eval/test_golden.py --tb=line)",
       "Bash(\"../.venv/Scripts/python.exe\")",
       "PowerShell($tcp = Get-NetTCPConnection -LocalPort 8003 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; if \\($tcp\\) { try { Stop-Process -Id $tcp.OwningProcess -Force -ErrorAction Stop; Write-Output \"killed PID $\\($tcp.OwningProcess\\) on :8003\" } catch { Write-Output \"kill failed\" } } else { Write-Output \"no listener on :8003\" }; Start-Sleep -Seconds 3)",
-      "Bash(\"../.venv/Scripts/uvicorn.exe\" main:app --port 8003)"
+      "Bash(\"../.venv/Scripts/uvicorn.exe\" main:app --port 8003)",
+      "Bash(\"../.venv/Scripts/uvicorn.exe\" main:app --port 8000)",
+      "Bash(EVAL_BASE_URL=http://localhost:8000 \"../.venv/Scripts/python.exe\" -m pytest tests/eval/test_golden.py --tb=short -q)",
+      "Bash(node -e ' *)",
+      "Bash(git commit -m 'docs\\(ai\\): deprioritize Grafana/Prometheus dashboard panels — metrics already emitted *)"
     ]
   }
 }
