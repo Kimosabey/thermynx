@@ -241,6 +241,116 @@ ANALYZER_CASES = [
         },
         "tags": ["happy_path", "T3"],
     },
+
+    # ─── Lock-in: non-chiller equipment selections must work ─────────────
+    # Pre-`59cd4b7` these returned 500 "Telemetry database is unreachable"
+    # because fetch_all_hvac_context shared an AsyncSession across 6 parallel
+    # queries (SQLAlchemy forbids this).
+    {
+        "id":       "an_tower_1_happy",
+        "endpoint": "/api/v1/analyze",
+        "category": "happy_path",
+        "body":     {"question": "Tell me about cooling tower 1", "hours": 24,
+                     "equipment_id": "cooling_tower_1", "verify": False},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["cooling tower", "tower", "kW", "running"],
+            "not_contains":   ["Telemetry unavailable",
+                               "Telemetry database is unreachable",
+                               "AttributeError",
+                               "concurrent operations are not permitted"],
+            "max_latency_ms": 60000,
+        },
+        "tags": ["happy_path", "non-chiller-equipment", "59cd4b7-lock"],
+    },
+    {
+        "id":       "an_tower_2_happy",
+        "endpoint": "/api/v1/analyze",
+        "category": "happy_path",
+        "body":     {"question": "Tell me about cooling tower 2", "hours": 24,
+                     "equipment_id": "cooling_tower_2", "verify": False},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["cooling tower", "tower", "kW", "running"],
+            "not_contains":   ["Telemetry unavailable",
+                               "Telemetry database is unreachable",
+                               "concurrent operations are not permitted"],
+            "max_latency_ms": 60000,
+        },
+        "tags": ["happy_path", "non-chiller-equipment", "59cd4b7-lock"],
+    },
+    {
+        "id":       "an_pump_1_happy",
+        "endpoint": "/api/v1/analyze",
+        "category": "happy_path",
+        "body":     {"question": "Tell me about condenser pump 1", "hours": 24,
+                     "equipment_id": "condenser_pump_1", "verify": False},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["pump", "kW", "running"],
+            "not_contains":   ["Telemetry unavailable",
+                               "Telemetry database is unreachable",
+                               "concurrent operations are not permitted"],
+            "max_latency_ms": 60000,
+        },
+        "tags": ["happy_path", "non-chiller-equipment", "59cd4b7-lock"],
+    },
+    {
+        "id":       "an_pump_3_happy",
+        "endpoint": "/api/v1/analyze",
+        "category": "happy_path",
+        "body":     {"question": "Tell me about condenser pump 3", "hours": 24,
+                     "equipment_id": "condenser_pump_3", "verify": False},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["pump", "kW", "running"],
+            "not_contains":   ["Telemetry unavailable",
+                               "Telemetry database is unreachable",
+                               "concurrent operations are not permitted"],
+            "max_latency_ms": 60000,
+        },
+        "tags": ["happy_path", "non-chiller-equipment", "59cd4b7-lock"],
+    },
+    {
+        # No equipment selected → "all-equipment" plant overview path that
+        # previously crashed on the same shared-session bug.
+        "id":       "an_no_selection_happy",
+        "endpoint": "/api/v1/analyze",
+        "category": "happy_path",
+        "body":     {"question": "Give me a plant-wide overview",
+                     "hours": 24, "verify": False},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["chiller", "tower", "pump", "Plant", "overview", "kW"],
+            "not_contains":   ["Telemetry unavailable",
+                               "Telemetry database is unreachable",
+                               "AttributeError",
+                               "concurrent operations are not permitted"],
+            "max_latency_ms": 90000,
+        },
+        "tags": ["happy_path", "plant-wide", "59cd4b7-lock"],
+    },
+
+    # ─── Lock-in: TR<10 outlier filter (commit 301e1ad) ──────────────────
+    # Pre-fix, chiller_2 reported "Average kW/TR: 4.526, critical band" because
+    # 4 sensor-zero rows (TR≈1.4 while kW≈130-150) inflated the running average.
+    # Post-fix should report ~0.541 in the excellent band.
+    {
+        "id":       "an_chiller_2_must_be_excellent",
+        "endpoint": "/api/v1/analyze",
+        "category": "happy_path",
+        "body":     {"question": "What efficiency band is chiller 2 in?",
+                     "hours": 24, "equipment_id": "chiller_2", "verify": False},
+        "expect": {
+            "status":         200,
+            # Real avg is ~0.54 in excellent band. Either "excellent" or
+            # "good" is acceptable — both indicate the filter is working.
+            "contains_any":   ["excellent", "good", "0.5"],
+            "not_contains":   ["4.5", "4.526", "596", "596%", "critical band"],
+            "max_latency_ms": 60000,
+        },
+        "tags": ["happy_path", "outlier-filter", "301e1ad-lock"],
+    },
 ]
 
 

@@ -306,7 +306,9 @@ async def _sse_stream(
 
 
 @router.post("/analyze")
-@limiter.limit("10/minute")
+@limiter.limit("30/minute")  # was 10/min — too tight for demo + test bursts.
+                              # 30/min still bounds accidental flood while allowing
+                              # natural rapid-fire operator usage (3-5 ops sharing a tab).
 async def analyze(
     request: Request,
     req: AnalyzeRequest,
