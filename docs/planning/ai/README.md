@@ -22,6 +22,7 @@ This is the index for the **AI platform excellence** doc set under [`docs/planni
 | 📊 **Evaluation** | [EVALUATION_PLAN.md](./EVALUATION_PLAN.md) | Quality framework, golden datasets, regression suite |
 | 🎯 **Next round** | [AGENT_UX_AND_EVAL_LOCKIN.md](./AGENT_UX_AND_EVAL_LOCKIN.md) | Focused ~4hr plan: lock today's fixes into eval + Agent UI parity (audit panel + tool trace) |
 | 📐 **Decision records** | [MODEL_SIZING_DECISION.md](./MODEL_SIZING_DECISION.md) | ADR: why we picked qwen2.5:14b + llama3.1:8b + llama3.2:3b instead of a single model or coder:32b for SQL |
+| 🔄 **Framework migration** | [AI_FRAMEWORK_MIGRATION.md](./AI_FRAMEWORK_MIGRATION.md) | When + how to move from DIY to LangChain/LangGraph/LangSmith/vLLM; on-prem vs cloud patterns; 5-stage plan |
 
 ## Related docs (outside this folder)
 
