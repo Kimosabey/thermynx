@@ -3,7 +3,12 @@
 **Status:** Living document — add items here when they're real but not yet scheduled.
 **Rule:** Every item must have a trigger condition (why now?), an effort estimate, and a link to the relevant plan doc.
 **Open-source constraint:** All tools and libraries must be MIT / Apache-2.0 / BSD. See [AI_FRAMEWORK_MIGRATION.md](./AI_FRAMEWORK_MIGRATION.md).
-**Last updated:** 2026-06-02
+**Last updated:** 2026-06-02 · **Eval baseline:** 27/27 cases passing · **Latest commit:** `105990a`
+
+### Quick-pick for next session
+Start here — top item from the highest priority group:
+> **🔴 #1 — Typo-tolerant equipment matching** (1h) — biggest safety gap, cheapest fix.
+> After that: **🟡 #5 — Agent UI audit panel** (3h) — most demo-visible gap remaining.
 
 ---
 
@@ -134,25 +139,37 @@ From [PERFORMANCE_PLAN.md](./PERFORMANCE_PLAN.md):
 
 ## ✅ Completed (with commit)
 
-| Item | Commit | Date |
+### Session 2 — 2026-06-02 (this session)
+
+| Item | Commit | What it does |
 |---|---|---|
-| Tier 1 hallucination guardrails (T1-A through T1-E) | `75c51fd` + `5d2762b` | 2026-05-28 |
-| Tier 2 prompt pins (T2-A through T2-H) | `4c38d1a` | 2026-05-28 |
-| Tier 2-F: action-verb preflight (shut down / send email / create WO) | `4c38d1a` + `7daf008` | 2026-05-28 |
-| Tier 2-I: premise verification (chiller_2 false spike case) | `0ea08ae` | 2026-06-01 |
-| Tier 2-H: English-only output (hardened, Thai bug fixed) | `3d9decc` | 2026-06-02 |
-| Tier 3 post-gen audits (numeric + equipment + citation + language) | `4c38d1a` + `3d9decc` | 2026-05-28 / 2026-06-02 |
-| Performance T1: model right-sizing per task | `4d2b0c9` + `5f8b38e` | 2026-05-28 / 2026-06-01 |
-| Reliability R1: Ollama circuit breaker | `4fc0242` | 2026-05-28 |
-| Reliability R4: health-degraded UI banner | `4fc0242` | 2026-05-28 |
-| Analyzer UI audit panel + citation drawer | `4fc0242` | 2026-05-28 |
-| Per-equipment + per-mode chip templates | `0650483` | 2026-06-02 |
-| Eval harness Phase 1 (27 cases, 27/27 passing) | `48e7b8c` + `5b87232` | 2026-05-28 / 2026-06-02 |
-| Analytics TR<10 outlier filter (chiller_2 4.526 → 0.54) | `301e1ad` | 2026-06-01 |
-| Analyzer tower/pump/no-selection fix (concurrent session bug) | `59cd4b7` | 2026-06-01 |
-| AI pipeline facade (`app/ai/pipeline.py`) | `d337558` | 2026-06-02 |
-| Model sizing ADR | `331a4c2` | 2026-06-02 |
-| Framework migration plan (open-source only) | `e5b1736` + `107f993` | 2026-06-02 |
-| Ollama tuning script MAX_LOADED_MODELS=3 + pre-warm | `0eb5702` | 2026-06-02 |
-| Demo script + manual test plan | `61c7a4c` + `38aaf43` | 2026-06-02 |
-| AI doc set reorganization (9 docs in `planning/ai/`) | `26ef57a` + `1f23e45` | 2026-05-28 |
+| Analytics TR<10 outlier filter | `301e1ad` | chiller_2 kW/TR fixed 4.526 → 0.541 (excellent). All 6 agentic surfaces correct now. |
+| Analyzer tower/pump/no-selection regression fix | `59cd4b7` | Was 500 "Telemetry unavailable" — SQLAlchemy concurrent-session bug. Fixed with per-task sessions in `asyncio.gather`. |
+| T2-I premise verification | `0ea08ae` | Agent refuses to generate diagnoses for events the data doesn't confirm (Thai spike case). |
+| Eval Part A lock-in — 6 new cases | `5b87232` | Tower/pump/no-selection/outlier-filter all pinned. Rate limit bumped 10→30/min. |
+| English-only output hardened — Thai bug fixed | `3d9decc` | English-only rule promoted to first block of all prompts. `audit_language()` postcheck added. 27/27. |
+| Per-equipment + per-mode chip templates | `0650483` | Chips switch based on equipment dropdown + agent mode. New `frontend/src/shared/ai/promptTemplates.js`. |
+| Model right-sizing defaults | `5f8b38e` | `OLLAMA_MODEL_TOOL=llama3.1:8b`, `OLLAMA_MODEL_SQL=llama3.1:8b`, `OLLAMA_AUDITOR_MODEL=llama3.2:latest`. |
+| Ollama MAX_LOADED_MODELS=3 + pre-warm | `0eb5702` | 3 models hot: qwen2.5:14b + llama3.1:8b + llama3.2:latest. Pre-warm step in restart script. |
+| AI pipeline facade | `d337558` | `backend/app/ai/pipeline.py` — re-exports all AI symbols in execution order. Navigation-as-code. |
+| Model sizing ADR | `331a4c2` | Locked the qwen2.5:14b + llama3.1:8b + llama3.2:latest decision with alternatives + trigger conditions. |
+| Framework migration plan | `e5b1736` | 5-stage open-source-only plan: vLLM → Langfuse → LangGraph → loaders → prompt mgmt. |
+| Open-source mandate locked in | `107f993` | Added ⚠️ OSS-only constraint to AI README + full exclusions list to migration plan. |
+| Future tasks master backlog | `105990a` | This doc — all 36 pending tasks in one place with effort estimates. |
+| Demo script | `61c7a4c` | 12-min live demo with pre-flight checklist, 12-question Q&A cheat sheet, failure recovery. |
+| AI manual test plan | `38aaf43` | 80+ UI test cases across Analyzer, Agent, Orchestrator, NL Query, Vision, Frontend. |
+
+### Session 1 — 2026-05-28
+
+| Item | Commit | What it does |
+|---|---|---|
+| Tier 1 hallucination guardrails (T1-A → T1-E) | `75c51fd` + `5d2762b` | Read-only, injection-resist, RAG-as-data, preflight regex, fixed benchmarks. All 6 surfaces. |
+| Tier 2 prompt pins (T2-A → T2-H) | `4c38d1a` | Data-window pin, current-focus pin, no-cross-type, no-recompute, column allow-list, action-verb, wall-of-text, force English. |
+| Tier 3 post-gen audits (numeric + equipment + citation) | `4c38d1a` | `services/postcheck.py` + Prometheus `hallucination_flags_total`. |
+| Analyzer UI audit panel + citation drawer | `4fc0242` | `AuditPanel.jsx` below every analyzer answer. Collapsible, opens on flags. |
+| Reliability R1 — Ollama circuit breaker | `4fc0242` | 3 failures / 30s → open for 60s. `circuit_state()` in `/health`. |
+| Reliability R4 — health-degraded UI banner | `4fc0242` | Red/amber banner on `/ai`, `/nl-query`, `/vision` when Ollama down or breaker open. |
+| Performance T1 — model right-sizing scaffolding | `4d2b0c9` | Config settings + `num_predict` plumbed through all Ollama call sites. |
+| Eval harness Phase 1 | `48e7b8c` | pytest parametrized, S1 deterministic, skip-on-unreachable. 17 initial cases. |
+| Action-verb regex tolerates articles | `7daf008` | "create **a** work order" now caught. `_FW` filler-word group. |
+| AI doc set reorganized into `planning/ai/` | `26ef57a` + `1f23e45` | 9 docs: GUARDRAILS, CASES, DEFENSES, ROADMAP, PERFORMANCE, RELIABILITY, SECURITY, EVALUATION, README. All cross-linked. Tier 1/2/3 marked 🟢. |

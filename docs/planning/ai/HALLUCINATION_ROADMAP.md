@@ -2,7 +2,7 @@
 
 Backlog of remaining anti-hallucination work, ordered by **blast radius × effort**. Sibling docs: [Guardrails](./HALLUCINATION_GUARDRAILS.md) · [Cases](./HALLUCINATION_CASES.md) · [Defenses](./HALLUCINATION_DEFENSES.md)
 
-**Last updated:** 2026-05-28
+**Last updated:** 2026-06-02 · **Eval baseline:** 27/27 passing · **Latest commit:** `3d9decc`
 
 ---
 
@@ -249,5 +249,15 @@ Fuzzy-match equipment names in `preflight.py` using `difflib.get_close_matches` 
 | —    | UI audit panel below answer | 🟢 Done | `4fc0242` |
 | —    | Eval harness Phase 1 — 17 cases, 17 passing | 🟢 Done | `48e7b8c` + `7daf008` |
 
-**Verified by:** `EVAL_BASE_URL=http://localhost:8003 pytest tests/eval/test_golden.py` → **17 passed in 79.30s**
-**Last verified:** 2026-05-28
+**Verified by:** `pytest backend/tests/eval/test_golden.py` → **27 passed in ~216s**
+**Last verified:** 2026-06-02 (27 cases — includes tower/pump/no-selection/outlier/language-drift locks)
+
+### Items added this session (2026-06-02)
+
+| Tier | Item | Status | Commit |
+|---|---|---|---|
+| T2-I | Premise verification — refuse to fix non-existent problems | 🟢 Done | `0ea08ae` |
+| T2-H | English-only output hardened — promoted to first prompt block, `audit_language()` postcheck | 🟢 Done | `3d9decc` |
+| T3-D+ | Language flag added to `hallucination_flags_total{type="language"}` | 🟢 Done | `3d9decc` |
+| — | Analytics TR<10 outlier filter — chiller_2 kW/TR 4.526 → 0.541 | 🟢 Done | `301e1ad` |
+| — | Analyzer tower/pump/no-selection concurrent-session regression | 🟢 Done | `59cd4b7` |

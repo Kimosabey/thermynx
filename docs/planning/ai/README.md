@@ -96,16 +96,19 @@ The platform never controls the plant — only reads telemetry and produces advi
 
 ---
 
-## Status dashboard (2026-05-28)
+## Status dashboard (2026-06-02) — last updated this session
 
 | Area | Maturity | Snapshot |
 |---|---|---|
-| 🧠 Truthfulness | 🟢 Strong | All 3 hallucination tiers shipped: code guards (T1), prompt pins (T2), post-gen audits (T3) — 17-case pytest suite at 17/17 |
-| ⚡ Performance | 🟢 Strong | Parallel DB fetch · connection pool · token batching · model right-sizing per task · response-length caps |
-| 🛡️ Reliability | 🟢 Strong | Ollama circuit breaker (3 fails / 30s → 60s open) · health-degraded UI banner · graceful Ollama-unavailable refusals |
-| 🔐 Security | 🟡 Partial | Read-only by design (T1-A + T2-F enforced) · OWASP LLM Top 10 mapped · API key gate + startup secret validation deferred |
-| 📊 Evaluation | 🟡 Partial | Phase 1 harness shipped (S1 deterministic, 17 cases, 17/17 passing) · Phase 2 expansion (150 cases) + S2/S3 still planned |
-| 🔭 Observability | 🟢 Strong | Prometheus (incl. new `hallucination_flags_total`) + Loki + Grafana · analyzer/agent audit trail in Postgres · circuit state in `/health` |
+| 🧠 Truthfulness | 🟢 Strong | All T1/T2/T3 shipped · English-only hardened (Thai bug fixed) · premise verification added · 27-case pytest suite 27/27 |
+| ⚡ Performance | 🟢 Strong | Parallel DB fetch · pool · token batching · **3-model right-sizing** (qwen2.5:14b / llama3.1:8b / llama3.2) · response caps · ADR locked |
+| 🛡️ Reliability | 🟢 Strong | Circuit breaker · degraded-mode UI banner · graceful Ollama refusals · Postgres startup retry |
+| 🔐 Security | 🟡 Partial | Read-only enforced (T1-A + T2-F) · OWASP mapped · **OSS-only mandate locked** · secret validation + pip-audit deferred |
+| 📊 Evaluation | 🟡 Partial | **27 cases, 27/27 passing** · tower/pump/outlier/language cases added · S2 LLM-as-judge + S3 reference compare planned |
+| 🔭 Observability | 🟢 Strong | Prometheus (`hallucination_flags_total` + `audit_runs_total`) · Loki · Grafana · audit trail · circuit state in `/health` |
+| 🎨 UX | 🟢 Strong | **Per-equipment + per-mode chip templates** · audit panel on analyzer · citation drawer · health-degraded banners · demo script |
+| 🤖 Agents | 🟡 Partial | 5 modes + orchestrator all passing eval · **no audit panel on agent UI yet** (next planned session) · work-order approve UI pending |
+| 🔄 Architecture | 🟢 Strong | `app/ai/pipeline.py` facade · full pipeline ASCII diagram · 5-stage OSS migration plan · model sizing ADR |
 
 ---
 
@@ -118,32 +121,26 @@ The platform never controls the plant — only reads telemetry and produces advi
 
 ---
 
-## Shipped this week
+## Shipped (2026-05-28 → 2026-06-02) — full list in [FUTURE_TASKS.md](./FUTURE_TASKS.md)
 
-All Tier 1 items below are now live in production. Verified by the 17-case
-eval suite (`backend/tests/eval/test_golden.py`) — 17/17 passing.
+**Session 1** (2026-05-28): Tier 1/2/3 guardrails · Perf T1 · R1/R4 reliability · Analyzer audit panel · Eval Phase 1 (17 cases)
+**Session 2** (2026-06-01/02): Analytics outlier fix · Tower/pump regression fix · T2-I premise verification · T2-H English-only hardened (Thai bug) · Eval 27 cases · Per-equipment chip templates · 3-model right-sizing + Ollama pre-warm · AI pipeline facade · ADR + framework migration plan · OSS mandate · Demo script · Future tasks backlog
 
-| Item | Doc | Commit |
-|---|---|---|
-| ✅ Read-only assertion in all prompts | [HALLUCINATION_ROADMAP.md#t1-a](./HALLUCINATION_ROADMAP.md) | `75c51fd` |
-| ✅ Injection-resistance rule | [HALLUCINATION_ROADMAP.md#t1-b](./HALLUCINATION_ROADMAP.md) | `75c51fd` |
-| ✅ RAG content-as-data wrapper | [HALLUCINATION_ROADMAP.md#t1-c](./HALLUCINATION_ROADMAP.md) | `75c51fd` |
-| ✅ Pre-flight equipment regex | [HALLUCINATION_ROADMAP.md#t1-d](./HALLUCINATION_ROADMAP.md) | `75c51fd` |
-| ✅ Action-verb preflight (T2-F) | [HALLUCINATION_ROADMAP.md#t2-f](./HALLUCINATION_ROADMAP.md) | `4c38d1a` + `7daf008` |
-| ✅ Right-size model per task | [PERFORMANCE_PLAN.md#a1](./PERFORMANCE_PLAN.md) | `4d2b0c9` |
-| ✅ Cap response length | [PERFORMANCE_PLAN.md#a2](./PERFORMANCE_PLAN.md) | `4d2b0c9` |
-| ✅ Ollama circuit breaker | [RELIABILITY_PLAN.md#r1](./RELIABILITY_PLAN.md) | `4fc0242` |
-| ✅ Health-degraded UI banner | [RELIABILITY_PLAN.md#r4](./RELIABILITY_PLAN.md) | `4fc0242` |
-| ✅ Post-gen audit (numeric/equipment/citation) | [HALLUCINATION_ROADMAP.md#t3](./HALLUCINATION_ROADMAP.md) | `4c38d1a` |
-| ✅ Eval harness Phase 1 | [EVALUATION_PLAN.md](./EVALUATION_PLAN.md) | `48e7b8c` |
+Eval baseline: **27/27 passing** · All services: **8/8 green**
 
-## What's open next
+## What's open — pick from [FUTURE_TASKS.md](./FUTURE_TASKS.md)
 
-| Item | Doc | Effort |
-|---|---|---|
-| Security T1 (startup secret validation, pip-audit, API_KEYS required outside dev) | [SECURITY_PLAN.md](./SECURITY_PLAN.md) | 2h — **deferred for now** |
-| Reliability R2 (audit row buffering when Postgres unreachable) | [RELIABILITY_PLAN.md#r2](./RELIABILITY_PLAN.md) | 4h |
-| Eval Phase 2 — expand 17 → 150 cases | [EVALUATION_PLAN.md](./EVALUATION_PLAN.md) | 1d |
-| Eval Phase 3 — S2 LLM-as-judge + S3 numeric reference compare | [EVALUATION_PLAN.md](./EVALUATION_PLAN.md) | 1d |
-| Pre-commit hook running fast eval subset on prompt-file changes | [EVALUATION_PLAN.md](./EVALUATION_PLAN.md) | 1h |
-| Grafana panel for `hallucination_flags_total` | [phases/PHASE_10B_HALLUCINATION_DASHBOARD.md](../phases/PHASE_10B_HALLUCINATION_DASHBOARD.md) | 2h |
+**Start next session here:**
+
+| # | Item | Priority | Effort |
+|---|---|---|---|
+| 1 | Typo-tolerant equipment matching (`difflib` fuzzy match) | 🔴 Must-do | 1h |
+| 2 | NL-SQL column validator at code level | 🔴 Must-do | 1h |
+| 3 | **Agent UI audit panel** (Part B from AGENT_UX plan) | 🟡 Agent UX | 3h |
+| 4 | Work-order approve/dismiss UI | 🟡 Agent UX | 2h |
+| 5 | Per-tool Prometheus metrics | 🟡 Agent UX | 1h |
+| 6 | Eval Phase 2: 27 → 50+ cases | 🟡 Eval | 1d |
+| 7 | Operator 👍/👎 feedback loop | 🟡 Eval | 5h |
+| 8 | Redis response cache (identical Q → <100ms) | 🟢 Perf | 4h |
+| 9 | Grafana hallucination flags panel | 🟢 Observability | 2h |
+| … | Full list | → | [FUTURE_TASKS.md](./FUTURE_TASKS.md) |
