@@ -24,6 +24,8 @@ This is the index for the **AI platform excellence** doc set under [`docs/planni
 | 📐 **Decision records** | [MODEL_SIZING_DECISION.md](./MODEL_SIZING_DECISION.md) | ADR: why we picked qwen2.5:14b + llama3.1:8b + llama3.2:3b instead of a single model or coder:32b for SQL |
 | 🔄 **Framework migration** | [AI_FRAMEWORK_MIGRATION.md](./AI_FRAMEWORK_MIGRATION.md) | When + how to move from DIY to LangChain/LangGraph/LangSmith/vLLM; on-prem vs cloud patterns; 5-stage plan |
 | 📋 **Future tasks** | [FUTURE_TASKS.md](./FUTURE_TASKS.md) | Master backlog — all AI work not yet started, grouped by priority, with effort estimates + commit history |
+| 🧭 **AI capability vision** | [AI_REQUIREMENTS_DISCOVERY.md](./AI_REQUIREMENTS_DISCOVERY.md) | What AI we want in the product and *why* — 15 capabilities, each with rationale + example cases + current build status. The reference doc behind the questionnaire |
+| 🗣️ **Discovery questionnaire** | [AI_DISCOVERY_QUESTIONNAIRE.md](./AI_DISCOVERY_QUESTIONNAIRE.md) | Ask-ready session script — 36 questions across Purpose / Requirements / Enhancements / Infra-On-prem, with example cases + `Answer:` lines. Print/share this for the requirements session |
 
 ## Related docs (outside this folder)
 
@@ -142,5 +144,5 @@ Eval baseline: **27/27 passing** · All services: **8/8 green**
 | 6 | Eval Phase 2: 27 → 50+ cases | 🟡 Eval | 1d |
 | 7 | Operator 👍/👎 feedback loop | 🟡 Eval | 5h |
 | 8 | Redis response cache (identical Q → <100ms) | 🟢 Perf | 4h |
-| 9 | Grafana hallucination flags panel | 🟢 Observability | 2h |
+| 9 | Grafana/Prometheus panels | 🌱 Later — metrics already emitted, panels are cosmetic | — |
 | … | Full list | → | [FUTURE_TASKS.md](./FUTURE_TASKS.md) |

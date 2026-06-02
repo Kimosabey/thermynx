@@ -9,6 +9,9 @@
 Start here — top item from the highest priority group:
 > **🔴 #1 — Typo-tolerant equipment matching** (1h) — biggest safety gap, cheapest fix.
 > After that: **🟡 #5 — Agent UI audit panel** (3h) — most demo-visible gap remaining.
+>
+> Grafana / Prometheus dashboard additions are explicitly **last priority** —
+> metrics are already emitted; panels are cosmetic until production monitoring is needed.
 
 ---
 
@@ -118,11 +121,16 @@ From [PERFORMANCE_PLAN.md](./PERFORMANCE_PLAN.md):
 
 ---
 
-## 🟢 Observability
+## 🌱 Observability dashboards — LOW priority, do later
 
-- [ ] **Grafana panel for `hallucination_flags_total`** — time-series of numeric/equipment/citation/language flags per hour. Wire into Phase 10B dashboard. 2h. [PHASE_10B_HALLUCINATION_DASHBOARD.md](../phases/PHASE_10B_HALLUCINATION_DASHBOARD.md)
-- [ ] **Agent step latency breakdown** — `agent_tool_duration_seconds{tool}` histogram in Grafana. Shows which tools are slow (which aids vLLM migration decision). 1h.
-- [ ] **Model usage tracking** — `ollama_model_calls_total{model, task}` counter so we can verify the right model fires for each task. 1h.
+> **Note (2026-06-02):** Prometheus metrics are already emitted correctly —
+> `hallucination_flags_total`, `analyzer_requests_total`, `agent_runs_total`, etc.
+> The data is all there. Adding Grafana panels is purely cosmetic until someone
+> actually needs to monitor production. Deferred until Tier B deployment.
+
+- [ ] **Grafana panel for `hallucination_flags_total`** — time-series of numeric/equipment/citation/language flags per hour. 2h. [PHASE_10B_HALLUCINATION_DASHBOARD.md](../phases/PHASE_10B_HALLUCINATION_DASHBOARD.md)
+- [ ] **Agent step latency breakdown** — `agent_tool_duration_seconds{tool}` histogram. 1h.
+- [ ] **Model usage tracking** — `ollama_model_calls_total{model, task}` counter. 1h.
 
 ---
 
