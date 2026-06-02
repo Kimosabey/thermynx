@@ -1,8 +1,78 @@
-# AI framework migration plan — DIY → LangChain / LangGraph / LangSmith
+# AI framework migration plan — Open-source-only stack
 
 **Status:** Deferred — POC is working, migration triggers not yet met
 **Audience:** Engineers evaluating whether to adopt AI frameworks
 **Last updated:** 2026-06-02
+
+---
+
+## ⚠️ Non-negotiable constraint: Open Source Only
+
+**Every component in the AI stack — models, frameworks, databases, observability
+tools, evaluation libraries — must be open-source licensed (MIT, Apache-2.0,
+BSD, or equivalent).** No proprietary SaaS, no cloud APIs with opaque terms,
+no vendor lock-in.
+
+This is an architectural principle, not a preference. Reasons:
+
+1. **Data sovereignty** — HVAC plant telemetry (kW, TR, setpoints, anomalies)
+   is operational data. Sending it to a proprietary API endpoint is a
+   contractual and security risk for facility operators.
+2. **Reproducibility** — open-source models and tools can be pinned to exact
+   versions, audited, and reproduced. Proprietary APIs change silently.
+3. **Cost control** — no per-token billing. GPU capex amortises over years;
+   API costs scale with usage and are unpredictable.
+4. **Auditability** — regulators and enterprise buyers increasingly ask
+   "show me the model weights." Open weights satisfy this; closed APIs don't.
+5. **Longevity** — open-source tools survive vendor pivots, acquisitions,
+   and pricing changes. Critical infrastructure cannot depend on a startup's
+   business model.
+
+### What this rules out (permanently)
+
+| Tool | Why excluded |
+|---|---|
+| OpenAI API (GPT-4o, GPT-4) | Proprietary model, closed weights, data sent to OpenAI |
+| Anthropic Claude API | Same — proprietary, data leaves facility |
+| Google Gemini API | Same |
+| LangSmith (cloud) | Proprietary tracing SaaS, traces ship to LangChain Inc |
+| Cohere, Mistral API | Cloud API — data egress |
+| Pinecone, Weaviate Cloud | Proprietary vector DB cloud tier |
+| GitHub Copilot for agents | Proprietary |
+| Any model with restricted weights (e.g. early LLaMA 1) | License prohibits commercial use |
+
+### What this allows (open-source equivalents)
+
+| Need | Open-source solution | License |
+|---|---|---|
+| LLM inference | Ollama, vLLM, llama.cpp, TGI (Text Generation Inference) | MIT / Apache-2.0 |
+| LLM models | qwen2.5, llama3.1, mistral, phi-3, deepseek — all open weights | Apache-2.0 / MIT |
+| Embeddings | nomic-embed-text, bge-m3, e5-large | Apache-2.0 |
+| Agent orchestration | LangGraph (MIT), custom Python | MIT |
+| Prompt chaining | LangChain core (MIT) | MIT |
+| Tracing / observability | Langfuse (self-hosted, MIT), W&B local (Apache) | MIT / Apache |
+| Prompt management | Langfuse prompts (self-hosted), git-based | MIT |
+| Vector DB | pgvector (PostgreSQL extension, MIT) ✅ already in use | MIT |
+| Evaluation | RAGAS (Apache-2.0), DeepEval (Apache), our own pytest suite | Apache / MIT |
+| Document loaders | LangChain community loaders (MIT) | MIT |
+
+### Current stack — open-source audit ✅
+
+Every dependency we use today passes the open-source test:
+
+| Layer | Component | License | Status |
+|---|---|---|---|
+| LLM serving | Ollama | MIT | ✅ |
+| Models | qwen2.5:14b, llama3.1:8b, llama3.2, nomic-embed-text | Apache-2.0 / MIT | ✅ |
+| API framework | FastAPI + uvicorn | MIT | ✅ |
+| DB | PostgreSQL (pgvector) + MySQL + Redis | MIT / GPL-2 / BSD | ✅ |
+| Frontend | React + Vite + Chakra UI | MIT | ✅ |
+| Observability | Prometheus + Grafana + Loki | Apache-2.0 | ✅ |
+| ORM | SQLAlchemy + Alembic | MIT | ✅ |
+| Validation | Pydantic | MIT | ✅ |
+| Eval | pytest | MIT | ✅ |
+
+**Zero proprietary dependencies.** This is not accidental — it was the design goal.
 
 Sibling docs:
 - [AI_PIPELINE_REORG.md](./AI_PIPELINE_REORG.md) — current pipeline structure (the facade that makes this migration incremental)
@@ -184,19 +254,36 @@ Replace:  vLLM serve --model qwen/qwen2.5-14b-instruct --port 11434
 - **Still fully on-prem** — vLLM runs in your Docker stack or LAN GPU box
 - Eval gate: 27/27 must pass after swap
 
-### Stage 2 — Add Langfuse for span tracing (~1 day)
+### Stage 2 — Add Langfuse (self-hosted) for span tracing (~1 day)
 **Trigger:** Need per-tool-call latency breakdown, or debugging becomes painful
+**Open-source:** Langfuse is MIT licensed. Self-host in Docker — zero data egress.
 
-```
-self-hosted Langfuse (Docker Compose service, MIT license)
-  → backend/app/llm/ollama.py wraps each call with span context
-  → Grafana dashboard gains a "Traces" tab pointing at Langfuse
+```yaml
+# Add to docker-compose.yml
+langfuse:
+  image: langfuse/langfuse:latest   # MIT license
+  ports: ["3200:3000"]
+  environment:
+    DATABASE_URL: "postgresql://..."
+    NEXTAUTH_SECRET: "..."
+    SALT: "..."
 ```
 
-- Langfuse is self-hosted, MIT licensed — zero data egress
-- Works alongside existing Prometheus + Loki (additive, not replacement)
+```python
+# backend/app/llm/ollama.py — wrap each call
+from langfuse import Langfuse
+langfuse = Langfuse(host="http://localhost:3200")  # self-hosted only
+
+trace = langfuse.trace(name="agent_run")
+span = trace.span(name="tool_call", input={"tool": name, "args": args})
+result = await execute_tool(name, args)
+span.end(output=result)
+```
+
+- Langfuse self-hosted = MIT, no telemetry to LangChain Inc
 - Gives span-level: prompt → LLM call → tool execution → postcheck
-- **Still fully on-prem**
+- Works alongside existing Prometheus + Loki (additive)
+- **Fully on-prem** ✅ open-source ✅
 
 ### Stage 3 — Replace agent loop with LangGraph (~2 days)
 **Trigger:** Need conditional branching (e.g. "if anomaly found → root_cause path, else → brief path")
@@ -229,20 +316,30 @@ Replace:  ai/rag/ingest.py using LangChain document loaders
 
 ### Stage 5 — Add prompt version management (~half day)
 **Trigger:** Multiple facilities need different prompt variants, or a prompt regression is hard to roll back
+**Open-source options only:**
 
 ```
-Option A (self-hosted): Langfuse prompt hub
-  → Prompts stored in Langfuse DB (self-hosted)
+Option A — Langfuse prompt hub (self-hosted, MIT)
+  → Prompts stored in Langfuse DB (already added in Stage 2)
   → backend pulls prompt by name + version at startup
   → rollback = change version pin in .env
+  → gives non-engineers a UI to edit prompts safely
+  → OPEN SOURCE ✅ on-prem ✅
 
-Option B (file-based): git tags + config.py PROMPT_VERSION env var
+Option B — git-based (no new infra, works today)
   → prompts/hvac_prompts_v1.py, v2.py ...
-  → select at runtime via settings.PROMPT_VERSION
-  → no new infrastructure, works today
+  → select at runtime via settings.PROMPT_VERSION env var
+  → rollback = deploy previous git tag
+  → OPEN SOURCE ✅ on-prem ✅ simplest ✅
+
+Option C — Humanloop (has self-hosted tier, Apache-2.0)
+  → More feature-rich prompt editor + evals UI
+  → Heavier deployment (needs their infra stack)
+  → OPEN SOURCE ✅ on-prem ✅ (self-hosted tier only)
 ```
 
-Option B is simpler and already possible with our current stack. Option A gives a UI for non-engineers to edit prompts.
+Recommendation: Option B (git-based) now, upgrade to Option A (Langfuse) when
+Stage 2 tracing is already deployed — no extra infra cost.
 
 ---
 
@@ -291,16 +388,22 @@ For planning the Stage 1 upgrade:
 
 ## Summary table — what to adopt, when, and why
 
-| Tool | When | Why | On-prem? | Effort |
-|---|---|---|---|---|
-| **vLLM** | >10 concurrent users OR <5s SLA | 10× throughput, OpenAI-compat API | ✅ | 2d |
-| **Langfuse** (self-hosted) | Need span traces / prompt management | MIT license, zero egress, great UI | ✅ | 1d |
-| **LangGraph** | Need conditional agent branches | Local Python lib, no cloud | ✅ | 2d |
-| **LangChain loaders** | Need multi-format document ingest | Local lib, 50+ loaders | ✅ | 1d |
-| **LangSmith** (cloud) | Only if data-residency allows | Best-in-class tracing UI | ❌ (cloud) | 1d |
-| **RAGAS** | Need semantic eval (S2) | Local Python eval framework | ✅ | 1d |
-| **Azure OpenAI Private Endpoint** | Need GPT-4o / Claude quality | Frontier models, data stays in tenant | ✅ (Private Link) | 3d |
-| **Fine-tune (LoRA)** | 6mo+ of labeled operator data | Custom HVAC reasoning | ✅ | 1-2wk |
+All tools listed are open-source. Proprietary alternatives are excluded per the constraint above.
+
+| Tool | License | When | Why | On-prem? | Effort |
+|---|---|---|---|---|---|
+| **vLLM** | Apache-2.0 | >10 concurrent users OR <5s SLA | 10× throughput, OpenAI-compat API | ✅ | 2d |
+| **Langfuse** (self-hosted) | MIT | Need span traces + prompt management | Zero egress, great UI, runs in Docker | ✅ | 1d |
+| **LangGraph** | MIT | Need conditional agent branches | Local Python lib, no cloud calls | ✅ | 2d |
+| **LangChain loaders** | MIT | Need PDF/Word/Confluence/SharePoint ingest | Local lib, 50+ loaders | ✅ | 1d |
+| **RAGAS** | Apache-2.0 | Need semantic eval (S2 LLM-as-judge) | Local Python eval framework | ✅ | 1d |
+| **DeepEval** | Apache-2.0 | Alternative to RAGAS | More metrics, hallucination scoring | ✅ | 1d |
+| **TGI** (Text Generation Inference) | Apache-2.0 | Alternative to vLLM (Hugging Face) | HuggingFace native, good quantization | ✅ | 2d |
+| **llama.cpp** (server mode) | MIT | Lightweight single-GPU deployment | Minimal infra, CPU fallback possible | ✅ | 1d |
+| **LoRA fine-tune** | Apache-2.0 (via unsloth/axolotl) | 6mo+ labeled operator data | Custom HVAC domain tuning | ✅ | 1-2wk |
+| **Milvus / Qdrant** | Apache-2.0 | Scale beyond pgvector (>10M vectors) | Purpose-built vector DB | ✅ | 2d |
+| ~~LangSmith (cloud)~~ | ~~Proprietary~~ | ~~Never~~ | ~~Traces ship to vendor~~ | ❌ | — |
+| ~~OpenAI API~~ | ~~Proprietary~~ | ~~Never~~ | ~~Closed model, data egress~~ | ❌ | — |
 
 ---
 

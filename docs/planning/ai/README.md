@@ -52,6 +52,19 @@ We cross-reference these frameworks throughout the doc set so the controls map c
 
 ---
 
+## ⚠️ Non-negotiable constraint: Open Source Only
+
+Every model, framework, library, and tool in the AI stack must be open-source
+licensed (MIT / Apache-2.0 / BSD). No proprietary APIs, no cloud-only services,
+no vendor lock-in. This is an architectural mandate, not a guideline.
+
+See [AI_FRAMEWORK_MIGRATION.md](./AI_FRAMEWORK_MIGRATION.md) for the full rationale,
+what's excluded, and the complete open-source alternative stack.
+
+Current status: **✅ 100% open-source** — every dependency audited 2026-06-02.
+
+---
+
 ## Cross-cutting principles
 
 Six principles applied across every AI feature in this platform.
