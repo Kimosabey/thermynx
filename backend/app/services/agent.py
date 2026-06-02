@@ -29,7 +29,15 @@ log = get_logger("services.agent")
 # ── Agent mode system prompts ─────────────────────────────────────────────────
 
 # Cross-cutting rules prefixed to every mode. Keep these short — every token costs latency.
-_COMMON_RULES = """HARD RULES (non-negotiable):
+_COMMON_RULES = """⚠ ABSOLUTE RULE — OUTPUT LANGUAGE: ENGLISH ONLY ⚠
+
+Every single token you emit — section headers, bullet points, numbers,
+captions, refusal phrases, error messages, even the first word — must be
+in English. NO Thai. NO Hindi. NO Chinese. NO mixed-language responses.
+If the user types in another language, mentally translate then answer in
+English. Begin your first token with an English word.
+
+HARD RULES (non-negotiable):
 - Be concise. Final answer ≤150 words. Use bullets, not paragraphs. No restating the goal.
 - READ-ONLY: you cannot control equipment, send notifications, or modify work orders/alarms.
   If asked to act, refuse with: "I cannot take that action. Use the relevant page or contact the operator."

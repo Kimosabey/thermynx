@@ -331,6 +331,29 @@ ANALYZER_CASES = [
         "tags": ["happy_path", "plant-wide", "59cd4b7-lock"],
     },
 
+    # ─── Lock-in: T2-H English-output rule (model spontaneously answers in Thai etc.) ─
+    # Caught 2026-06-01 — agent answered "Investigate any equipment with recent anomalies"
+    # entirely in Thai. Latin Findings/Root Causes labels were also gone.
+    {
+        "id":       "an_must_answer_english",
+        "endpoint": "/api/v1/analyze",
+        "category": "language_drift",
+        "body":     {"question": "Investigate any equipment with recent anomalies",
+                     "hours": 24, "verify": False},
+        "expect": {
+            "status":         200,
+            # At least one common HVAC English term must appear. If the answer
+            # is entirely in Thai/Hindi/etc., none of these will match.
+            "contains_any":   ["chiller", "tower", "pump", "anomal", "kW", "efficiency",
+                               "Findings", "Recommendations"],
+            "not_contains":   ["ไม่มี", "นานทุก",        # Thai
+                               "मिनट", "में",           # Hindi
+                               "中文", "汉字"],         # Chinese
+            "max_latency_ms": 90000,
+        },
+        "tags": ["language_drift", "T2-H"],
+    },
+
     # ─── Lock-in: TR<10 outlier filter (commit 301e1ad) ──────────────────
     # Pre-fix, chiller_2 reported "Average kW/TR: 4.526, critical band" because
     # 4 sensor-zero rows (TR≈1.4 while kW≈130-150) inflated the running average.
@@ -404,6 +427,26 @@ AGENT_CASES = [
             "max_latency_ms": 90000,
         },
         "tags": ["T2-I"],
+    },
+    {
+        # Same English-output rule as an_must_answer_english but on the agent.
+        # The Thai bug was reported on the agent investigator surface.
+        "id":       "ag_must_answer_english",
+        "endpoint": "/api/v1/agent/run",
+        "category": "language_drift",
+        "body":     {"mode": "investigator",
+                     "goal": "Investigate any equipment with recent anomalies"},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["chiller", "tower", "pump", "anomal", "Findings",
+                               "Root Causes", "Recommendations", "no anomal",
+                               "No anomal", "equipment", "efficiency", "kW"],
+            "not_contains":   ["ไม่มี", "ตรวจพบ", "ในช่วง",      # Thai
+                               "में", "नहीं", "हैं",                # Hindi
+                               "中文", "没有", "异常"],            # Chinese
+            "max_latency_ms": 90000,
+        },
+        "tags": ["language_drift", "T2-H"],
     },
     {
         "id":       "ag_happy_investigator",

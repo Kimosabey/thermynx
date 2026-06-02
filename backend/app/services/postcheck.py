@@ -219,6 +219,51 @@ def audit_citations(
     return flags
 
 
+def audit_language(answer: str, *, max_non_latin_pct: float = 8.0) -> list[dict[str, Any]]:
+    """Flag if the answer is more than ~8% non-Latin (Thai, Chinese, Hindi, etc.).
+
+    The English-only rule is in the prompt, but multilingual base models
+    (qwen2.5, llama3.1) sometimes drift into other languages. This is the
+    safety net — if the model slips, we flag the answer so the UI can warn
+    and (eventually) trigger a retry-in-English.
+    """
+    if not answer or not answer.strip():
+        return []
+    total_letters = 0
+    non_latin = 0
+    for ch in answer:
+        if ch.isalpha():
+            total_letters += 1
+            # Basic Latin block (ASCII letters) + Latin-1 supplement is 0x00-0x024F
+            if ord(ch) > 0x024F:
+                non_latin += 1
+    if total_letters == 0:
+        return []
+    pct = (non_latin / total_letters) * 100
+    if pct > max_non_latin_pct:
+        # Capture a sample of the non-Latin run for diagnostics
+        sample = []
+        run = ""
+        for ch in answer:
+            if ch.isalpha() and ord(ch) > 0x024F:
+                run += ch
+            elif run:
+                if len(run) >= 3:
+                    sample.append(run[:20])
+                run = ""
+                if len(sample) >= 3:
+                    break
+        if run and len(run) >= 3:
+            sample.append(run[:20])
+        return [{
+            "reason":   f"response is {pct:.1f}% non-Latin script — English-only rule violated",
+            "samples":  sample,
+            "total_letters": total_letters,
+            "non_latin_letters": non_latin,
+        }]
+    return []
+
+
 # ── Combined entry point ─────────────────────────────────────────────────────
 
 def run_postcheck(
@@ -255,11 +300,12 @@ def run_postcheck(
                 elif isinstance(e, str):
                     catalog_ids.add(e)
 
-    num_flags = audit_numeric_claims(answer, context or {}, summary or {}) if (context or summary) else []
-    eq_flags  = audit_equipment_mentions(answer, catalog_ids) if catalog_ids else []
-    cit_flags = audit_citations(answer, retrieved_chunks)
+    num_flags  = audit_numeric_claims(answer, context or {}, summary or {}) if (context or summary) else []
+    eq_flags   = audit_equipment_mentions(answer, catalog_ids) if catalog_ids else []
+    cit_flags  = audit_citations(answer, retrieved_chunks)
+    lang_flags = audit_language(answer)
 
-    total = len(num_flags) + len(eq_flags) + len(cit_flags)
+    total = len(num_flags) + len(eq_flags) + len(cit_flags) + len(lang_flags)
 
     # Increment per-type metrics
     if num_flags:
@@ -268,6 +314,8 @@ def run_postcheck(
         hallucination_flags_total.labels(type="equipment").inc(len(eq_flags))
     if cit_flags:
         hallucination_flags_total.labels(type="citation").inc(len(cit_flags))
+    if lang_flags:
+        hallucination_flags_total.labels(type="language").inc(len(lang_flags))
 
     result = "dirty" if total > 0 else "clean"
     hallucination_audit_runs_total.labels(result=result).inc()
@@ -279,4 +327,5 @@ def run_postcheck(
         "numeric_flags":   num_flags,
         "equipment_flags": eq_flags,
         "citation_flags":  cit_flags,
+        "language_flags":  lang_flags,
     }
