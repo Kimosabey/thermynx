@@ -126,7 +126,7 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
 
 
 @router.post("/agent/run")
-@limiter.limit("10/minute")
+@limiter.limit("20/minute")  # aligned with analyzer (was 10 — arbitrary 3x gap vs analyzer's 30/min)
 async def agent_run(
     request: Request,
     req: AgentRequest,
@@ -244,7 +244,7 @@ async def agent_history(
     pg: AsyncSession = Depends(get_pg),
 ):
     where = "WHERE mode = :mode" if mode else ""
-    params = {"limit": limit}
+    params: dict[str, object] = {"limit": limit}
     if mode:
         params["mode"] = mode
     rows = await pg.execute(

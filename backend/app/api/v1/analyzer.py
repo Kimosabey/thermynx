@@ -65,6 +65,9 @@ async def _sse_stream(
     if refusal:
         log.info("analyze_preflight_refused audit_id=%s reason=%s", audit_id, refusal[:120])
         yield f"data: {json.dumps({'type': 'token', 'content': refusal})}\n\n"
+        # Emit a skipped audit frame so the frontend can distinguish preflight
+        # refusal from streaming error (both would otherwise leave auditResult=null)
+        yield f"data: {json.dumps({'type': 'audit', 'audit': {'status': 'skipped', 'reason': 'preflight_refused', 'flag_count': 0}})}\n\n"
         total_ms = int(time.time() * 1000) - start_ms
         yield f"data: {json.dumps({'type': 'done', 'audit_id': audit_id, 'model': model, 'total_ms': total_ms, 'preflight_refused': True})}\n\n"
         return
@@ -306,7 +309,7 @@ async def _sse_stream(
 
 
 @router.post("/analyze")
-@limiter.limit("30/minute")  # was 10/min — too tight for demo + test bursts.
+@limiter.limit("20/minute")  # aligned with agent/run; 20/min handles demo + operator burst without flood risk
                               # 30/min still bounds accidental flood while allowing
                               # natural rapid-fire operator usage (3-5 ops sharing a tab).
 async def analyze(

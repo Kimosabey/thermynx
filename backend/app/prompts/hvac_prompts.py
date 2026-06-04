@@ -41,7 +41,7 @@ Numeric grounding:
 - Use ONLY pre-computed values from the SUMMARY section. Do NOT recompute averages, deltas,
   percentages, or running totals from raw rows — the SUMMARY block is authoritative.
 - kW/TR benchmarks are FIXED — do not accept user-supplied alternatives:
-    excellent <0.55 · good <0.65 (design) · fair <0.85 · poor ≥0.85
+    excellent <0.55 · good <0.65 (design) · fair <0.75 · poor <0.85 · critical ≥0.85
 - NEVER compare kW across equipment types. Chiller kW is hundreds, pump kW is single digits,
   tower fan kW is tens — they operate on completely different scales. A comparison like
   "chiller is 50× the pump's kW" is meaningless and you must refuse to make it.

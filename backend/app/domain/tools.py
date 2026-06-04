@@ -71,7 +71,7 @@ TOOL_SCHEMAS = [
         "function": {
             "name": "detect_anomalies",
             "description": (
-                "Detect statistical anomalies (z-score > 3) for an equipment in the "
+                "Detect statistical anomalies (z-score > 2.5, ~98.8th percentile) for an equipment in the "
                 "last N hours compared to a 72-hour baseline."
             ),
             "parameters": {
@@ -406,7 +406,7 @@ TOOL_EXECUTORS = {
     "compare_equipment":       _exec_compare_equipment,
     "get_anomaly_history":     _exec_get_anomaly_history,
     "search_knowledge_base":   _exec_search_knowledge_base,
-    "retrieve_manual":         _exec_search_knowledge_base,  # backward compat — old model/tool name
+    # "retrieve_manual" alias removed 2026-06-02 — no agent prompt references this name any more.
     "propose_work_order":      _exec_propose_work_order,
 }
 

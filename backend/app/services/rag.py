@@ -87,7 +87,7 @@ async def retrieve(
             """)
             result = await pg.execute(sql, {
                 "vec": vec_str,
-                "eq_filter": f"%{equipment_id}%",
+                "eq_filter": f"%{equipment_id.replace(chr(37), chr(37)+chr(37)).replace('_', r'\\_')}%",
                 "k": top_k,
             })
         else:
