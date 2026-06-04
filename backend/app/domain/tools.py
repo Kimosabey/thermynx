@@ -2,6 +2,7 @@
 Agent tool registry — schemas (for Ollama) + async executors.
 All executors return JSON-serializable dicts, kept small for LLM context.
 """
+import asyncio
 import decimal
 from dataclasses import asdict, dataclass
 from datetime import datetime, date
@@ -422,6 +423,12 @@ async def execute_tool(
     if not fn:
         log.warning("unknown_tool name=%s", name)
         return {"error": f"Unknown tool: {name}"}
+    # Inner timeout: 28s gives a 2s margin before the agent-level 30s
+    # asyncio.wait_for fires. Without this, a slow/hung DB query is cancelled
+    # at the agent level but its underlying asyncpg/aiomysql coroutine keeps
+    # running, leaking a connection from the pool.
+    _TOOL_INNER_TIMEOUT = 28.0
+
     try:
         import inspect as ip
 
@@ -432,7 +439,7 @@ async def execute_tool(
             p.kind == ip.Parameter.VAR_KEYWORD for p in sig.parameters.values()
         )
         if accepts_var_kw:
-            out = await fn(**raw)
+            out = await asyncio.wait_for(fn(**raw), timeout=_TOOL_INNER_TIMEOUT)
         else:
             allowed = {
                 pname
@@ -440,12 +447,15 @@ async def execute_tool(
                 if param.kind in (ip.Parameter.POSITIONAL_OR_KEYWORD, ip.Parameter.KEYWORD_ONLY)
             }
             filtered = {k: v for k, v in raw.items() if k in allowed}
-            out = await fn(**filtered)
+            out = await asyncio.wait_for(fn(**filtered), timeout=_TOOL_INNER_TIMEOUT)
 
         log.debug("tool_ok name=%s", name)
         # Sanitize before returning — MySQL returns Decimal for AVG/MAX, which
         # json.dumps in _sse() cannot handle.
         return _sanitize(out)
+    except asyncio.TimeoutError:
+        log.warning("tool_inner_timeout name=%s timeout=%.0fs", name, _TOOL_INNER_TIMEOUT)
+        return {"error": f"Tool '{name}' timed out after {_TOOL_INNER_TIMEOUT:.0f}s — database query too slow."}
     except TypeError as e:
         log.warning("tool_bad_args name=%s err=%s args=%s", name, e, args)
         return {"error": f"Invalid arguments for '{name}'. Expected valid parameters — got keys {list((args or {}).keys())}. {e}"}

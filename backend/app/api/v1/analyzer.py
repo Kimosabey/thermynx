@@ -106,16 +106,10 @@ async def _sse_stream(
         msgs = list(res.scalars())
         conversation_history = [{"role": m.role, "content": m.content} for m in reversed(msgs)]
 
-        # Persist the user message immediately — before streaming begins.
-        # This ensures the question is recorded even if the stream fails or
-        # the user closes the tab before a response arrives.
-        pg.add(Message(
-            id=str(uuid.uuid4()),
-            thread_id=req.thread_id,
-            role="user",
-            content=req.question,
-        ))
-        await pg.commit()
+        # NOTE: user message is persisted AFTER the stream completes (below),
+        # together with the assistant response in a single transaction.
+        # Persisting here would create an orphaned user message when the client
+        # disconnects mid-stream — corrupting the conversation history.
 
     telemetry_failed = False
     summary: dict = {}
@@ -291,9 +285,16 @@ async def _sse_stream(
         getattr(request.state, "request_id", None),
     )
 
-    # Persist assistant response — user message was already saved before streaming.
-    # Save as long as we got some content back (even on partial streams).
-    if req.thread_id and response_text.strip():
+    # Persist user + assistant messages together in one transaction.
+    # Only write if the stream completed (status=ok) or got a partial answer —
+    # skip entirely on a client disconnect with no content so history stays clean.
+    if req.thread_id and response_text.strip() and status != "cancelled":
+        pg.add(Message(
+            id=str(uuid.uuid4()),
+            thread_id=req.thread_id,
+            role="user",
+            content=req.question,
+        ))
         pg.add(Message(
             id=str(uuid.uuid4()),
             thread_id=req.thread_id,

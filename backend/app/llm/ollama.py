@@ -1,4 +1,5 @@
 import json
+import threading
 import time
 from typing import AsyncIterator, Any
 
@@ -16,17 +17,23 @@ log = get_logger("llm.ollama")
 # After N failures within WINDOW seconds, the breaker opens and short-circuits
 # all Ollama calls for COOLDOWN seconds. Prevents request pile-up during an
 # Ollama outage (each call would otherwise wait for the full timeout).
+#
+# The lock protects the shared mutable state (_cb_failures list and
+# _cb_open_until float) from concurrent modification by async worker threads.
+# Without it, two simultaneous failures can race on _cb_failures.append()
+# and the breaker never trips reliably during an outage.
 
 _CB_FAILURE_THRESHOLD = 3        # failures in the window to trip
 _CB_FAILURE_WINDOW_S  = 30.0     # rolling window for counting failures
 _CB_COOLDOWN_S        = 60.0     # how long the breaker stays open
 
-_cb_failures: list[float] = []   # timestamps of recent failures
-_cb_open_until: float = 0.0       # epoch seconds; 0 = closed
+_cb_lock:       threading.Lock = threading.Lock()
+_cb_failures:   list[float]    = []   # timestamps of recent failures (guarded by _cb_lock)
+_cb_open_until: float          = 0.0  # epoch monotonic seconds; 0 = closed (guarded by _cb_lock)
 
 
 def _circuit_open_remaining() -> float:
-    """Return seconds remaining if the breaker is open, else 0."""
+    """Return seconds remaining if the breaker is open, else 0. Lock-free read (float is atomic on CPython)."""
     now = time.monotonic()
     return _cb_open_until - now if _cb_open_until > now else 0.0
 
@@ -45,31 +52,35 @@ def _circuit_record_failure() -> None:
     """Note one failure; trip the breaker if threshold reached in the window."""
     global _cb_open_until
     now = time.monotonic()
-    cutoff = now - _CB_FAILURE_WINDOW_S
-    _cb_failures[:] = [t for t in _cb_failures if t >= cutoff]
-    _cb_failures.append(now)
-    if len(_cb_failures) >= _CB_FAILURE_THRESHOLD:
-        _cb_open_until = now + _CB_COOLDOWN_S
-        log.warning(
-            "ollama_circuit_open failures=%s window_s=%s cooldown_s=%s",
-            len(_cb_failures), _CB_FAILURE_WINDOW_S, _CB_COOLDOWN_S,
-        )
+    with _cb_lock:
+        cutoff = now - _CB_FAILURE_WINDOW_S
+        _cb_failures[:] = [t for t in _cb_failures if t >= cutoff]
+        _cb_failures.append(now)
+        if len(_cb_failures) >= _CB_FAILURE_THRESHOLD:
+            _cb_open_until = now + _CB_COOLDOWN_S
+            log.warning(
+                "ollama_circuit_open failures=%s window_s=%s cooldown_s=%s",
+                len(_cb_failures), _CB_FAILURE_WINDOW_S, _CB_COOLDOWN_S,
+            )
 
 
 def _circuit_record_success() -> None:
     """Clear failure history on a successful call (closes the breaker if open)."""
     global _cb_open_until
-    if _cb_failures or _cb_open_until:
-        _cb_failures.clear()
-        _cb_open_until = 0.0
+    with _cb_lock:
+        if _cb_failures or _cb_open_until:
+            _cb_failures.clear()
+            _cb_open_until = 0.0
 
 
 def circuit_state() -> dict[str, Any]:
     """Expose breaker state for /health and debugging."""
+    with _cb_lock:
+        failures = len(_cb_failures)
     return {
         "open":               _circuit_open_remaining() > 0,
         "open_seconds_left":  round(_circuit_open_remaining(), 1),
-        "recent_failures":    len(_cb_failures),
+        "recent_failures":    failures,
         "threshold":          _CB_FAILURE_THRESHOLD,
         "window_seconds":     _CB_FAILURE_WINDOW_S,
     }
