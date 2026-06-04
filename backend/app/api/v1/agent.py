@@ -3,11 +3,12 @@ import uuid
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.db.session import get_pg
-from app.db.models import AgentRun
+from app.db.models import AgentRun, Message
 from app.services.agent import run_agent
 from app.services.multi_agent import run_multi_agent
 from app.limiter import limiter
@@ -26,6 +27,7 @@ class AgentRequest(BaseModel):
     goal:        str = Field(..., min_length=3, max_length=2000)
     context:     dict | None = None    # {equipment_id, hours, anomaly_id, ...}
     model:       str | None = None
+    thread_id:   str | None = Field(default=None, max_length=36)  # load prior conversation history
 
 
 async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
@@ -44,8 +46,37 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
         yield f"data: {json.dumps({'type':'done','steps':0,'preflight_refused':True})}\n\n"
         return
 
+    # Load conversation history from thread so agents have multi-turn context
+    # (mirrors what the analyzer does — see api/v1/analyzer.py:98-107).
+    conversation_summary: str = ""
+    if req.thread_id:
+        try:
+            res = await pg.execute(
+                select(Message)
+                .where(Message.thread_id == req.thread_id)
+                .order_by(Message.created_at.desc())
+                .limit(12)
+            )
+            msgs = list(reversed(res.scalars().all()))
+            if msgs:
+                history_lines = []
+                for m in msgs:
+                    content = (m.content or "").strip()
+                    if not content or len(content) > 4000:
+                        continue
+                    history_lines.append(f"{m.role.upper()}: {content[:500]}")
+                if history_lines:
+                    conversation_summary = "Prior conversation:\n" + "\n".join(history_lines)
+        except Exception:
+            log.warning("agent_history_load_failed thread_id=%s", req.thread_id)
+
     run_id = str(uuid.uuid4())
     model  = req.model or settings.OLLAMA_DEFAULT_MODEL
+
+    # Inject history into context so run_agent appends it to the user message
+    agent_context = dict(req.context or {})
+    if conversation_summary:
+        agent_context["conversation_history"] = conversation_summary
 
     # Persist run row
     run = AgentRun(
@@ -73,7 +104,7 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
     status = "error"
 
     try:
-        async for frame in run_agent(req.mode, req.goal, req.context, model=model):
+        async for frame in run_agent(req.mode, req.goal, agent_context or None, model=model):
             if await request.is_disconnected():
                 status = "cancelled"
                 break

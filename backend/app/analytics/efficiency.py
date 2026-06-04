@@ -103,7 +103,7 @@ def analyze_chiller_efficiency(
     when tr ≈ 1.4). `running_pct` still counts ALL is_running rows so the
     operator sees the true uptime.
     """
-    running = [r for r in rows if r.get("is_running")]
+    running = [r for r in rows if bool(r.get("is_running"))]
     clean_running = [r for r in running if _is_clean_running(r)]
     record_count = len(rows)
 

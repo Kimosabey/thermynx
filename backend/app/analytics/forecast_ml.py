@@ -126,6 +126,8 @@ def forecast_metric_ml(
     if len(series) < _MIN_HISTORY_POINTS:
         # Not enough history for HW — fall back transparently
         result = _forecast_heuristic(rows, metric, horizon_hours=horizon_hours, equipment_id=equipment_id)
+        result.backend = "heuristic"
+        result.fallback_reason = f"insufficient history for ML (need ≥{_MIN_HISTORY_POINTS}h, have {len(series)}h)"
         if result.note:
             result.note = "Backend: heuristic (insufficient history for ML). " + result.note
         else:
@@ -156,6 +158,8 @@ def forecast_metric_ml(
     fitted = _fit_holt_winters(values, horizon_hours)
     if fitted is None:
         result = _forecast_heuristic(rows, metric, horizon_hours=horizon_hours, equipment_id=equipment_id)
+        result.backend = "heuristic"
+        result.fallback_reason = "Holt-Winters model fit failed (series too constant or degenerate)"
         result.note = ("Backend: heuristic (Holt-Winters fit failed). " + result.note).strip()
         return result
 
@@ -189,6 +193,7 @@ def forecast_metric_ml(
         horizon_hours = horizon_hours,
         generated_at  = datetime.utcnow().isoformat(),
         points        = points,
+        backend       = "ml",
         note          = f"Backend: {label}. Fit on {len(values)} hourly observations.",
     )
 

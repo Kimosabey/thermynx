@@ -34,6 +34,8 @@ class ForecastResult:
     generated_at:  str
     points:        list[ForecastPoint] = field(default_factory=list)
     note:          str = ""
+    backend:       str = "heuristic"    # "ml" | "heuristic" — tells operators the quality tier
+    fallback_reason: str | None = None  # set when ML was requested but fell back
 
 
 def _mean(vals: list[float]) -> float:
@@ -78,6 +80,7 @@ def forecast_metric(
             horizon_hours=horizon_hours,
             generated_at=datetime.utcnow().isoformat(),
             note="Insufficient historical data to generate forecast.",
+            backend="heuristic",
         )
 
     # Project next N hours
@@ -119,6 +122,7 @@ def forecast_metric(
         horizon_hours = horizon_hours,
         generated_at  = datetime.utcnow().isoformat(),
         points        = points,
+        backend       = "heuristic",
         note          = f"Hour-of-day profile built from {sum(len(v) for v in profile.values())} historical readings.",
     )
 
