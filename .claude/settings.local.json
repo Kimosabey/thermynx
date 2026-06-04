@@ -32,7 +32,8 @@
       "Bash(\"../.venv/Scripts/uvicorn.exe\" main:app --port 8000)",
       "Bash(EVAL_BASE_URL=http://localhost:8000 \"../.venv/Scripts/python.exe\" -m pytest tests/eval/test_golden.py --tb=short -q)",
       "Bash(node -e ' *)",
-      "Bash(git commit -m 'docs\\(ai\\): deprioritize Grafana/Prometheus dashboard panels — metrics already emitted *)"
+      "Bash(git commit -m 'docs\\(ai\\): deprioritize Grafana/Prometheus dashboard panels — metrics already emitted *)",
+      "Bash(git commit *)"
     ]
   }
 }
