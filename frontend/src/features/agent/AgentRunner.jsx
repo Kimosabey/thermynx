@@ -1,10 +1,10 @@
-import { useRef, useEffect, useState } from "react";
-import { Box, Flex, Text, Badge, Grid, Spinner, HStack } from "@chakra-ui/react";
+import { useRef, useEffect, useState, useCallback } from "react";
+import { Box, Flex, Text, Badge, Grid, Spinner, HStack, Button, useToast } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import {
   List, Zap, ScanSearch, BarChart2, Columns2,
-  History, Wrench, CheckCircle2,
+  History, Wrench, CheckCircle2, ClipboardList, CheckCheck, X,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -18,6 +18,7 @@ const ICON_SIZE = 13;
 const TOOL_LABELS = {
   get_equipment_list:     { label: "Equipment List",   Icon: List },
   compute_efficiency:     { label: "Efficiency Calc",  Icon: Zap },
+  propose_work_order:     { label: "Work Order Draft", Icon: ClipboardList },
   detect_anomalies:       { label: "Anomaly Scan",     Icon: ScanSearch },
   get_timeseries_summary: { label: "Timeseries Stats", Icon: BarChart2 },
   compare_equipment:      { label: "Compare",          Icon: Columns2 },
@@ -51,6 +52,119 @@ function ThinkingDots() {
     </Flex>
   );
 }
+
+// ── Work-order proposal card ─────────────────────────────────────────────────
+// Rendered when a tool_result frame has result.status === "proposed".
+// The agent called propose_work_order — now a human must Approve or Dismiss.
+function WorkOrderProposalCard({ proposal }) {
+  const [state, setState] = useState("pending"); // pending | creating | created | dismissed | error
+  const [wo, setWo]       = useState(null);
+  const toast = useToast();
+
+  const handleApprove = useCallback(async () => {
+    setState("creating");
+    try {
+      const r = await fetch("/api/v1/work-orders", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title:               proposal.title,
+          description:         proposal.diagnosis,
+          equipment_id:        proposal.equipment_id,
+          priority:            proposal.priority || "normal",
+          source:              "agent",
+          diagnosis:           proposal.diagnosis,
+          recommended_actions: proposal.recommended_actions,
+        }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || `HTTP ${r.status}`);
+      const d = await r.json();
+      setWo(d);
+      setState("created");
+      toast({ title: `Work order created (#${d.id?.slice(0,8)})`, status: "success", duration: 3000, position: "bottom-right" });
+    } catch (e) {
+      setState("error");
+      toast({ title: `Failed: ${e.message}`, status: "error", duration: 5000, position: "bottom-right" });
+    }
+  }, [proposal, toast]);
+
+  return (
+    <GlassCard mt={3} p={4} border="1px solid" borderColor="rgba(245,158,11,0.35)"
+      bg="rgba(245,158,11,0.04)" borderRadius="12px">
+      <Flex align="center" gap={2} mb={3}>
+        <ClipboardList size={14} strokeWidth={2} color="#f59e0b" />
+        <Eyebrow color="#f59e0b">Work order proposal — human review required</Eyebrow>
+        {state === "created" && (
+          <Badge ml="auto" fontSize="9px" bg="rgba(16,185,129,0.15)" color="#10b981"
+            border="1px solid rgba(16,185,129,0.3)" borderRadius="6px" px={2}>
+            Created
+          </Badge>
+        )}
+        {state === "dismissed" && (
+          <Badge ml="auto" fontSize="9px" bg="bg.chip" color="text.muted"
+            border="1px solid" borderColor="border.subtle" borderRadius="6px" px={2}>
+            Dismissed
+          </Badge>
+        )}
+      </Flex>
+
+      <Box mb={3}>
+        <Text fontSize="sm" fontWeight={700} color="text.primary" mb={1}>{proposal.title}</Text>
+        {proposal.equipment_name && (
+          <Badge fontSize="9px" bg="bg.chip" color="text.muted"
+            border="1px solid" borderColor="border.subtle" borderRadius="6px" px={2} mr={2}>
+            {proposal.equipment_name}
+          </Badge>
+        )}
+        <Badge fontSize="9px"
+          bg={proposal.priority === "critical" ? "rgba(239,68,68,0.12)" : "rgba(245,158,11,0.12)"}
+          color={proposal.priority === "critical" ? "#ef4444" : "#f59e0b"}
+          border="1px solid" borderColor="border.subtle" borderRadius="6px" px={2}>
+          {proposal.priority || "normal"}
+        </Badge>
+      </Box>
+
+      {proposal.diagnosis && (
+        <Box mb={2}>
+          <Text fontSize="10px" color="text.muted" fontWeight={600} mb={1} textTransform="uppercase" letterSpacing="0.08em">Diagnosis</Text>
+          <Text fontSize="xs" color="text.primary">{proposal.diagnosis}</Text>
+        </Box>
+      )}
+      {proposal.recommended_actions && (
+        <Box mb={3}>
+          <Text fontSize="10px" color="text.muted" fontWeight={600} mb={1} textTransform="uppercase" letterSpacing="0.08em">Recommended actions</Text>
+          <Text fontSize="xs" color="text.primary">{proposal.recommended_actions}</Text>
+        </Box>
+      )}
+
+      {state === "created" && wo && (
+        <Text fontSize="10px" color="#10b981" mt={2}>
+          Work order created successfully — view it on the Work Orders page.
+        </Text>
+      )}
+      {state === "error" && (
+        <Text fontSize="10px" color="#ef4444" mt={2}>
+          Failed to create. Check the Work Orders page or try again.
+        </Text>
+      )}
+
+      {state === "pending" && (
+        <HStack mt={3} spacing={2}>
+          <Button size="xs" colorScheme="yellow" variant="solid"
+            leftIcon={<CheckCheck size={11} />}
+            onClick={handleApprove} isLoading={state === "creating"}>
+            Approve &amp; Create
+          </Button>
+          <Button size="xs" variant="ghost" leftIcon={<X size={11} />}
+            onClick={() => setState("dismissed")}>
+            Dismiss
+          </Button>
+        </HStack>
+      )}
+    </GlassCard>
+  );
+}
+
 
 function TraceStep({ frame }) {
   const [expanded, setExpanded] = useState(false);
@@ -91,6 +205,17 @@ function TraceStep({ frame }) {
   }
 
   if (frame.type === "tool_result") {
+    // Special rendering: work-order proposals get an Approve/Dismiss card
+    const proposal = frame.result?.proposal;
+    if (frame.tool === "propose_work_order" && frame.result?.status === "proposed" && proposal) {
+      return (
+        <MotionBox initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.2 }} mb={2}>
+          <WorkOrderProposalCard proposal={proposal} />
+        </MotionBox>
+      );
+    }
+
     const meta = TOOL_LABELS[frame.tool] ?? { label: frame.tool, Icon: CheckCircle2 };
     return (
       <MotionBox initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
