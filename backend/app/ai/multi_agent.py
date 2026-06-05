@@ -43,11 +43,11 @@ import uuid
 from datetime import date, datetime
 from typing import Any, AsyncIterator
 
-import httpx
-
 from app.config import settings
 from app.log import get_logger
-from app.services.agent import run_agent
+from app.errors import OllamaUnavailableError
+from app.llm.ollama import generate_json, stream_generate
+from app.ai.agent import run_agent
 
 log = get_logger("services.multi_agent")
 
@@ -174,54 +174,11 @@ def _parse_plan_json(raw: str) -> dict | None:
     return None
 
 
-async def _ollama_generate_json(model: str, prompt: str, *, temperature: float, timeout: float) -> str:
-    url = f"{settings.OLLAMA_HOST.rstrip('/')}/api/generate"
-    body = {
-        "model":   model,
-        "prompt":  prompt,
-        "stream":  False,
-        "format":  "json",
-        "options": {"temperature": temperature},
-    }
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        r = await client.post(url, json=body)
-        r.raise_for_status()
-        return (r.json().get("response") or "").strip()
-
-
-async def _ollama_stream(
-    model: str,
-    prompt: str,
-    *,
-    temperature: float,
-    timeout: float,
-    num_predict: int | None = None,
-) -> AsyncIterator[str]:
-    """Stream raw response text from Ollama /api/generate."""
-    url = f"{settings.OLLAMA_HOST.rstrip('/')}/api/generate"
-    options: dict[str, Any] = {"temperature": temperature}
-    if num_predict is not None and num_predict > 0:
-        options["num_predict"] = num_predict
-    body = {
-        "model":   model,
-        "prompt":  prompt,
-        "stream":  True,
-        "options": options,
-    }
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        async with client.stream("POST", url, json=body) as resp:
-            resp.raise_for_status()
-            async for line in resp.aiter_lines():
-                if not line.strip():
-                    continue
-                try:
-                    chunk = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if chunk.get("response"):
-                    yield chunk["response"]
-                if chunk.get("done"):
-                    break
+# NOTE: planner JSON + synthesizer streaming now go through the shared,
+# circuit-breaker-guarded client in app/llm/ollama.py (generate_json /
+# stream_generate) — see _plan() and the synthesis stage below. The old
+# direct-httpx helpers (_ollama_generate_json / _ollama_stream) were removed
+# so an Ollama outage during orchestration trips the breaker like everywhere else.
 
 
 async def _plan(goal: str, context: dict | None, model: str) -> dict:
@@ -236,7 +193,7 @@ async def _plan(goal: str, context: dict | None, model: str) -> dict:
         + f"\n\nOperator question:\n{goal}{ctx_block}\n\nReturn the JSON plan now."
     )
     raw    = await asyncio.wait_for(
-        _ollama_generate_json(model, prompt, temperature=_PLAN_TEMPERATURE, timeout=_PLAN_TIMEOUT_S),
+        generate_json(prompt, model=model, temperature=_PLAN_TEMPERATURE, timeout=_PLAN_TIMEOUT_S),
         timeout=_PLAN_TIMEOUT_S,
     )
     parsed = _parse_plan_json(raw) or {}
@@ -330,7 +287,7 @@ async def run_multi_agent(
     except asyncio.TimeoutError:
         yield _sse({"type": "error", "detail": "Planner timed out."})
         return
-    except httpx.HTTPError as exc:
+    except OllamaUnavailableError as exc:
         yield _sse({"type": "error", "detail": f"Planner HTTP error: {exc}"})
         return
 
@@ -358,7 +315,11 @@ async def run_multi_agent(
         had_error = False
         last_error: str = ""
         try:
-            async for frame in run_agent(specialist, sub_goal, context, model=used):
+            # Pass the original `model` (may be None) — NOT `used`/text_model.
+            # Sub-agents do tool-calling, so they must resolve the per-role
+            # OLLAMA_MODEL_TOOL (mistral); forcing the narration model (phi4)
+            # here breaks function-calling → delegate_error.
+            async for frame in run_agent(specialist, sub_goal, context, model=model):
                 retagged = _retag_frame(frame, idx, specialist)
                 if retagged:
                     await queue.put(("frame", retagged))
@@ -450,18 +411,17 @@ async def run_multi_agent(
     )
 
     try:
-        async for chunk in _ollama_stream(
-            text_model,
+        async for chunk in stream_generate(
             synth_prompt,
+            model=text_model,
             temperature=_SYNTH_TEMPERATURE,
-            timeout=_SYNTHESIS_TIMEOUT_S,
             num_predict=settings.OLLAMA_MAX_TOKENS_SYNTH,
         ):
             yield _sse({"type": "synthesis_token", "content": chunk})
     except asyncio.TimeoutError:
         yield _sse({"type": "error", "detail": "Synthesiser timed out."})
         return
-    except httpx.HTTPError as exc:
+    except OllamaUnavailableError as exc:
         yield _sse({"type": "error", "detail": f"Synthesiser HTTP error: {exc}"})
         return
 

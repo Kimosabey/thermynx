@@ -10,7 +10,7 @@ from app.db.session import get_db, get_pg
 from app.db.telemetry import compute_summary, fetch_all_hvac_context, fetch_bucket_series, resolve_telemetry_until
 from app.domain.equipment import EQUIPMENT_CATALOG
 from app.llm.ollama import chat
-from app.prompts.hvac_prompts import REPORT_SUMMARY_SYSTEM, build_report_summary_user_message
+from app.ai.prompts.hvac_prompts import REPORT_SUMMARY_SYSTEM, build_report_summary_user_message
 from app.log import get_logger
 
 router = APIRouter()

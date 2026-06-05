@@ -22,7 +22,7 @@ See `docs/planning/ai/AI_PIPELINE_REORG.md` for the full pipeline diagram.
 # ─── STAGE 1 — Pre-flight ──────────────────────────────────────────────────
 # Cheap regex-based gates that short-circuit obviously-bad input BEFORE the LLM
 # sees the question. Runs in <100ms — saves the 30-60s tax of refusing late.
-from app.services.preflight import (    # noqa: F401
+from app.ai.preflight import (    # noqa: F401
     check_action_request,
     check_equipment_mentions,
     topic_gate,
@@ -50,7 +50,7 @@ from app.domain.equipment import (        # noqa: F401
 # HVAC knowledge base, returns top-k chunks above similarity threshold 0.55.
 # Chunks are wrapped in DATA_START/DATA_END markers in format_rag_context
 # so the LLM treats them as DATA, not instructions (LLM01/LLM04).
-from app.services.rag import (            # noqa: F401
+from app.ai.rag import (            # noqa: F401
     embed_query,
     retrieve,
     format_rag_context,
@@ -61,7 +61,7 @@ from app.services.rag import (            # noqa: F401
 # Composes the final prompt: SYSTEM_CONTEXT (English-only, read-only,
 # refuse-unknown-equipment, premise-verify, fixed-benchmark rules)
 # + LIVE PLANT DATA + SUMMARY + RAG context + CURRENT FOCUS pin.
-from app.prompts.hvac_prompts import (   # noqa: F401
+from app.ai.prompts.hvac_prompts import (   # noqa: F401
     SYSTEM_CONTEXT,
     build_analyze_prompt,
     REPORT_SUMMARY_SYSTEM,
@@ -88,7 +88,7 @@ from app.llm.ollama import (              # noqa: F401
 # The agent ReAct loop calls these tools. Each tool validates its args
 # (e.g. equipment_id allow-list), executes against the DB/analytics, and
 # returns a JSON-serializable result that gets payload-capped (12k chars).
-from app.domain.tools import (             # noqa: F401
+from app.ai.tools import (             # noqa: F401
     TOOL_SCHEMAS,
     execute_tool,
     ToolContext,
@@ -100,7 +100,7 @@ from app.domain.agent_payload import compact_agent_tool_payload   # noqa: F401
 # Regex-only checks against the streamed answer. Flags any number/equipment/
 # citation not grounded in the source data, plus non-Latin output that violates
 # the English-only rule. Emits Prometheus counters per flag type.
-from app.services.postcheck import (      # noqa: F401
+from app.ai.postcheck import (      # noqa: F401
     run_postcheck,
     audit_numeric_claims,
     audit_equipment_mentions,
@@ -113,16 +113,16 @@ from app.services.postcheck import (      # noqa: F401
 # Tiny second LLM call (llama3.2:latest, 3B) acts as a fact-checking auditor.
 # Reads the SUMMARY block + the streamed answer, returns
 # verified/suspicious/unverified verdict. Hard 25s timeout — never blocks.
-from app.services.critique import verify_answer    # noqa: F401
+from app.ai.critique import verify_answer    # noqa: F401
 
 
 # ─── Per-surface orchestrators ─────────────────────────────────────────────
 # Each AI surface (/analyze, /agent/run, etc.) has a top-level orchestrator
 # that walks the stages above. These are exposed for testing / introspection;
 # the route handlers in api/v1/ are the real entry points.
-from app.services.agent import run_agent, SYSTEM_PROMPTS    # noqa: F401
-from app.services.multi_agent import run_multi_agent        # noqa: F401
-from app.services.nl_to_sql import run_nl_query, NLQueryError  # noqa: F401
+from app.ai.agent import run_agent, SYSTEM_PROMPTS    # noqa: F401
+from app.ai.multi_agent import run_multi_agent        # noqa: F401
+from app.ai.nl_to_sql import run_nl_query, NLQueryError  # noqa: F401
 from app.services.vision import describe_scene, compare_images  # noqa: F401
 
 

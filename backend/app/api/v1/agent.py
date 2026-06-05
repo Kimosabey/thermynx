@@ -9,8 +9,8 @@ from sqlalchemy import text
 
 from app.db.session import get_pg
 from app.db.models import AgentRun, Message
-from app.services.agent import run_agent
-from app.services.multi_agent import run_multi_agent
+from app.ai.agent import run_agent
+from app.ai.multi_agent import run_multi_agent
 from app.limiter import limiter
 from app.config import settings
 from app.log import get_logger
@@ -38,7 +38,7 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
 
     # Layer 1 — pre-flight: catch unknown equipment + action requests before
     # paying for the ReAct loop (saves 15-30s per refused goal).
-    from app.services.preflight import check_action_request, check_equipment_mentions
+    from app.ai.preflight import check_action_request, check_equipment_mentions
     refusal = check_action_request(req.goal) or check_equipment_mentions(req.goal)
     if refusal:
         log.info("agent_preflight_refused mode=%s reason=%s", req.mode, refusal[:120])
@@ -71,6 +71,11 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
             log.warning("agent_history_load_failed thread_id=%s", req.thread_id)
 
     run_id = str(uuid.uuid4())
+    # `model` is recorded on the run row / logged. Pass req.model (may be None)
+    # into run_agent so it resolves the PER-ROLE models (tool→OLLAMA_MODEL_TOOL,
+    # narration→OLLAMA_MODEL_TEXT). Do NOT collapse to OLLAMA_DEFAULT_MODEL here:
+    # that would force one model for tool-calling too, and a narration model like
+    # phi4 cannot do function-calling → "does not support tools" at step 1.
     model  = req.model or settings.OLLAMA_DEFAULT_MODEL
 
     # Inject history into context so run_agent appends it to the user message
@@ -104,7 +109,7 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
     status = "error"
 
     try:
-        async for frame in run_agent(req.mode, req.goal, agent_context or None, model=model):
+        async for frame in run_agent(req.mode, req.goal, agent_context or None, model=req.model):
             if await request.is_disconnected():
                 status = "cancelled"
                 break
@@ -143,7 +148,7 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
     # Runs after stream ends; never blocks the response.
     if status == "ok" and final_tokens:
         try:
-            from app.services.postcheck import run_postcheck
+            from app.ai.postcheck import run_postcheck
             from app.domain.equipment import EQUIPMENT_CATALOG
             audit_result = run_postcheck(
                 "".join(final_tokens),
@@ -194,7 +199,7 @@ async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: Asy
     """Multi-agent stream — same persistence model as `_stream`, mode='orchestrator'."""
     # Layer 1 — pre-flight: catch action requests + unknown equipment before
     # planner + N sub-agents fire (saves 60-90s per refused orchestration).
-    from app.services.preflight import check_action_request, check_equipment_mentions
+    from app.ai.preflight import check_action_request, check_equipment_mentions
     refusal = check_action_request(req.goal) or check_equipment_mentions(req.goal)
     if refusal:
         log.info("orchestrate_preflight_refused reason=%s", refusal[:120])
@@ -203,6 +208,9 @@ async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: Asy
         return
 
     run_id = str(uuid.uuid4())
+    # See _stream: record default for the row, but pass req.model (may be None)
+    # so run_multi_agent resolves per-role models (planner→OLLAMA_MODEL_PLANNER,
+    # sub-agent tools→OLLAMA_MODEL_TOOL, synthesis→OLLAMA_MODEL_TEXT).
     model  = req.model or settings.OLLAMA_DEFAULT_MODEL
 
     run = AgentRun(
@@ -227,7 +235,7 @@ async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: Asy
     status       = "error"
 
     try:
-        async for frame in run_multi_agent(req.goal, req.context, model=model):
+        async for frame in run_multi_agent(req.goal, req.context, model=req.model):
             if await request.is_disconnected():
                 status = "cancelled"
                 break

@@ -36,7 +36,7 @@ from app.ai.pipeline import (
 )
 
 # Original form (still works — every existing import keeps functioning)
-from app.services.preflight import check_action_request
+from app.ai.preflight import check_action_request
 from app.db.telemetry import fetch_all_hvac_context
 # ...
 ```

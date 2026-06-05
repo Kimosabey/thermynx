@@ -18,7 +18,7 @@ def test_compact_truncates_large_payload():
 
 
 def test_tool_schemas_contains_search_knowledge_base():
-    from app.domain.tools import TOOL_SCHEMAS
+    from app.ai.tools import TOOL_SCHEMAS
 
     names = [s["function"]["name"] for s in TOOL_SCHEMAS]
     assert "search_knowledge_base" in names

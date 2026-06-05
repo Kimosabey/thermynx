@@ -113,11 +113,15 @@ def _num_ctx_for(model_name: str) -> int:
     degraded output. Use the largest safe value per tier.
     """
     name = (model_name or "").lower()
-    if any(x in name for x in ("3b", "3.2:latest", "phi", "llama3.2:latest")):
+    # Small (≤3B) tier — 4096 native window. NB: match "phi3"/"phi2" explicitly,
+    # NOT the substring "phi", so phi4 (14B-class, 16k window) is not mis-tiered.
+    if any(x in name for x in ("3b", "3.2:latest", "phi3", "phi2", "phi:", "llama3.2:latest")):
         return 4096
     if any(x in name for x in ("7b", "8b", "llama3.1")):
         return 8192
-    return 8192   # 14B+ — keep at 8192 to control VRAM; prompt compression handles the rest
+    # 14B+ incl. phi4, qwen2.5:14b, gpt-oss:20b — 8192 to control VRAM;
+    # prompt compression handles the rest.
+    return 8192
 
 
 def circuit_state() -> dict[str, Any]:
@@ -294,6 +298,53 @@ async def chat(
         current_request_id.get(),
     )
     return data
+
+
+async def generate_json(
+    prompt: str,
+    model: str | None = None,
+    *,
+    temperature: float = 0.0,
+    timeout: float | None = None,
+) -> str:
+    """Non-streaming /api/generate with ``format=json`` — circuit-breaker-guarded.
+
+    Returns the raw ``response`` string (JSON text for the caller to parse).
+    Used by the multi-agent planner and the self-critique auditor, which both
+    need a single deterministic JSON completion. Routing them through here (vs.
+    their old direct httpx calls) gives them the circuit breaker + correlation
+    headers + tracing the rest of the LLM layer already has.
+    """
+    target = model or settings.OLLAMA_DEFAULT_MODEL
+    payload: dict[str, Any] = {
+        "model": target,
+        "prompt": prompt,
+        "stream": False,
+        "format": "json",
+        "options": {"temperature": temperature, "num_ctx": _num_ctx_for(target)},
+    }
+    _circuit_check()
+    async with httpx.AsyncClient(
+        timeout=timeout or settings.OLLAMA_CHAT_TIMEOUT_S,
+        headers=_correlation_headers(),
+    ) as client:
+        try:
+            resp = await client.post(f"{settings.OLLAMA_HOST}/api/generate", json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+        except httpx.TimeoutException as e:
+            _circuit_record_failure()
+            raise OllamaUnavailableError("Ollama generate(json) request timed out.") from e
+        except httpx.HTTPStatusError as e:
+            _circuit_record_failure()
+            raise OllamaUnavailableError("Ollama returned an error during generate(json).") from e
+        except httpx.RequestError as e:
+            _circuit_record_failure()
+            raise OllamaUnavailableError(
+                f"Cannot connect to Ollama at {settings.OLLAMA_HOST}."
+            ) from e
+    _circuit_record_success()
+    return (data.get("response") or "").strip()
 
 
 async def stream_chat_text(

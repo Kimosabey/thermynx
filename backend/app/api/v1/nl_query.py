@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.limiter import limiter
 from app.log import get_logger
-from app.services.nl_to_sql import NLQueryError, run_nl_query
-from app.services.preflight import check_equipment_mentions, topic_gate
+from app.ai.nl_to_sql import NLQueryError, run_nl_query
+from app.ai.preflight import check_equipment_mentions, topic_gate
 
 router = APIRouter()
 log = get_logger("api.nl_query")
@@ -29,7 +29,7 @@ async def nl_query(
 ):
     # Layer 1 — pre-flight: catch action verbs + unknown equipment + off-topic
     # before paying for SQL generation.
-    from app.services.preflight import check_action_request
+    from app.ai.preflight import check_action_request
     refusal = (
         check_action_request(body.question)
         or check_equipment_mentions(body.question)

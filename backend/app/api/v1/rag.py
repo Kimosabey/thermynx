@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, UploadFile, File, Form, HTTPExcep
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_pg
-from app.services.rag import retrieve, embed_query
+from app.ai.rag import retrieve, embed_query
 from app.services.ingest import ingest_document, delete_source, SUPPORTED_EXTENSIONS
 from app.log import get_logger
 

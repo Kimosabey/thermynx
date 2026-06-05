@@ -25,8 +25,8 @@ from app.db.telemetry import fetch_all_hvac_context, compute_summary
 from app.limiter import limiter
 from app.llm.ollama import stream_generate
 from app.log import get_logger
-from app.prompts.hvac_prompts import build_analyze_prompt
-from app.services.rag import retrieve, format_rag_context
+from app.ai.prompts.hvac_prompts import build_analyze_prompt
+from app.ai.rag import retrieve, format_rag_context
 from app.services.slack import (
     post_response_url, slack_configured, verify_signature,
 )
@@ -46,7 +46,7 @@ async def _run_analyze(question: str, response_url: str) -> None:
     """Collect a full analyzer answer and post to Slack via response_url."""
     # Layer 1 — pre-flight: catch action verbs + unknown equipment + off-topic
     # before any LLM call.
-    from app.services.preflight import (
+    from app.ai.preflight import (
         check_action_request, check_equipment_mentions, topic_gate,
     )
     refusal = (

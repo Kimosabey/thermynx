@@ -22,8 +22,10 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # Ollama (Tailscale server)
+    # Non-Chinese-origin policy: no qwen / deepseek / qwq in production. The
+    # global default/fallback is phi4 (Microsoft). Overridden by .env at runtime.
     OLLAMA_HOST: str = "http://100.125.103.28:11434"
-    OLLAMA_DEFAULT_MODEL: str = "qwen2.5:14b"
+    OLLAMA_DEFAULT_MODEL: str = "phi4"
 
     # CORS — comma-separated list of allowed origins.
     # Dev default: Vite + CRA local ports. Production: set to the deployed domain.
@@ -37,6 +39,12 @@ class Settings(BaseSettings):
 
     # Phase 3 cost analytics — flat blended tariff (₹/kWh), POC default
     TARIFF_INR_PER_KWH: float = 8.5
+
+    # Morning digest cron — time of day (UTC) the daily plant-health digest is
+    # built + pushed to Slack. Default 00:30 UTC = 06:00 IST (facility-local
+    # morning; tariff is in ₹). Override via env for a different timezone.
+    DIGEST_CRON_HOUR_UTC:   int = 0
+    DIGEST_CRON_MINUTE_UTC: int = 30
 
     # Forecast backend — "ml" uses Holt-Winters triple-exp smoothing from
     # statsmodels (real ML, captures trend + 24h seasonality). "heuristic"
@@ -83,24 +91,35 @@ class Settings(BaseSettings):
     OLLAMA_DIGEST_TOOL_MODEL:    str = ""   # llama3.1:8b digest
     OLLAMA_DIGEST_VISION_MODEL:  str = ""   # llama3.2-vision digest
 
-    # ── Model right-sizing per task (Performance A1) ─────────────────────────
+    # ── Model right-sizing per task (eval verdict 2026-06-03 + non-Chinese policy) ──
     # Each task can use a different model. Empty string = fall back to
-    # OLLAMA_DEFAULT_MODEL. Right-sizing cuts /agent/run from ~27s to ~12s and
-    # /analyze from ~48s to ~25s on representative workload.
-    #   - TEXT:     final narration / answer streaming (quality matters → 14B)
-    #   - TOOL:     agent ReAct tool selection (classifier-like → 8B fine)
-    #   - SQL:      NL-to-SQL generation (structured output → 8B fine)
-    #   - PLANNER:  multi-agent planner JSON (deterministic → 8B fine)
-    #   - AUDITOR:  self-critique pass/fail (small classifier → 3B fine)
-    # Defaults assume the standard model set is loaded on the Ollama host
-    # (qwen2.5:14b, llama3.1:8b, llama3.2:latest, llama3.2-vision, nomic-embed-text).
-    # Override any one via env var to swap or fall back; set to "" to force
-    # the OLLAMA_DEFAULT_MODEL fallback.
-    OLLAMA_MODEL_TEXT:     str = ""             # narration & analyzer answer — keep 14B for quality
-    OLLAMA_MODEL_TOOL:     str = "llama3.1:8b"  # agent ReAct tool selection — classifier-like, 8B is plenty
-    OLLAMA_MODEL_SQL:      str = "llama3.1:8b"  # NL→SQL — structured output, validator catches errors, speed matters
-    OLLAMA_MODEL_PLANNER:  str = "llama3.1:8b"  # multi-agent planner — short JSON, deterministic temp
-    OLLAMA_AUDITOR_MODEL:  str = "llama3.2:latest"  # self-critique — pure pass/fail classification, 3B is fastest
+    # OLLAMA_DEFAULT_MODEL (now phi4). Assignments are the eval winners, with
+    # Chinese-origin models (qwen/deepseek/qwq) EXCLUDED by policy — so the
+    # narration winner (qwen2.5:14b) is replaced by its tying runner-up phi4,
+    # and the executor by gemma3:27b (Google). See MODEL_FIT_VERDICT.md.
+    #   - TEXT:     narration / answer streaming  → phi4 (4.5, ties qwen; non-Chinese)
+    #   - TOOL:     agent ReAct executor          → mistral-small3.2 (Mistral/FR; best non-Chinese tool-caller)
+    #   - SQL:      NL→SQL generation             → mistral-small3.2 + nl_to_sql guardrails
+    #   - PLANNER:  multi-agent planner JSON       → mistral-small3.2
+    #   - AUDITOR:  self-critique / validator      → phi4 (validator winner 5.0)
+    #   - RAG:      RAG-grounded analyzer answer    → "" = TEXT model (phi4; RAG winner-tie 4.4)
+    # IMPORTANT — why not gpt-oss / gemma3 (the raw eval winners):
+    #   gpt-oss:20b is a REASONING model: it spends num_predict tokens on a hidden
+    #   "thinking" channel before answering, so under the backend's token caps
+    #   (analyze=400) with large RAG prompts it returns an EMPTY response. gemma3:27b
+    #   scored worst on tool-calling (2.0) and broke agent runs. Both verified to fail
+    #   the golden eval (2026-06-05). phi4 + mistral-small3.2 answer DIRECTLY (no
+    #   thinking channel) and pass cleanly. Revisit gpt-oss only with a higher token
+    #   budget + thinking-aware streaming in llm/ollama.py.
+    # Production set on the Ollama host: phi4, mistral-small3.2, llama3.2-vision,
+    # nomic-embed-text — all non-Chinese-origin.
+    # Override any one via env var; set to "" to force the OLLAMA_DEFAULT_MODEL fallback.
+    OLLAMA_MODEL_TEXT:     str = "phi4"                  # narration & analyzer answer
+    OLLAMA_MODEL_TOOL:     str = "mistral-small3.2:latest"  # agent ReAct executor — best non-Chinese tool-caller
+    OLLAMA_MODEL_SQL:      str = "mistral-small3.2:latest"  # NL→SQL — nl_to_sql validator/deny-list still guards
+    OLLAMA_MODEL_PLANNER:  str = "mistral-small3.2:latest"  # multi-agent planner JSON
+    OLLAMA_AUDITOR_MODEL:  str = "phi4"                  # self-critique / validator — eval validator winner (5.0)
+    OLLAMA_MODEL_RAG:      str = ""                      # RAG-grounded answer → TEXT model (phi4); split disabled
 
     # ── Response length caps (Performance A2) ───────────────────────────────
     # Hard ceiling on tokens generated per response. The prompt also asks for

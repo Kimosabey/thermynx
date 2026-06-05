@@ -18,7 +18,7 @@ from typing import AsyncIterator, Any
 from app.llm.ollama import chat, stream_chat_text
 from app.errors import AppError, OllamaUnavailableError
 from app.domain.agent_payload import compact_agent_tool_payload
-from app.domain.tools import TOOL_SCHEMAS, ToolContext, execute_tool
+from app.ai.tools import TOOL_SCHEMAS, ToolContext, execute_tool
 from app.config import settings
 from app.log import get_logger
 from app.observability.metrics import agent_runs_total

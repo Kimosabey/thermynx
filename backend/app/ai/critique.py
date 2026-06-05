@@ -32,10 +32,10 @@ import json
 import re
 from typing import Any
 
-import httpx
-
 from app.config import settings
 from app.log import get_logger
+from app.errors import OllamaUnavailableError
+from app.llm.ollama import generate_json
 
 log = get_logger("services.critique")
 
@@ -116,23 +116,6 @@ def _parse_auditor_json(raw: str) -> dict[str, Any] | None:
     return None
 
 
-async def _ollama_audit_call(model: str, prompt: str) -> str:
-    """One-shot non-streaming /api/generate call with format=json + temp=0."""
-    url = f"{settings.OLLAMA_HOST.rstrip('/')}/api/generate"
-    body = {
-        "model": model,
-        "prompt": prompt,
-        "stream": False,
-        "format": "json",
-        "options": {"temperature": _AUDITOR_TEMPERATURE},
-    }
-    async with httpx.AsyncClient(timeout=_AUDIT_TIMEOUT_S) as client:
-        r = await client.post(url, json=body)
-        r.raise_for_status()
-        data = r.json()
-        return data.get("response", "")
-
-
 async def verify_answer(
     answer_text: str,
     summary: dict[str, Any],
@@ -170,15 +153,15 @@ async def verify_answer(
 
     try:
         raw = await asyncio.wait_for(
-            _ollama_audit_call(auditor_model, prompt),
+            generate_json(prompt, model=auditor_model, temperature=_AUDITOR_TEMPERATURE, timeout=_AUDIT_TIMEOUT_S),
             timeout=_AUDIT_TIMEOUT_S,
         )
     except asyncio.TimeoutError:
         log.warning("critique_timeout model=%s", auditor_model)
         return {"status": "skipped", "reason": "auditor timeout", "model": auditor_model}
-    except httpx.HTTPError as e:
-        log.warning("critique_http_error err=%s", e)
-        return {"status": "skipped", "reason": f"auditor http error: {e}", "model": auditor_model}
+    except OllamaUnavailableError as e:
+        log.warning("critique_ollama_unavailable err=%s", e)
+        return {"status": "skipped", "reason": f"auditor unavailable: {e}", "model": auditor_model}
     except Exception as e:  # pragma: no cover
         log.exception("critique_unexpected err=%s", e)
         return {"status": "skipped", "reason": "auditor crashed", "model": auditor_model}

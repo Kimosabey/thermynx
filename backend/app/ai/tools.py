@@ -319,7 +319,7 @@ async def _exec_search_knowledge_base(
     top_k: int = 4,
 ) -> dict:
     from app.db.session import PGSession
-    from app.services.rag import retrieve
+    from app.ai.rag import retrieve
     async with PGSession() as pg:
         chunks = await retrieve(pg, query, top_k=top_k, equipment_id=equipment_id)
     if not chunks:

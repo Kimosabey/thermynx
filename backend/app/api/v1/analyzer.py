@@ -17,9 +17,9 @@ from app.db.models import AnalysisAudit, Message, Thread
 from app.db.telemetry import fetch_all_hvac_context, compute_summary, fetch_chiller_data
 from app.domain.equipment import EQUIPMENT_CATALOG, get_by_id
 from app.llm.ollama import stream_generate
-from app.prompts.hvac_prompts import build_analyze_prompt
-from app.services.rag import retrieve, format_rag_context
-from app.services.critique import verify_answer
+from app.ai.prompts.hvac_prompts import build_analyze_prompt
+from app.ai.rag import retrieve, format_rag_context
+from app.ai.critique import verify_answer
 from app.limiter import limiter
 from app.config import settings
 from app.log import get_logger
@@ -54,7 +54,7 @@ async def _sse_stream(
 
     # Layer 1 — pre-flight: reject obvious bad input before any LLM/DB work.
     # Saves 30-60s per refused request and is 100% deterministic.
-    from app.services.preflight import (
+    from app.ai.preflight import (
         check_action_request, check_equipment_mentions, topic_gate,
     )
     refusal = (
@@ -153,6 +153,14 @@ async def _sse_stream(
     rag_chunks = await retrieve(pg, req.question, top_k=5, equipment_id=req.equipment_id)
     rag_context = format_rag_context(rag_chunks) if rag_chunks else ""
 
+    # Model split (eval verdict): manual-grounded answers route to the RAG winner
+    # (gpt-oss:20b) while plain narration stays on the TEXT model (phi4).
+    # Honour an explicit caller-supplied model; only auto-route when none was given.
+    if rag_chunks and not req.model and settings.OLLAMA_MODEL_RAG:
+        model = settings.OLLAMA_MODEL_RAG
+        audit.model = model
+        log.info("analyze_rag_model audit_id=%s model=%s chunks=%s", audit_id, model, len(rag_chunks))
+
     # Emit a citations frame BEFORE the stream so the UI can render footnote
     # targets the moment the LLM mentions [source: ...]. Snippet is capped so
     # this frame stays small.
@@ -172,7 +180,7 @@ async def _sse_stream(
     # ── Response cache check (Redis, 60s TTL) ────────────────────────────────
     # Key includes the telemetry window_end so stale answers are never served
     # after new data arrives. Disabled when TTL=0 or Redis is unavailable.
-    from app.services.answer_cache import get_cached_answer, set_cached_answer
+    from app.ai.answer_cache import get_cached_answer, set_cached_answer
     _window_end = context.get("fetched_at")  # set by fetch_all_hvac_context
     if settings.ANALYZER_CACHE_TTL_S > 0:
         _cached = await get_cached_answer(
@@ -250,7 +258,7 @@ async def _sse_stream(
     # and unmatched citations. Increments Prometheus counters either way.
     if status == "ok" and response_text.strip():
         try:
-            from app.services.postcheck import run_postcheck
+            from app.ai.postcheck import run_postcheck
             audit_result = run_postcheck(
                 response_text,
                 context=context,

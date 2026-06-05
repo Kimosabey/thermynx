@@ -58,6 +58,29 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         except Exception as _e:
             log.debug("digest_check_failed err=%s", _e)
 
+    # Per-role model map — single source of truth for "which model runs where",
+    # surfaced in the System page UI. Resolves "" fallbacks the same way the
+    # services do (role-specific → TEXT → OLLAMA_DEFAULT_MODEL).
+    _text_model = settings.OLLAMA_MODEL_TEXT or settings.OLLAMA_DEFAULT_MODEL
+    model_roles = [
+        {"role": "Narration",      "model": _text_model,
+         "purpose": "Final analyzer answer + summaries", "origin": "Microsoft"},
+        {"role": "Executor / Tools", "model": settings.OLLAMA_MODEL_TOOL or settings.OLLAMA_DEFAULT_MODEL,
+         "purpose": "Agent ReAct tool selection", "origin": "Mistral (FR)"},
+        {"role": "NL→SQL",         "model": settings.OLLAMA_MODEL_SQL or settings.OLLAMA_DEFAULT_MODEL,
+         "purpose": "Natural language → SQL query", "origin": "Mistral (FR)"},
+        {"role": "Planner",        "model": settings.OLLAMA_MODEL_PLANNER or settings.OLLAMA_DEFAULT_MODEL,
+         "purpose": "Multi-agent task decomposition", "origin": "Mistral (FR)"},
+        {"role": "Validator",      "model": settings.OLLAMA_AUDITOR_MODEL or settings.OLLAMA_DEFAULT_MODEL,
+         "purpose": "Self-critique / fact-check", "origin": "Microsoft"},
+        {"role": "RAG answer",     "model": settings.OLLAMA_MODEL_RAG or _text_model,
+         "purpose": "Manual-grounded answers", "origin": "Microsoft"},
+        {"role": "Vision",         "model": settings.OLLAMA_VISION_MODEL,
+         "purpose": "Image / scene analysis", "origin": "Meta"},
+        {"role": "Embeddings",     "model": "nomic-embed-text",
+         "purpose": "RAG vector search", "origin": "Nomic (US)"},
+    ]
+
     # Data-freshness signal — populates the Prometheus gauge for alerting +
     # surfaces a human-readable warning in the response when wall_clock mode is
     # in use. Stays None / 0 in historical-dump (latest_in_db) mode.
@@ -82,6 +105,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
             "host": settings.OLLAMA_HOST,
             "default_model": settings.OLLAMA_DEFAULT_MODEL,
             "available_models": models,
+            "model_roles": model_roles,
             "circuit": circuit_state(),
             "digest_warnings": digest_warnings,
         },
