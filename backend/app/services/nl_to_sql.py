@@ -141,6 +141,24 @@ def _validate(sql: str) -> tuple[str, list[str]]:
     if illegal:
         raise NLQueryError(f"Query references disallowed table(s): {sorted(illegal)}")
 
+    # Column allow-list: hard-fail on column names the schema doesn't have.
+    # Uses a narrow deny-list of common hallucinations rather than an exhaustive
+    # allow-list — MySQL itself rejects truly unknown columns, but this surfaces
+    # the error BEFORE the DB call with a friendlier message.
+    _HALLUCINATED_COLS = re.compile(
+        r"\b(power_factor|voltage|current|vibration|oil_temp|oil_pressure|"
+        r"refrigerant_level|bearing_temp|suction_pressure|discharge_pressure|"
+        r"motor_current|motor_rpm|efficiency_ratio)\b",
+        re.IGNORECASE,
+    )
+    bad_col = _HALLUCINATED_COLS.search(cleaned)
+    if bad_col:
+        raise NLQueryError(
+            f"Column '{bad_col.group(0)}' does not exist in the telemetry schema. "
+            "Use only: slot_time, kw, tr, kw_per_tr, chiller_load, kwh, run_hours, "
+            "evap_leaving_temp, chw_delta_t, cond_leaving_temp, ambient_temp."
+        )
+
     warnings: list[str] = []
     if not re.search(r"\blimit\b", cleaned, re.IGNORECASE):
         cleaned = f"{cleaned} LIMIT {_max_rows()}"

@@ -51,6 +51,21 @@ anomalies_detected_total = Counter(
     ["equipment_id", "severity"],
 )
 
+# ── Agent tool metrics ───────────────────────────────────────────────────────
+
+agent_tool_calls_total = Counter(
+    "graylinx_agent_tool_calls_total",
+    "Number of agent tool calls, partitioned by tool name and outcome.",
+    ["tool", "status"],   # status = ok | error | timeout
+)
+
+agent_tool_duration_seconds = __import__("prometheus_client").Histogram(
+    "graylinx_agent_tool_duration_seconds",
+    "Agent tool execution latency in seconds.",
+    ["tool"],
+    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0],
+)
+
 # ── Hallucination audits (Tier 3 — post-generation) ──────────────────────────
 
 hallucination_flags_total = Counter(

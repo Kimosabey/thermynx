@@ -11,6 +11,13 @@ import remarkGfm from "remark-gfm";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import TraceStepDS from "../../shared/ui/TraceStep";
+import { AuditPanel } from "../analyzer/AuditPanel";
+
+// Thin wrapper that maps agent audit shape → AuditPanel (which expects analyzer shape)
+function AgentAuditPanel({ audit }) {
+  if (!audit) return null;
+  return <AuditPanel audit={audit} verification={null} />;
+}
 
 const MotionBox = motion.create(Box);
 const ICON_SIZE = 13;
@@ -273,7 +280,7 @@ function MarkdownOutput({ content }) {
   );
 }
 
-export default function AgentRunner({ trace, output, running, done, meta, error }) {
+export default function AgentRunner({ trace, output, running, done, meta, error, agentAudit }) {
   const [timelineRef] = useAutoAnimate({ duration: 220, easing: "ease-out" });
   const outputScrollRef = useRef(null);
   const bottomRef      = useRef(null);
@@ -436,6 +443,12 @@ export default function AgentRunner({ trace, output, running, done, meta, error 
               }
               <Box ref={bottomRef} h="1px" />
             </Box>
+            {/* Agent audit panel — parity with analyzer page */}
+            {!running && agentAudit && (
+              <Box px={{ base: 3, md: 4 }} pt={2} pb={3}>
+                <AgentAuditPanel audit={agentAudit} />
+              </Box>
+            )}
           </GlassCard>
         </Box>
 

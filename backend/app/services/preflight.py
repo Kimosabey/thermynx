@@ -53,13 +53,16 @@ def check_equipment_mentions(question: str) -> str | None:
 
     Returns:
         None if all mentions are valid (or no equipment mentioned).
-        A user-facing refusal string if any mention is not in EQUIPMENT_CATALOG.
+        A user-facing refusal string if any mention is not in EQUIPMENT_CATALOG,
+        including a "did you mean?" hint when a typo of a known equipment word
+        is detected (e.g. "chillor" → "did you mean chiller?").
 
     Examples:
         check_equipment_mentions("Tell me about chiller 1")  -> None
         check_equipment_mentions("Tell me about chiller 3")  -> "Chiller 3 does not exist…"
         check_equipment_mentions("efficiency of tower 5")    -> "Cooling Tower 5 does not exist…"
         check_equipment_mentions("general overview")         -> None  (no equipment mentioned)
+        check_equipment_mentions("analyse chillor 1")        -> typo hint
     """
     if not question:
         return None
@@ -82,6 +85,16 @@ def check_equipment_mentions(question: str) -> str | None:
             f"{', '.join(unique_bad)} does not exist in this plant. "
             f"Available equipment: {_available_label()}."
         )
+
+    # No unknown equipment found — check for typos of equipment words
+    # (e.g. "chillor 1" looks like a typo of "chiller").
+    typo_hint = suggest_equipment_fix(question)
+    if typo_hint:
+        return (
+            f"{typo_hint} — could not find a matching equipment. "
+            f"Available: {_available_label()}."
+        )
+
     return None
 
 

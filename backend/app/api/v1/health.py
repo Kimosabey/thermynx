@@ -30,6 +30,34 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 
     ollama_ok, models = await check_ollama_health()
 
+    # Digest pin check — warn when a loaded model's digest doesn't match the pin.
+    # Non-blocking: mismatches log a warning and appear in the response but don't
+    # fail the health check. Operators can act on this signal manually.
+    digest_warnings: list[str] = []
+    pin_pairs = [
+        (settings.OLLAMA_DEFAULT_MODEL, settings.OLLAMA_DIGEST_DEFAULT_MODEL),
+        (settings.OLLAMA_MODEL_TOOL or settings.OLLAMA_DEFAULT_MODEL, settings.OLLAMA_DIGEST_TOOL_MODEL),
+        (settings.OLLAMA_VISION_MODEL, settings.OLLAMA_DIGEST_VISION_MODEL),
+    ]
+    if ollama_ok:
+        try:
+            import httpx as _httpx
+            async with _httpx.AsyncClient(timeout=5.0) as _c:
+                _r = await _c.get(f"{settings.OLLAMA_HOST}/api/tags")
+                _model_digests = {
+                    m["name"]: m.get("digest", "") for m in (_r.json().get("models") or [])
+                }
+            for model_name, expected_digest in pin_pairs:
+                if not expected_digest:
+                    continue   # no pin set — skip
+                actual = _model_digests.get(model_name, "")
+                if actual and not actual.startswith(expected_digest[:12]):
+                    msg = f"Digest mismatch for {model_name}: expected …{expected_digest[:12]}, got …{actual[:12]}"
+                    log.warning("model_digest_mismatch %s", msg)
+                    digest_warnings.append(msg)
+        except Exception as _e:
+            log.debug("digest_check_failed err=%s", _e)
+
     # Data-freshness signal — populates the Prometheus gauge for alerting +
     # surfaces a human-readable warning in the response when wall_clock mode is
     # in use. Stays None / 0 in historical-dump (latest_in_db) mode.
@@ -55,6 +83,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
             "default_model": settings.OLLAMA_DEFAULT_MODEL,
             "available_models": models,
             "circuit": circuit_state(),
+            "digest_warnings": digest_warnings,
         },
         "telemetry": {
             "anchor": settings.TELEMETRY_TIME_ANCHOR,

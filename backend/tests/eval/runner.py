@@ -52,7 +52,7 @@ def _collect_sse(url: str, body: dict, timeout: float) -> dict[str, Any]:
                 except json.JSONDecodeError:
                     continue
                 t = frame.get("type")
-                if t == "token":
+                if t in ("token", "synthesis_token", "delegate_token"):
                     tokens.append(frame.get("content", ""))
                 elif t == "audit":
                     audit = frame.get("audit")

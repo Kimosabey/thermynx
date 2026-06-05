@@ -61,7 +61,28 @@ async def _alembic_upgrade() -> None:
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # ── 0. Redis (non-fatal — caching degrades gracefully if Redis is down) ──────────
+    # ── 0a. Secret validation — refuse to boot with placeholder credentials in prod ──
+    import os as _os
+    _env = _os.environ.get("ENV", "dev").lower()
+    _is_prod = _env not in ("dev", "development", "test", "local")
+    _secret_issues: list[str] = []
+    if settings.DB_PASSWORD == "changeme":
+        _secret_issues.append("DB_PASSWORD is still 'changeme'")
+    if _is_prod and not settings.API_KEYS.strip():
+        _secret_issues.append("API_KEYS is empty (auth disabled) in non-dev environment")
+    if _is_prod and "dev" in settings.POSTGRES_URL:
+        _secret_issues.append("POSTGRES_URL contains 'dev' — looks like a dev connection string")
+    if _secret_issues:
+        if _is_prod:
+            raise RuntimeError(
+                "Refusing to start with insecure configuration in non-dev environment:\n"
+                + "\n".join(f"  • {s}" for s in _secret_issues)
+            )
+        else:
+            log.warning("secret_validation_warnings (dev mode — not blocking):\n%s",
+                        "\n".join(f"  • {s}" for s in _secret_issues))
+
+    # ── 0b. Redis (non-fatal — caching degrades gracefully if Redis is down) ─────────
     cache_svc.init_redis(settings.REDIS_URL)
 
     # ── 1. Postgres schema version (Alembic: pgvector extension, tables, embeddings index)

@@ -269,8 +269,25 @@ async def _sse_stream(
     audit.tokens_estimated = len(response_text.split())
     audit.total_ms = total_ms
     audit.status = status
-    await pg.merge(audit)
-    await pg.commit()
+    try:
+        await pg.merge(audit)
+        await pg.commit()
+    except Exception as _pg_err:
+        # R2 — Postgres unreachable: buffer audit row to local NDJSON so data
+        # isn't lost. A background job can drain this file when Postgres recovers.
+        log.warning("audit_pg_write_failed audit_id=%s err=%s — buffering to NDJSON", audit_id, _pg_err)
+        import json as _json, pathlib as _pl
+        _buf_path = _pl.Path("logs/audit-buffer.ndjson")
+        try:
+            _buf_path.parent.mkdir(parents=True, exist_ok=True)
+            with _buf_path.open("a", encoding="utf-8") as _f:
+                _f.write(_json.dumps({
+                    "id": audit_id, "equipment_id": req.equipment_id,
+                    "question": req.question, "status": status,
+                    "total_ms": total_ms, "model": model,
+                }) + "\n")
+        except Exception as _buf_err:
+            log.error("audit_buffer_write_failed err=%s", _buf_err)
 
     # Custom metric — bucket terminal status as ok | error | aborted
     analyzer_requests_total.labels(

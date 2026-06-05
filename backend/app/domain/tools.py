@@ -4,12 +4,14 @@ All executors return JSON-serializable dicts, kept small for LLM context.
 """
 import asyncio
 import decimal
+import time as _time
 from dataclasses import asdict, dataclass
 from datetime import datetime, date
 from typing import Any
 
 from app.domain.equipment import EQUIPMENT_CATALOG, get_by_id
 from app.log import get_logger
+from app.observability.metrics import agent_tool_calls_total, agent_tool_duration_seconds
 
 
 @dataclass(frozen=True)
@@ -438,6 +440,7 @@ async def execute_tool(
         accepts_var_kw = any(
             p.kind == ip.Parameter.VAR_KEYWORD for p in sig.parameters.values()
         )
+        _t0 = _time.monotonic()
         if accepts_var_kw:
             out = await asyncio.wait_for(fn(**raw), timeout=_TOOL_INNER_TIMEOUT)
         else:
@@ -449,16 +452,19 @@ async def execute_tool(
             filtered = {k: v for k, v in raw.items() if k in allowed}
             out = await asyncio.wait_for(fn(**filtered), timeout=_TOOL_INNER_TIMEOUT)
 
+        agent_tool_duration_seconds.labels(tool=name).observe(_time.monotonic() - _t0)
+        agent_tool_calls_total.labels(tool=name, status="ok").inc()
         log.debug("tool_ok name=%s", name)
-        # Sanitize before returning — MySQL returns Decimal for AVG/MAX, which
-        # json.dumps in _sse() cannot handle.
         return _sanitize(out)
     except asyncio.TimeoutError:
+        agent_tool_calls_total.labels(tool=name, status="timeout").inc()
         log.warning("tool_inner_timeout name=%s timeout=%.0fs", name, _TOOL_INNER_TIMEOUT)
         return {"error": f"Tool '{name}' timed out after {_TOOL_INNER_TIMEOUT:.0f}s — database query too slow."}
     except TypeError as e:
+        agent_tool_calls_total.labels(tool=name, status="error").inc()
         log.warning("tool_bad_args name=%s err=%s args=%s", name, e, args)
         return {"error": f"Invalid arguments for '{name}'. Expected valid parameters — got keys {list((args or {}).keys())}. {e}"}
     except Exception as e:
+        agent_tool_calls_total.labels(tool=name, status="error").inc()
         log.exception("tool_failed name=%s args=%s", name, list((args or {}).keys()))
         return {"error": str(e)}

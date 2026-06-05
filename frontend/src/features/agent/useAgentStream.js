@@ -7,6 +7,8 @@ export function useAgentStream() {
   const [done,        setDone]        = useState(false);
   const [meta,        setMeta]        = useState(null);
   const [error,       setError]       = useState(null);
+  // Post-gen audit (same as analyzer)
+  const [agentAudit,  setAgentAudit]  = useState(null);
   // Multi-agent state
   const [plan,        setPlan]        = useState(null);
   const [delegations, setDelegations] = useState([]);
@@ -26,6 +28,7 @@ export function useAgentStream() {
     tokenBuf.current = "";
     setTrace([]);
     setOutput("");
+    setAgentAudit(null);
     setPlan(null);
     setDelegations([]);
     setSynthesis("");
@@ -128,6 +131,8 @@ export function useAgentStream() {
                   setSynthesis((p) => p + chunk);
                 }, 40);
               }
+            } else if (t === "audit") {
+              setAgentAudit(frame.audit || null);
             } else if (t === "done") {
               setMeta(frame);
               setDone(true);
@@ -162,6 +167,7 @@ export function useAgentStream() {
   return {
     trace, output, running, done, meta, error,
     plan, delegations, synthesis,
+    agentAudit,
     start, stop,
   };
 }

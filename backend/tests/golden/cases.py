@@ -461,6 +461,116 @@ AGENT_CASES = [
         },
         "tags": ["happy_path"],
     },
+
+    # T3-A optimizer mode
+    {
+        "id":       "ag_happy_optimizer",
+        "endpoint": "/api/v1/agent/run",
+        "category": "happy_path",
+        "body":     {"mode": "optimizer", "goal": "Find optimization opportunities for chiller 2",
+                     "context": {"equipment_id": "chiller_2", "hours": 24}},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["chiller", "kW", "energy", "Current State", "Optimization",
+                               "efficiency", "saving", "Savings"],
+            "not_contains":   ["Telemetry unavailable", "chiller 7", "chiller_7"],
+            "max_latency_ms": 120000,
+        },
+        "tags": ["happy_path", "optimizer_mode"],
+    },
+
+    # T3-B brief mode
+    {
+        "id":       "ag_happy_brief",
+        "endpoint": "/api/v1/agent/run",
+        "category": "happy_path",
+        "body":     {"mode": "brief", "goal": "Generate a shift-start plant briefing"},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["Plant Status", "Equipment", "Action", "chiller", "kW"],
+            "not_contains":   ["Telemetry unavailable"],
+            "max_latency_ms": 120000,
+        },
+        "tags": ["happy_path", "brief_mode"],
+    },
+    # T3-B maintenance mode
+    {
+        "id":       "ag_happy_maintenance",
+        "endpoint": "/api/v1/agent/run",
+        "category": "happy_path",
+        "body":     {"mode": "maintenance", "goal": "Build a maintenance plan for chiller 2",
+                     "context": {"equipment_id": "chiller_2", "hours": 168}},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["Maintenance", "Priority", "chiller", "inspect", "check"],
+            "not_contains":   ["chiller 7", "Telemetry unavailable"],
+            "max_latency_ms": 120000,
+        },
+        "tags": ["happy_path", "maintenance_mode"],
+    },
+
+    # T3-C orchestrator happy path
+    {
+        "id":       "ag_orchestrator_happy",
+        "endpoint": "/api/v1/agent/orchestrate",
+        "category": "happy_path",
+        "body":     {"goal": "Investigate chiller 1 then propose a maintenance plan",
+                     "context": {"equipment_id": "chiller_1", "hours": 24}},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["chiller", "kW", "Answer", "Recommended", "Evidence",
+                               "maintenance", "efficiency"],
+            "not_contains":   ["chiller 7", "Telemetry unavailable"],
+            "max_latency_ms": 300000,
+        },
+        "tags": ["happy_path", "orchestrator"],
+    },
+    # T3-C orchestrator refusal
+    {
+        "id":       "ag_orchestrator_refused",
+        "endpoint": "/api/v1/agent/orchestrate",
+        "category": "equipment_refusal",
+        "body":     {"goal": "Plan maintenance for chiller 7"},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["does not exist", "Chiller 7", "Available"],
+            "not_contains":   ["plan maintenance for chiller 7 complete"],
+            "max_latency_ms": 5000,
+        },
+        "tags": ["T1-D", "orchestrator"],
+    },
+
+    # T3-D non-chiller equipment in agent context
+    {
+        "id":       "ag_happy_cooling_tower",
+        "endpoint": "/api/v1/agent/run",
+        "category": "happy_path",
+        "body":     {"mode": "investigator", "goal": "Investigate cooling tower 1 performance",
+                     "context": {"equipment_id": "cooling_tower_1", "hours": 24}},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["cooling tower", "tower", "kW", "running", "Findings"],
+            "not_contains":   ["Telemetry unavailable", "chiller_7"],
+            "max_latency_ms": 120000,
+        },
+        "tags": ["happy_path", "non_chiller_equipment"],
+    },
+    # T3-D typo in equipment name — preflight fires with "did you mean?" hint.
+    # The typo "chillor" is close enough (0.82 cutoff) to trigger suggest_equipment_fix.
+    # May still hit the LLM if the regex doesn't match the exact pattern, so use
+    # a generous timeout. Contains_any covers both the fast-path and LLM-path responses.
+    {
+        "id":       "ag_typo_equipment",
+        "endpoint": "/api/v1/agent/run",
+        "category": "equipment_refusal",
+        "body":     {"mode": "investigator", "goal": "Analyse chillor 1 efficiency"},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["did you mean", "chiller", "Available", "does not exist"],
+            "max_latency_ms": 60000,  # typo may not match regex → goes to LLM (full agent run)
+        },
+        "tags": ["T1-A-typo"],
+    },
 ]
 
 

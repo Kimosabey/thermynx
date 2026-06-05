@@ -217,7 +217,7 @@ export default function AgentHub() {
   const [selectedEq,  setSelectedEq]  = useState("");
   const [hours,       setHours]       = useState(24);
 
-  const { trace, output, running, done, meta, error, plan, delegations, synthesis, start, stop } = useAgentStream();
+  const { trace, output, running, done, meta, error, plan, delegations, synthesis, agentAudit, start, stop } = useAgentStream();
   const mode = MODES.find((m) => m.id === activeMode);
   const isOrchestrator = activeMode === "orchestrator";
 
@@ -485,6 +485,7 @@ export default function AgentHub() {
           done={done}
           meta={meta}
           error={error}
+          agentAudit={agentAudit}
         />
       )}
     </PageShell>

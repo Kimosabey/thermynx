@@ -139,6 +139,20 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
         yield f"data: {json.dumps({'type':'error','detail':'Agent run failed.','request_id':rid})}\n\n"
         status = "error"
 
+    # Post-gen audit — same postcheck the analyzer runs, gives agents parity.
+    # Runs after stream ends; never blocks the response.
+    if status == "ok" and final_tokens:
+        try:
+            from app.services.postcheck import run_postcheck
+            from app.domain.equipment import EQUIPMENT_CATALOG
+            audit_result = run_postcheck(
+                "".join(final_tokens),
+                equipment_catalog=EQUIPMENT_CATALOG,
+            )
+            yield f"data: {json.dumps({'type': 'audit', 'audit': audit_result})}\n\n"
+        except Exception:
+            log.exception("agent_postcheck_failed run_id=%s", run_id)
+
     # Update run row
     run.final_output = "".join(final_tokens) or None
     run.steps_taken  = steps

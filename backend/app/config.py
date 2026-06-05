@@ -70,6 +70,15 @@ class Settings(BaseSettings):
     # Ollama vision model (separate from default text model)
     OLLAMA_VISION_MODEL: str = "llama3.2-vision"
 
+    # Model digest pins — optional SHA256 digests for the models in use.
+    # When set, the health endpoint verifies the running model matches the pin
+    # and logs a WARNING if it doesn't. This catches silent behavior changes
+    # when someone runs `ollama pull` and the model is updated under our feet.
+    # Leave empty to skip verification (the default for POC / dev).
+    OLLAMA_DIGEST_DEFAULT_MODEL: str = ""   # e.g. "sha256:7cdf5a01..."
+    OLLAMA_DIGEST_TOOL_MODEL:    str = ""   # llama3.1:8b digest
+    OLLAMA_DIGEST_VISION_MODEL:  str = ""   # llama3.2-vision digest
+
     # ── Model right-sizing per task (Performance A1) ─────────────────────────
     # Each task can use a different model. Empty string = fall back to
     # OLLAMA_DEFAULT_MODEL. Right-sizing cuts /agent/run from ~27s to ~12s and
