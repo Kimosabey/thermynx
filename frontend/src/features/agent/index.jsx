@@ -369,7 +369,8 @@ export default function AgentHub() {
                 ? equipment.find((e) => e.id === selectedEq) || null
                 : null;
               const dynamic = buildAgentPrompts(mode?.id, selectedEqObj);
-              const chips = dynamic.length ? dynamic : (mode?.presets || []);
+              // Use dynamic chips if the module returned any; fall back to static presets only if empty
+              const chips = Array.isArray(dynamic) && dynamic.length > 0 ? dynamic : (mode?.presets || []);
               return (
                 <Box mb={4}>
                   <Eyebrow mb={2}>

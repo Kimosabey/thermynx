@@ -134,12 +134,29 @@ def _sse(data: dict) -> str:
 
 
 def _parse_plan_json(raw: str) -> dict | None:
+    """Parse JSON from the planner's raw output.
+
+    Strategy: strip code fences, try json.loads on the whole string first
+    (fast path for well-formed responses), then fall back to the brace-depth
+    scanner for cases where the model added prose before/after the JSON.
+    """
     if not raw:
         return None
     s = raw.strip()
     if s.startswith("```"):
         s = re.sub(r"^```(?:json)?\n?", "", s, flags=re.IGNORECASE)
         s = re.sub(r"```\s*$", "", s)
+    s = s.strip()
+
+    # Fast path: the whole string is valid JSON
+    try:
+        parsed = json.loads(s)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    # Fallback: find the first balanced {…} span
     start = s.find("{")
     if start < 0:
         return None
@@ -338,6 +355,8 @@ async def run_multi_agent(
     async def _drain(idx: int, specialist: str, sub_goal: str) -> dict[str, Any]:
         """Consume one sub-agent's generator, put SSE frames into shared queue."""
         tokens: list[str] = []
+        had_error = False
+        last_error: str = ""
         try:
             async for frame in run_agent(specialist, sub_goal, context, model=used):
                 retagged = _retag_frame(frame, idx, specialist)
@@ -345,11 +364,17 @@ async def run_multi_agent(
                     await queue.put(("frame", retagged))
                 try:
                     data = json.loads(frame[6:])
-                    if data.get("type") == "token":
+                    t = data.get("type")
+                    if t == "token":
                         tokens.append(data.get("content", ""))
+                    elif t == "error":
+                        had_error = True
+                        last_error = data.get("detail", "sub-agent error")
                 except Exception:
                     pass
         except Exception as exc:
+            had_error = True
+            last_error = str(exc)
             log.exception("multi_agent_subtask_failed idx=%s specialist=%s", idx, specialist)
             await queue.put(("frame", _sse({
                 "type":       "delegate_error",
@@ -357,7 +382,16 @@ async def run_multi_agent(
                 "specialist": specialist,
                 "detail":     f"sub-agent crashed: {exc}",
             })))
-        return {"specialist": specialist, "goal": sub_goal, "summary": "".join(tokens).strip()}
+        summary = "".join(tokens).strip()
+        # If the sub-task failed or produced no content, give the synthesizer an
+        # explicit marker so it doesn't try to reason over empty findings.
+        if had_error or not summary:
+            summary = (
+                f"[Sub-task '{specialist}' encountered an error: {last_error or 'no output produced'}. "
+                "Do NOT infer or fabricate findings for this specialist — acknowledge the gap instead.]"
+            )
+        return {"specialist": specialist, "goal": sub_goal, "summary": summary,
+                "had_error": had_error}
 
     # Emit delegate_start for all sub-tasks up front, then fire them in parallel
     subtasks = plan["subtasks"]

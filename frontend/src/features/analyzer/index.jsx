@@ -44,7 +44,7 @@ function MarkdownRenderer({ content, components }) {
         strong:    { color: "text.primary", fontWeight: 600 },
         code:      { bg: "rgba(0,196,244,0.08)", px: "5px", py: "2px", borderRadius: "5px", fontSize: "0.82em", color: "brand.300", fontFamily: "mono", wordBreak: "break-all" },
         pre:       { bg: "rgba(0,0,0,0.4)", border: "1px solid", borderColor: "border.subtle", p: 4, borderRadius: "10px", overflowX: "auto", maxW: "100%", mb: 3, fontSize: "xs" },
-        table:     { width: "100%", borderCollapse: "collapse", mb: 3, fontSize: "sm", display: "block", overflowX: "auto", maxW: "100%" },
+        table:     { width: "100%", borderCollapse: "collapse", mb: 3, fontSize: "sm", display: "block", overflowX: "auto", maxW: "100%", fontFamily: "mono" },
         "th,td":   { border: "1px solid", borderColor: "border.subtle", px: 3, py: "6px", textAlign: "left" },
         th:        { bg: "bg.elevated", fontWeight: 600, fontSize: "xs", color: "text.muted" },
         td:        { color: "text.primary" },
@@ -221,7 +221,8 @@ export default function AIAnalyzer() {
           let evt;
           try {
             evt = JSON.parse(line.slice(6));
-          } catch {
+          } catch (e) {
+            if (import.meta.env.DEV) console.error("[analyzer] SSE parse error:", line.slice(0, 120), e);
             continue;
           }
           if (evt.type === "token") setStreamContent((p) => p + evt.content);

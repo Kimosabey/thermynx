@@ -56,16 +56,18 @@ Temporal grounding:
 - If the user says "today" / "now" / "right now" and the data window ends days or months
   earlier, clarify: "Note: my latest data is from <window_end> — answering for that day."
 
-Premise verification (required — most critical rule below):
+Premise verification (required — most critical rule, no exceptions):
 - If the user ASSERTS something happened ("there was a spike at 2-4 PM", "efficiency dropped",
   "anomaly at 3 PM", "chiller 1 is failing", "kWh tripled today"), you MUST verify it against
   the LIVE PLANT DATA and SUMMARY blocks BEFORE proposing a diagnosis or remediation.
-- If the data contradicts the user's claim, say so plainly:
+- If the data contradicts the user's claim, say so plainly with numbers:
   "I checked: there was no spike. Between 14:00–16:00 chiller_1 averaged 131-140 kW, which
    is BELOW the morning peak of 184 kW at 11:00. Nothing to remediate."
-- DO NOT generate Findings / Recommendations / Work-Order proposals for problems the data
-  doesn't confirm. Generic actions like "inspect flow settings" are forbidden unless tied
-  to a specific cited number from the data.
+- DO NOT generate Findings / Recommendations for problems the data does not confirm.
+  Generic actions like "inspect flow settings" are forbidden unless tied to a specific
+  cited number and timestamp from the data.
+- DO NOT produce a Work-Order proposal unless you have a cited numeric finding that
+  confirms the problem exists in the data. "I suspect" or "it may be" is NOT enough.
 
 Conversation hygiene:
 - If the user asks multiple distinct questions in one prompt, answer the most important
@@ -186,13 +188,40 @@ def build_analyze_prompt(
 
     # T2-A · CURRENT DATA WINDOW pin — tells the LLM the dataset ends *here*,
     # forcing past-tense narration and refusing out-of-window date claims.
+    # M6 · Completeness warning — if actual data span is significantly shorter
+    # than the requested window, flag it so operators know what they're looking at.
     window_end = _max_slot_time(context)
     if window_end or focus_hours:
         sections.append("\n---\n## CURRENT DATA WINDOW")
         if window_end:
             sections.append(f"  Dataset ends at: **{window_end}** (use past tense for anything older than 1 hour from this).")
         if focus_hours:
-            sections.append(f"  Window span:     last **{focus_hours}** hours of telemetry.")
+            sections.append(f"  Requested window: last **{focus_hours}** hours of telemetry.")
+
+        # Compute actual vs requested span for the completeness warning
+        if focus_hours:
+            all_timestamps: list[str] = []
+            for v in context.values():
+                if isinstance(v, list):
+                    for r in v:
+                        if isinstance(r, dict) and r.get("slot_time"):
+                            all_timestamps.append(str(r["slot_time"]))
+            if len(all_timestamps) >= 2:
+                all_timestamps.sort()
+                try:
+                    from datetime import datetime as _dt
+                    t0 = _dt.fromisoformat(all_timestamps[0].replace("T", " ")[:19])
+                    t1 = _dt.fromisoformat(all_timestamps[-1].replace("T", " ")[:19])
+                    actual_hours = (t1 - t0).total_seconds() / 3600
+                    if actual_hours < focus_hours * 0.7:
+                        sections.append(
+                            f"\n  ⚠ WARNING: Only **{actual_hours:.0f}h** of data available "
+                            f"(requested {focus_hours}h). Do not assume a longer window — "
+                            "say explicitly that data is limited."
+                        )
+                except Exception:
+                    pass
+
         sections.append("  Refuse any question that asks about dates outside this window.\n")
 
     # T2-B · CURRENT FOCUS pin — keeps multi-turn threads grounded on the

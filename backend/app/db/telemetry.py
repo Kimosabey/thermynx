@@ -182,7 +182,7 @@ async def fetch_all_hvac_context(
 
 async def compute_summary(data: dict[str, Any]) -> dict[str, Any]:
     def _avg(rows, key):
-        vals = [float(r[key]) for r in rows if r.get(key) is not None]
+        vals = [float(r[key]) for r in rows if r.get(key) is not None]  # float() handles Decimal
         return round(sum(vals) / len(vals), 3) if vals else None
 
     def _latest(rows, key):

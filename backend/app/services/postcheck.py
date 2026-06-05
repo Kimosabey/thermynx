@@ -112,9 +112,11 @@ def audit_numeric_claims(
 ) -> list[dict[str, Any]]:
     """Flag numeric claims in the answer that don't match the context.
 
-    Tolerance is 5% by default — accounts for LLM rounding ("0.61" cited as
-    "0.6", or "139.1" cited as "139"). A claim is "orphan" if no number
-    within ±tolerance_pct exists in the context blob.
+    Tolerance is adaptive:
+    - Absolute values (kW, kWh, TR, °C): 5% — tight enough to catch fabrication
+    - Percentages and z-scores (%, σ): 15% — looser because LLM rounds aggressively
+      e.g. "82.3%" → context "82%" needs 15% tolerance to avoid false positives
+    A claim is "orphan" if no number within tolerance exists in the context blob.
     """
     if not answer:
         return []
@@ -141,11 +143,12 @@ def audit_numeric_claims(
             continue
         seen_claims.add(claim_key)
 
-        # Tolerance match
+        # Adaptive tolerance: looser for ratios/z-scores, tighter for absolutes
+        adaptive_tol = 15.0 if unit in ("%", "σ") else tolerance_pct
         if abs(n) < 1e-9:
             matched = any(abs(c) < 1e-9 for c in context_nums)
         else:
-            tol = abs(n) * (tolerance_pct / 100.0)
+            tol = abs(n) * (adaptive_tol / 100.0)
             matched = any(abs(c - n) <= tol for c in context_nums)
 
         if not matched:
@@ -153,7 +156,7 @@ def audit_numeric_claims(
                 "claim": m.group(0).strip(),
                 "value": n,
                 "unit": unit,
-                "reason": f"no value within ±{tolerance_pct:.0f}% found in context",
+                "reason": f"no value within ±{adaptive_tol:.0f}% found in context",
             })
             if len(orphans) >= max_orphans:
                 break
@@ -195,28 +198,50 @@ def audit_equipment_mentions(
 def audit_citations(
     answer: str,
     retrieved_chunks: list[dict[str, Any]] | None,
-) -> list[dict[str, str]]:
-    """Flag `[source: X §N]` citations in the answer that weren't retrieved."""
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Return (false_citation_flags, uncited_chunk_flags).
+
+    false_citation_flags: citations in the answer that don't match retrieved chunks.
+    uncited_chunk_flags:  retrieved chunks that were never cited in the answer.
+    Both tell operators about RAG grounding quality.
+    """
     if not answer or not retrieved_chunks:
-        return []
+        return [], []
+
     valid = {(str(c.get("source_id")), str(c.get("chunk_idx"))) for c in retrieved_chunks}
 
-    flags: list[dict[str, str]] = []
-    seen: set[tuple[str, str]] = set()
+    false_flags: list[dict[str, str]] = []
+    cited_keys: set[tuple[str, str]] = set()
+    seen_mentions: set[tuple[str, str]] = set()
+
     for m in _CITATION_RE.finditer(answer):
         src = m.group("source")
         idx = m.group("idx")
         key = (src, idx)
-        if key in valid or key in seen:
+        cited_keys.add(key)
+        if key in valid or key in seen_mentions:
             continue
-        seen.add(key)
-        flags.append({
+        seen_mentions.add(key)
+        false_flags.append({
             "mention": m.group(0),
             "source":  src,
             "chunk":   idx,
             "reason":  "citation does not match any retrieved chunk",
         })
-    return flags
+
+    # Chunks that were retrieved but never cited
+    uncited_flags: list[dict[str, str]] = []
+    for c in retrieved_chunks:
+        key = (str(c.get("source_id")), str(c.get("chunk_idx")))
+        if key not in cited_keys:
+            uncited_flags.append({
+                "source_id":  c.get("source_id", "?"),
+                "chunk_idx":  c.get("chunk_idx", "?"),
+                "score":      str(c.get("score", "")),
+                "reason":     "retrieved chunk was not cited in the answer",
+            })
+
+    return false_flags, uncited_flags
 
 
 def audit_language(answer: str, *, max_non_latin_pct: float = 8.0) -> list[dict[str, Any]]:
@@ -302,7 +327,7 @@ def run_postcheck(
 
     num_flags  = audit_numeric_claims(answer, context or {}, summary or {}) if (context or summary) else []
     eq_flags   = audit_equipment_mentions(answer, catalog_ids) if catalog_ids else []
-    cit_flags  = audit_citations(answer, retrieved_chunks)
+    cit_flags, uncited_flags = audit_citations(answer, retrieved_chunks)
     lang_flags = audit_language(answer)
 
     total = len(num_flags) + len(eq_flags) + len(cit_flags) + len(lang_flags)
@@ -327,5 +352,6 @@ def run_postcheck(
         "numeric_flags":   num_flags,
         "equipment_flags": eq_flags,
         "citation_flags":  cit_flags,
+        "uncited_chunks":  uncited_flags,   # retrieved but not cited — informational
         "language_flags":  lang_flags,
     }

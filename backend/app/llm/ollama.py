@@ -73,6 +73,21 @@ def _circuit_record_success() -> None:
             _cb_open_until = 0.0
 
 
+def _num_ctx_for(model_name: str) -> int:
+    """Appropriate context window per model tier.
+
+    Smaller models have smaller native context windows — sending 8192 tokens
+    to a 3B model that was trained with 4096 causes silent truncation or
+    degraded output. Use the largest safe value per tier.
+    """
+    name = (model_name or "").lower()
+    if any(x in name for x in ("3b", "3.2:latest", "phi", "llama3.2:latest")):
+        return 4096
+    if any(x in name for x in ("7b", "8b", "llama3.1")):
+        return 8192
+    return 8192   # 14B+ — keep at 8192 to control VRAM; prompt compression handles the rest
+
+
 def circuit_state() -> dict[str, Any]:
     """Expose breaker state for /health and debugging."""
     with _cb_lock:
@@ -143,7 +158,7 @@ async def stream_generate(
         "stream_generate_start model=%s prompt_chars=%s num_predict=%s request_id=%s",
         target, len(prompt), num_predict, current_request_id.get(),
     )
-    options: dict[str, Any] = {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192}
+    options: dict[str, Any] = {"temperature": temperature, "top_p": 0.9, "num_ctx": _num_ctx_for(target)}
     if num_predict is not None and num_predict > 0:
         options["num_predict"] = num_predict
     payload = {
@@ -206,7 +221,7 @@ async def chat(
     temperature=0.0 default: tool-selection steps should be deterministic.
     """
     target = model or settings.OLLAMA_DEFAULT_MODEL
-    opts: dict[str, Any] = {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192}
+    opts: dict[str, Any] = {"temperature": temperature, "top_p": 0.9, "num_ctx": _num_ctx_for(target)}
     if num_predict is not None and num_predict > 0:
         opts["num_predict"] = num_predict
     payload: dict[str, Any] = {
@@ -262,7 +277,7 @@ async def stream_chat_text(
         "stream_chat_text_start model=%s messages=%s num_predict=%s request_id=%s",
         target, len(messages), num_predict, current_request_id.get(),
     )
-    options: dict[str, Any] = {"temperature": temperature, "top_p": 0.9, "num_ctx": 8192}
+    options: dict[str, Any] = {"temperature": temperature, "top_p": 0.9, "num_ctx": _num_ctx_for(target)}
     if num_predict is not None and num_predict > 0:
         options["num_predict"] = num_predict
     payload = {

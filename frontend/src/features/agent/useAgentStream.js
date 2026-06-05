@@ -134,7 +134,10 @@ export function useAgentStream() {
             } else if (t === "error") {
               setError(frame.detail);
             }
-          } catch { /* skip malformed */ }
+          } catch (e) {
+            if (typeof import !== "undefined" && import.meta?.env?.DEV)
+              console.error("[agent] SSE parse error:", line?.slice(0, 120), e);
+          }
         }
       }
     } catch (e) {

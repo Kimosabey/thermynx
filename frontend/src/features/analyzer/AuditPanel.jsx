@@ -161,6 +161,25 @@ export function AuditPanel({ audit, verification }) {
             </Text>
           )}
 
+          {/* Uncited chunks — informational, not a flag */}
+          {audit?.uncited_chunks?.length > 0 && (
+            <Box mt={3}>
+              <Text fontSize="10px" color="text.muted" fontWeight={600} mb={1}
+                textTransform="uppercase" letterSpacing="0.08em">
+                Uncited sources ({audit.uncited_chunks.length})
+              </Text>
+              <Text fontSize="10px" color="text.muted" mb={2}>
+                These documents were retrieved but not referenced in the answer.
+              </Text>
+              {audit.uncited_chunks.slice(0, 4).map((c, i) => (
+                <Text key={i} fontSize="11px" color="text.muted" mb="2px">
+                  • {c.source_id} §{c.chunk_idx}
+                  {c.score ? <Text as="span" color="text.muted"> (rel {parseFloat(c.score).toFixed(2)})</Text> : null}
+                </Text>
+              ))}
+            </Box>
+          )}
+
           {/* LLM critique */}
           {verification && verification.status === "ok" && (
             <Box mt={audit?.flag_count > 0 ? 4 : 0}>
