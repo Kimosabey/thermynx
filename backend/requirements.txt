@@ -17,3 +17,6 @@ prometheus-fastapi-instrumentator==7.1.0
 arq==0.25.0
 slack-sdk==3.33.0
 statsmodels==0.14.2
+
+# Optional: self-hosted LLM tracing (MIT). Install when LANGFUSE_HOST is configured.
+langfuse>=2.0.0

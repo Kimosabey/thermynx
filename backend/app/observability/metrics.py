@@ -74,6 +74,12 @@ hallucination_flags_total = Counter(
     ["type"],   # type = number | equipment | citation
 )
 
+operator_feedback_total = Counter(
+    "graylinx_operator_feedback_total",
+    "Number of operator 👍/👎 ratings on analyzer answers.",
+    ["verdict"],   # verdict = positive | negative
+)
+
 hallucination_audit_runs_total = Counter(
     "graylinx_hallucination_audit_runs_total",
     "Number of post-generation audit passes that ran, partitioned by clean/dirty.",

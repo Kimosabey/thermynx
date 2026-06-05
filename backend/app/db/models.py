@@ -28,6 +28,9 @@ class AnalysisAudit(Base):
     total_ms: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(20), default="streaming")
     request_id: Mapped[str | None] = mapped_column(String(64))
+    # Operator feedback — set via POST /api/v1/audit/{id}/verdict
+    operator_verdict: Mapped[str | None] = mapped_column(String(16))  # "positive" | "negative"
+    operator_note: Mapped[str | None] = mapped_column(Text)           # optional free-text reason
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

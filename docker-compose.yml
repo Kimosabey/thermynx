@@ -110,6 +110,38 @@ services:
     depends_on: [prometheus, loki]
     restart: unless-stopped
 
+  # ── Langfuse — self-hosted LLM tracing (MIT license) ─────────────────────────
+  # Open-source span-level observability. Traces every LLM call, tool call,
+  # postcheck and critique pass. Zero data egress — runs entirely on-prem.
+  # Dashboard: http://localhost:3200
+  # Docs: https://langfuse.com/docs/deployment/self-host
+  langfuse:
+    image: langfuse/langfuse:latest
+    profiles: [obs]          # start with: docker compose --profile obs up -d
+    ports:
+      - "3200:3000"
+    environment:
+      DATABASE_URL: postgresql://thermynx:${POSTGRES_PASSWORD:-dev}@postgres:5432/thermynx_app
+      NEXTAUTH_URL:    http://localhost:3200
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-changeme-langfuse-secret}
+      SALT:            ${LANGFUSE_SALT:-changeme-langfuse-salt}
+      # Pre-seed a project so the backend can connect without manual UI setup
+      LANGFUSE_INIT_PROJECT_NAME:       thermynx
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-thermynx-dev}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-thermynx-dev}
+      LANGFUSE_INIT_ORG_NAME:           graylinx
+      TELEMETRY_ENABLED: "false"   # no phone-home
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/public/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 volumes:
   postgres_data:
   loki_data:

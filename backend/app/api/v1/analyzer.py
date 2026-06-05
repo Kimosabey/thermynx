@@ -169,6 +169,26 @@ async def _sse_stream(
         ]
         yield f"data: {json.dumps({'type': 'citations', 'chunks': citation_payload})}\n\n"
 
+    # ── Response cache check (Redis, 60s TTL) ────────────────────────────────
+    # Key includes the telemetry window_end so stale answers are never served
+    # after new data arrives. Disabled when TTL=0 or Redis is unavailable.
+    from app.services.answer_cache import get_cached_answer, set_cached_answer
+    _window_end = context.get("fetched_at")  # set by fetch_all_hvac_context
+    if settings.ANALYZER_CACHE_TTL_S > 0:
+        _cached = await get_cached_answer(
+            req.question, req.equipment_id, req.hours, _window_end
+        )
+        if _cached:
+            # Replay cached answer as token frames — same streaming UX
+            words = _cached.split(" ")
+            for i, word in enumerate(words):
+                token = (word + " ") if i < len(words) - 1 else word
+                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+            total_ms = int(time.time() * 1000) - start_ms
+            yield f"data: {json.dumps({'type': 'done', 'audit_id': audit_id, 'model': model, 'total_ms': total_ms, 'cache_hit': True})}\n\n"
+            log.info("analyze_cache_hit audit_id=%s ms=%s", audit_id, total_ms)
+            return
+
     prompt = build_analyze_prompt(
         req.question, context, summary,
         conversation_history=conversation_history,
@@ -217,6 +237,13 @@ async def _sse_stream(
     total_ms = int(time.time() * 1000) - start_ms
     response_text = "".join(full_response)
     yield f"data: {json.dumps({'type': 'done', 'audit_id': audit_id, 'model': model, 'total_ms': total_ms})}\n\n"
+
+    # ── Write to answer cache on success ─────────────────────────────────────
+    if status == "ok" and response_text.strip() and settings.ANALYZER_CACHE_TTL_S > 0:
+        await set_cached_answer(
+            req.question, req.equipment_id, req.hours, _window_end,
+            response_text, ttl_s=settings.ANALYZER_CACHE_TTL_S,
+        )
 
     # ── Post-generation audit (Tier 3 — regex-based, no LLM call) ──────────
     # Fast (<50ms) check for: orphan numeric claims, fabricated equipment names,

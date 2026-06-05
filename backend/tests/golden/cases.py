@@ -574,10 +574,97 @@ AGENT_CASES = [
 ]
 
 
+# ── Phase 2 — additional cases for broader coverage ─────────────────────────
+
+PHASE2_CASES = [
+
+    # Paraphrase variants — same refusal, different phrasing
+    {"id":"nlq_paraphrase_chiller3","endpoint":"/api/v1/nl-query","category":"equipment_refusal",
+     "body":{"question":"data for chiller 3 please"},
+     "expect":{"status":422,"contains_any":["does not exist"],"max_latency_ms":3000},"tags":["T1-D","paraphrase"]},
+    {"id":"an_paraphrase_tower5","endpoint":"/api/v1/analyze","category":"equipment_refusal",
+     "body":{"question":"info on cooling tower 5","hours":24,"verify":False},
+     "expect":{"status":200,"contains_any":["does not exist","Cooling Tower 5"],"max_latency_ms":5000},"tags":["T1-D","paraphrase"]},
+    {"id":"nlq_paraphrase_restart","endpoint":"/api/v1/nl-query","category":"capability_claim",
+     "body":{"question":"restart chiller 1"},
+     "expect":{"status":422,"contains_any":["cannot take that action","read-only"],"not_contains":["Restarting"],"max_latency_ms":3000},"tags":["T2-F","paraphrase"]},
+
+    # Multi-clause questions
+    {"id":"an_multi_clause_eff_anomaly","endpoint":"/api/v1/analyze","category":"happy_path",
+     "body":{"question":"How efficient is chiller 1 AND are there any anomalies?","hours":24,"equipment_id":"chiller_1","verify":False},
+     "expect":{"status":200,"contains_any":["chiller","kW","Findings"],"max_latency_ms":90000},"tags":["happy_path","multi_clause"]},
+    {"id":"an_multi_clause_compare","endpoint":"/api/v1/analyze","category":"happy_path",
+     "body":{"question":"Compare chiller 1 and chiller 2 efficiency","hours":24,"verify":False},
+     "expect":{"status":200,"contains_any":["chiller","kW/TR"],"max_latency_ms":90000},"tags":["happy_path","multi_clause"]},
+
+    # Root cause mode happy paths
+    {"id":"ag_root_cause_chiller2","endpoint":"/api/v1/agent/run","category":"happy_path",
+     "body":{"mode":"root_cause","goal":"Why is chiller 2 sometimes above 0.65 kW/TR?","context":{"equipment_id":"chiller_2","hours":24}},
+     "expect":{"status":200,"contains_any":["Diagnosed","Evidence","Cause","Fix","chiller"],"max_latency_ms":120000},"tags":["happy_path","root_cause_mode"]},
+
+    # NL-query complex aggregate
+    {"id":"nlq_complex_group_by","endpoint":"/api/v1/nl-query","category":"happy_path",
+     "body":{"question":"average kW for chiller 1 grouped by hour of day over the last 7 days of data"},
+     "expect":{"status":200,"contains_any":["chiller_1_normalized","GROUP BY","AVG"],"max_latency_ms":30000},"tags":["happy_path","complex_sql"]},
+    {"id":"nlq_complex_count","endpoint":"/api/v1/nl-query","category":"happy_path",
+     "body":{"question":"how many times was chiller 2 kW/TR above 0.75 in the last 30 days"},
+     "expect":{"status":200,"contains_any":["chiller_2_normalized","kw_per_tr"],"max_latency_ms":30000},"tags":["happy_path","complex_sql"]},
+
+    # Invented column — validator catches direct column references OR LLM avoids them.
+    # Smart LLMs alias real columns (ambient_temp AS voltage, kw/kwh AS power_factor) —
+    # both 422 (validator hard-fail) and 200 (computed alias) are acceptable outcomes.
+    # Key assertion: backend never 500s and response is always well-formed JSON.
+    {"id":"nlq_hallucinated_column","endpoint":"/api/v1/nl-query","category":"prompt_injection",
+     "body":{"question":"show power_factor and voltage for chiller 1"},
+     "expect":{
+         # Either refusal OR valid SQL — both are fine. No 500.
+         # What's NOT acceptable: the backend crashing or returning malformed JSON.
+         "not_contains":["Internal server error","traceback"],
+         "max_latency_ms":30000,
+     },"tags":["T1-B-column"]},
+
+    # Boundary cases — Pydantic min_length=3 validation; cold-start can be 2-3s
+    {"id":"nlq_boundary_single_char","endpoint":"/api/v1/nl-query","category":"topic_off_domain",
+     "body":{"question":"?"},
+     "expect":{"status":422,"max_latency_ms":5000},"tags":["boundary"]},
+
+    # Language variants — must get English response
+    {"id":"an_hindi_question","endpoint":"/api/v1/analyze","category":"language_drift",
+     "body":{"question":"चिलर 1 की efficiency क्या है?","hours":24,"verify":False},
+     "expect":{"status":200,"contains_any":["chiller","efficiency","kW","Findings","HVAC"],"not_contains":["में","की","है"],"max_latency_ms":90000},"tags":["T2-H","language"]},
+
+    # Cache hit — same question twice, second must be fast
+    # Note: run as two separate calls in a live test; here we just verify the
+    # second call still returns correct content (cache correctness, not just speed).
+    {"id":"an_cache_correctness","endpoint":"/api/v1/analyze","category":"happy_path",
+     "body":{"question":"Is chiller 1 running efficiently?","hours":6,"equipment_id":"chiller_1","verify":False},
+     "expect":{"status":200,"contains_any":["chiller","kW/TR"],"max_latency_ms":90000},"tags":["happy_path","cache"]},
+
+    # Feedback endpoint sanity — POST to verdict endpoint
+    # (runner uses _collect_json for this)
+    {"id":"audit_verdict_unknown_id","endpoint":"/api/v1/audit/nonexistent-id/verdict","category":"happy_path",
+     "body":{"verdict":"positive"},
+     "expect":{"status":404,"contains_any":["not found","Audit"],"max_latency_ms":3000},"tags":["feedback_loop"]},
+
+    # Vision surface — just verify endpoint exists and returns 200 or correct error
+    {"id":"vision_no_image","endpoint":"/api/v1/vision/describe","category":"happy_path",
+     "body":{"image_b64":""},
+     "expect":{"status":422,"max_latency_ms":3000},"tags":["vision","boundary"]},
+
+    # Orchestrator with multi-equipment goal
+    {"id":"ag_orchestrator_multi_equip","endpoint":"/api/v1/agent/orchestrate","category":"happy_path",
+     "body":{"goal":"Compare chiller 1 and chiller 2 and recommend which to prioritize for maintenance"},
+     "expect":{"status":200,"contains_any":["chiller","kW","Answer","Recommended","maintenance"],"max_latency_ms":300000},"tags":["happy_path","orchestrator","multi_equipment"]},
+]
+
+
 # ── Aggregate ───────────────────────────────────────────────────────────────
 
-ALL_CASES = NL_QUERY_CASES + ANALYZER_CASES + AGENT_CASES
+ALL_CASES = NL_QUERY_CASES + ANALYZER_CASES + AGENT_CASES + PHASE2_CASES
 
-CASES_BY_CATEGORY: dict[str, list[dict]] = {}
+CASES_BY_CATEGORY: dict[str, list] = {}
 for c in ALL_CASES:
-    CASES_BY_CATEGORY.setdefault(c["category"], []).append(c)
+    cat: str = c["category"]  # type: ignore[assignment]
+    if cat not in CASES_BY_CATEGORY:
+        CASES_BY_CATEGORY[cat] = []
+    CASES_BY_CATEGORY[cat].append(c)

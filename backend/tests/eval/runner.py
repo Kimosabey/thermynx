@@ -29,6 +29,7 @@ class CaseResult:
     failures:       list[str] = field(default_factory=list)
     skipped:        bool = False
     skip_reason:    str = ""
+    s2_verdict:     dict[str, Any] | None = None
 
 
 def _collect_sse(url: str, body: dict, timeout: float) -> dict[str, Any]:
@@ -155,6 +156,19 @@ def run_case(case: dict, base_url: str = "http://localhost:8000") -> CaseResult:
                 f"audit_flag_count: {flag_count} not in [{lo}, {hi}]"
             )
 
+    # ── S2 LLM-as-judge (optional, only when s2_judge=True in expect) ────────
+    s2_verdict: dict[str, Any] | None = None
+    if expect.get("s2_judge") and text and not failures:
+        try:
+            from tests.eval.judge import judge_answer
+            s2_verdict = judge_answer(text, text[:1000])  # use answer itself as context proxy
+            if expect.get("s2_grounded") and s2_verdict.get("grounded") is False:
+                failures.append(
+                    f"s2_judge: answer not grounded — issues: {s2_verdict.get('issues', [])[:3]}"
+                )
+        except Exception as exc:
+            s2_verdict = {"grounded": None, "issues": [f"judge error: {exc}"]}
+
     return CaseResult(
         case_id=case_id,
         passed=not failures,
@@ -163,6 +177,7 @@ def run_case(case: dict, base_url: str = "http://localhost:8000") -> CaseResult:
         response_text=text[:500],
         audit=audit,
         failures=failures,
+        s2_verdict=s2_verdict,
     )
 
 

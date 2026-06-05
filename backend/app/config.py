@@ -63,6 +63,10 @@ class Settings(BaseSettings):
     NL_QUERY_MAX_ROWS:      int   = 1000  # hard row cap (LIMIT)
     VISION_TIMEOUT_S:       float = 90.0  # Ollama vision call timeout
 
+    # Analyzer response cache (Redis) — 60s TTL keeps answers fresh while
+    # eliminating repeated identical questions. Set to 0 to disable.
+    ANALYZER_CACHE_TTL_S: int = 60
+
     # Ollama HTTP timeouts for the agent/analyzer chat paths
     OLLAMA_CHAT_TIMEOUT_S:   float = 60.0   # non-streaming /api/chat (tool calls)
     OLLAMA_STREAM_TIMEOUT_S: float = 120.0  # streaming /api/chat and /api/generate
@@ -106,6 +110,13 @@ class Settings(BaseSettings):
     OLLAMA_MAX_TOKENS_AGENT:   int = 300   # agent final summary
     OLLAMA_MAX_TOKENS_SYNTH:   int = 400   # multi-agent synthesizer
     OLLAMA_MAX_TOKENS_REPORT:  int = 350   # daily report
+
+    # Langfuse self-hosted span tracing (optional, MIT license)
+    # Leave LANGFUSE_HOST empty to disable tracing entirely (default).
+    # Start the Langfuse container: docker compose --profile obs up -d langfuse
+    LANGFUSE_HOST:       str = ""   # e.g. "http://localhost:3200"
+    LANGFUSE_PUBLIC_KEY: str = ""   # pk-lf-...
+    LANGFUSE_SECRET_KEY: str = ""   # sk-lf-...
 
     # Logging — DEBUG | INFO | WARNING | ERROR
     LOG_LEVEL: str = "INFO"

@@ -1,26 +1,28 @@
-"""Read-only audit log endpoints.
+"""Audit log endpoints — read + operator feedback.
 
 Exposes `analysis_audit` + `agent_runs` rows so operators (and compliance
 reviewers) can see every AI request — what was asked, which model
 answered, how long it took, the self-critique verdict status, and a
 hash of the prompt/response for tamper-evident review.
 
-Strictly read-only — there are no write or delete handlers. Anything
-needing mutation should go through the originating analyzer / agent
-flow that owns those rows.
+Write endpoint: POST /audit/{id}/verdict  — records operator thumbs-up/down.
+This is the only mutation allowed on audit rows.
 """
 from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import AgentRun, AnalysisAudit
 from app.db.session import get_pg
 from app.limiter import limiter
-from fastapi import Request
+from app.observability.metrics import operator_feedback_total
 
 router = APIRouter()
 
@@ -234,3 +236,34 @@ async def audit_quality(
         "success_rate":      round(by_status.get("ok", 0) / total, 4),
         "series":            series,
     }
+
+
+# ── Operator feedback endpoint ────────────────────────────────────────────────
+
+class VerdictRequest(BaseModel):
+    verdict: Literal["positive", "negative"]
+    note: str | None = None
+
+
+@router.post("/audit/{audit_id}/verdict")
+@limiter.limit("60/minute")
+async def submit_verdict(
+    request: Request,
+    audit_id: str,
+    body: VerdictRequest,
+    pg: AsyncSession = Depends(get_pg),
+):
+    """Record operator 👍/👎 feedback on an analyzer answer.
+
+    The audit_id is emitted in the SSE `done` frame as `audit_id`.
+    Frontend sends this after the operator clicks a thumbs button.
+    """
+    row = await pg.get(AnalysisAudit, audit_id)
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Audit row {audit_id} not found.")
+    row.operator_verdict = body.verdict
+    if body.note:
+        row.operator_note = body.note[:1000]
+    await pg.commit()
+    operator_feedback_total.labels(verdict=body.verdict).inc()
+    return {"audit_id": audit_id, "verdict": body.verdict, "recorded": True}

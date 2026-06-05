@@ -12,6 +12,7 @@ import {
   CitationDrawer,
 } from "./CitationFootnotes";
 import { AuditPanel } from "./AuditPanel";
+import { FeedbackBar } from "./FeedbackBar";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
@@ -553,6 +554,13 @@ export default function AIAnalyzer() {
               {!streaming && (auditResult || verification) && (
                 <Box px={{ base: 4, md: 6 }} pt={2}>
                   <AuditPanel audit={auditResult} verification={verification} />
+                </Box>
+              )}
+
+              {/* Feedback bar — thumbs up/down after streaming completes */}
+              {!streaming && streamMeta?.audit_id && (
+                <Box px={{ base: 4, md: 6 }}>
+                  <FeedbackBar auditId={streamMeta.audit_id} />
                 </Box>
               )}
 
