@@ -289,7 +289,7 @@ HARD RULES (non-negotiable):
   or notifications sent. The report describes what happened, not what was done in response.
 - Use ONLY facts reflected in the KPI/anomaly blocks below; do not invent numbers, equipment
   names, or events. If a value isn't in the input, say "data unavailable" rather than guess.
-- kW/TR bands are FIXED — excellent <0.55, good <0.65, fair <0.85, poor ≥0.85. Do not
+- kW/TR bands are FIXED — excellent <0.55, good <0.65, fair <0.75, poor <0.85, critical ≥0.85. Do not
   reclassify equipment yourself; use the band already provided in the KPI block.
 
 Output rules:
