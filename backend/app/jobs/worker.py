@@ -16,11 +16,12 @@ from app.jobs.anomaly_scan import run_scan_job
 from app.jobs.slack_forwarder import run_slack_forward_job
 from app.jobs.pm_scheduler import run_pm_scheduler_job
 from app.jobs.digest_job import run_digest_job
+from app.jobs.predictive_pm import run_predictive_pm_job
 from app.config import settings as app_settings
 
 
 class WorkerSettings:
-    functions  = [run_scan_job, run_slack_forward_job, run_pm_scheduler_job, run_digest_job]
+    functions  = [run_scan_job, run_slack_forward_job, run_pm_scheduler_job, run_digest_job, run_predictive_pm_job]
     cron_jobs  = [
         # Every 5 minutes — anomaly persistence scan
         arq_cron(
@@ -46,6 +47,12 @@ class WorkerSettings:
             run_digest_job,
             hour={app_settings.DIGEST_CRON_HOUR_UTC},
             minute={app_settings.DIGEST_CRON_MINUTE_UTC},
+            run_at_startup=False,
+        ),
+        # Daily 02:35 UTC — predictive PM proposes WOs for degrading-trend assets
+        arq_cron(
+            run_predictive_pm_job,
+            hour={2}, minute={35},
             run_at_startup=False,
         ),
     ]

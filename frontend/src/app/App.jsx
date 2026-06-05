@@ -16,6 +16,7 @@ const AgentHub      = lazy(() => import("../features/agent"));
 const Forecast      = lazy(() => import("../features/forecast"));
 const Compare       = lazy(() => import("../features/compare"));
 const Maintenance   = lazy(() => import("../features/maintenance"));
+const Predictive    = lazy(() => import("../features/predictive"));
 const CostAnalytics = lazy(() => import("../features/cost"));
 const Optimizer     = lazy(() => import("../features/optimizer"));
 const Reports       = lazy(() => import("../features/reports"));
@@ -54,6 +55,7 @@ export default function App() {
         <Route path="forecast"    element={<Suspense fallback={<PageFallback />}><Forecast /></Suspense>} />
         <Route path="compare"     element={<Suspense fallback={<PageFallback />}><Compare /></Suspense>} />
         <Route path="maintenance" element={<Suspense fallback={<PageFallback />}><Maintenance /></Suspense>} />
+        <Route path="predictive"  element={<Suspense fallback={<PageFallback />}><Predictive /></Suspense>} />
         <Route path="topology"    element={<Suspense fallback={<PageFallback />}><Topology /></Suspense>} />
         <Route path="cost"        element={<Suspense fallback={<PageFallback />}><CostAnalytics /></Suspense>} />
         <Route path="optimizer"   element={<Suspense fallback={<PageFallback />}><Optimizer /></Suspense>} />
