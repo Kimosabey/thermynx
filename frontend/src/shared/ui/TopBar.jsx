@@ -9,7 +9,7 @@ import {
   LayoutDashboard, BrainCircuit, TriangleAlert,
   TrendingUp, Columns2, Wrench, IndianRupee, FileText,
   BookOpen, Zap, Sparkles, BellRing, Network, Camera, ScrollText,
-  Server, ClipboardList, ChevronDown, Menu as MenuIcon, X, Sun, Moon, Sunrise, Library,
+  Server, ClipboardList, ChevronDown, Menu as MenuIcon, X, Sun, Moon, Sunrise, Library, Gauge,
 } from "lucide-react";
 import { GraylinxLogo } from "./GraylinxLogo";
 
@@ -17,7 +17,7 @@ const MotionBox = motion.create(Box);
 
 const ICON = { size: 17, strokeWidth: 1.75 };
 
-// Same nav model as the retired sidebar — 5 groups, 20 destinations.
+// Same nav model as the retired sidebar — 5 groups, 21 destinations.
 const NAV_GROUPS = [
   {
     label: "Monitor",
@@ -45,6 +45,7 @@ const NAV_GROUPS = [
       { label: "Work Orders", to: "/work-orders", Icon: ClipboardList },
       { label: "Topology",    to: "/topology",    Icon: Network },
       { label: "Cost",        to: "/cost",        Icon: IndianRupee },
+      { label: "Optimizer",   to: "/optimizer",   Icon: Gauge },
       { label: "Reports",     to: "/reports",     Icon: FileText },
     ],
   },

@@ -15,6 +15,7 @@ from app.api.v1 import (
     reports,
     digest,
     knowledge,
+    optimizer,
     threads,
     rag,
     capabilities,
@@ -45,6 +46,7 @@ router.include_router(cooling_tower.router, tags=["Cooling Tower Optimizer"])
 router.include_router(reports.router,       tags=["Reports"])
 router.include_router(digest.router,         tags=["Daily Digest"])
 router.include_router(knowledge.router,      tags=["Past Fixes"])
+router.include_router(optimizer.router,      tags=["Energy Optimizer"])
 router.include_router(threads.router,       tags=["Threads"])
 router.include_router(rag.router,           tags=["RAG"])
 router.include_router(capabilities.router,  tags=["Capabilities"])

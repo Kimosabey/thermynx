@@ -26,7 +26,18 @@
       "PowerShell($conns = Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue; foreach \\($c in $conns\\) { try { Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue } catch {} }; Start-Sleep -Seconds 3; Write-Output \"port 8000 cleared\")",
       "Bash(curl -s --max-time 2 http://localhost:8000/api/v1/health)",
       "Bash(curl -s --max-time 2 http://localhost:5173)",
-      "Bash(curl -s --max-time 3 http://localhost:3100/ready)"
+      "Bash(curl -s --max-time 3 http://localhost:3100/ready)",
+      "Bash(\"../.venv/Scripts/python.exe\" -c \"import langfuse; print\\('langfuse', langfuse.__version__\\)\")",
+      "Bash(Get-ChildItem -Path \"D:\\\\Harshan\\\\HVAC AI Operations Intelligence Platform\\\\backend\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(python -m uvicorn main:app --port 8001 --log-level info)",
+      "Bash(echo \"launched pid $!\")",
+      "Bash(python -c \"import sys; sys.path.insert\\(0,'.'\\); import app.prompts.hvac_prompts; print\\('import OK'\\)\")",
+      "Bash(../.venv/Scripts/python -c \"import main; print\\('main:app imports OK — app =', type\\(main.app\\).__name__\\)\")",
+      "Bash(python -m uvicorn main:app --port 8001 --log-level warning)",
+      "Bash(curl -s -m 10 http://localhost:8001/api/v1/digest/latest)",
+      "Bash(curl -s -m 10 \"http://localhost:8001/api/v1/digest?limit=5\")"
     ]
   }
 }

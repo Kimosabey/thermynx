@@ -17,6 +17,7 @@ const Forecast      = lazy(() => import("../features/forecast"));
 const Compare       = lazy(() => import("../features/compare"));
 const Maintenance   = lazy(() => import("../features/maintenance"));
 const CostAnalytics = lazy(() => import("../features/cost"));
+const Optimizer     = lazy(() => import("../features/optimizer"));
 const Reports       = lazy(() => import("../features/reports"));
 const Digest        = lazy(() => import("../features/digest"));
 const RAGKnowledge  = lazy(() => import("../features/rag"));
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="maintenance" element={<Suspense fallback={<PageFallback />}><Maintenance /></Suspense>} />
         <Route path="topology"    element={<Suspense fallback={<PageFallback />}><Topology /></Suspense>} />
         <Route path="cost"        element={<Suspense fallback={<PageFallback />}><CostAnalytics /></Suspense>} />
+        <Route path="optimizer"   element={<Suspense fallback={<PageFallback />}><Optimizer /></Suspense>} />
         <Route path="reports"     element={<Suspense fallback={<PageFallback />}><Reports /></Suspense>} />
         <Route path="digest"      element={<Suspense fallback={<PageFallback />}><Digest /></Suspense>} />
         <Route path="agent"       element={<Navigate to="/ai?mode=agent" replace />} />
