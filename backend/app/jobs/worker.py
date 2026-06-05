@@ -15,11 +15,12 @@ from arq.cron import cron as arq_cron
 from app.jobs.anomaly_scan import run_scan_job
 from app.jobs.slack_forwarder import run_slack_forward_job
 from app.jobs.pm_scheduler import run_pm_scheduler_job
+from app.jobs.digest_job import run_digest_job
 from app.config import settings as app_settings
 
 
 class WorkerSettings:
-    functions  = [run_scan_job, run_slack_forward_job, run_pm_scheduler_job]
+    functions  = [run_scan_job, run_slack_forward_job, run_pm_scheduler_job, run_digest_job]
     cron_jobs  = [
         # Every 5 minutes — anomaly persistence scan
         arq_cron(
@@ -38,6 +39,14 @@ class WorkerSettings:
             run_pm_scheduler_job,
             hour={2}, minute={5},
             run_at_startup=True,    # so a fresh install gets its first PM batch immediately
+        ),
+        # Daily morning plant-health digest (built + pushed to Slack).
+        # Default 00:30 UTC = 06:00 IST; override via DIGEST_CRON_*_UTC env.
+        arq_cron(
+            run_digest_job,
+            hour={app_settings.DIGEST_CRON_HOUR_UTC},
+            minute={app_settings.DIGEST_CRON_MINUTE_UTC},
+            run_at_startup=False,
         ),
     ]
     redis_settings = RedisSettings.from_dsn(app_settings.REDIS_URL)

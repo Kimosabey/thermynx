@@ -130,6 +130,17 @@ async def transition(
         wo = await svc.transition_state(pg, wo_id, to_state=body.to_state, actor=body.actor, notes=body.notes)
     except svc.WorkOrderError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+
+    # Tribal-knowledge flywheel: when a WO is resolved, capture the fix as a
+    # searchable `incident` embedding. Best-effort — never fail the transition.
+    if body.to_state == "resolved":
+        try:
+            from app.ai import knowledge
+            await knowledge.capture_resolution(pg, wo, resolution_note=body.notes)
+        except Exception as e:  # pragma: no cover
+            from app.log import get_logger
+            get_logger("api.work_orders").warning("resolution_capture_failed wo=%s err=%s", wo_id, e)
+
     return svc.serialise(wo)
 
 

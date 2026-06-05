@@ -172,6 +172,33 @@ class Technician(Base):
     created_at:       Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class DailyDigest(Base):
+    """A persisted morning plant-health digest. Generated once daily by the
+    arq cron (`jobs/digest_job.py`), pushed to Slack, and shown on the Digest
+    page. Stores the *computed* numbers separately from the LLM narrative so the
+    UI renders real figures (never hallucinated ones) — the model only writes
+    `headline` + `recommendation`."""
+    __tablename__ = "daily_digest"
+
+    id:              Mapped[str] = mapped_column(String(36), primary_key=True)
+    period_from:     Mapped[str] = mapped_column(String(32))
+    period_to:       Mapped[str] = mapped_column(String(32))
+    hours:           Mapped[int] = mapped_column(Integer, default=24)
+    # Computed KPIs (deterministic — not from the LLM)
+    total_kwh:       Mapped[float | None] = mapped_column(Float)
+    total_cost_inr:  Mapped[float | None] = mapped_column(Float)
+    anomaly_count:   Mapped[int] = mapped_column(Integer, default=0)
+    critical_count:  Mapped[int] = mapped_column(Integer, default=0)
+    worst_equipment: Mapped[str | None] = mapped_column(String(64))
+    worst_kw_per_tr: Mapped[float | None] = mapped_column(Float)
+    # LLM narrative (grounded in the KPIs above)
+    headline:        Mapped[str | None] = mapped_column(Text)
+    recommendation:  Mapped[str | None] = mapped_column(Text)
+    markdown:        Mapped[str | None] = mapped_column(Text)
+    status:          Mapped[str] = mapped_column(String(16), default="ok")  # ok | degraded
+    created_at:      Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+
+
 class PMTemplate(Base):
     """Recurring preventive-maintenance template. The scheduler reads these
     once a day and creates work orders for each (equipment, template) pair

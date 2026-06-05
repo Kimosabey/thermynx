@@ -18,7 +18,9 @@ const Compare       = lazy(() => import("../features/compare"));
 const Maintenance   = lazy(() => import("../features/maintenance"));
 const CostAnalytics = lazy(() => import("../features/cost"));
 const Reports       = lazy(() => import("../features/reports"));
+const Digest        = lazy(() => import("../features/digest"));
 const RAGKnowledge  = lazy(() => import("../features/rag"));
+const PastFixes     = lazy(() => import("../features/knowledge"));
 const NLQuery       = lazy(() => import("../features/nl_query"));
 const Alarms        = lazy(() => import("../features/alarms"));
 const Topology      = lazy(() => import("../features/topology"));
@@ -54,9 +56,11 @@ export default function App() {
         <Route path="topology"    element={<Suspense fallback={<PageFallback />}><Topology /></Suspense>} />
         <Route path="cost"        element={<Suspense fallback={<PageFallback />}><CostAnalytics /></Suspense>} />
         <Route path="reports"     element={<Suspense fallback={<PageFallback />}><Reports /></Suspense>} />
+        <Route path="digest"      element={<Suspense fallback={<PageFallback />}><Digest /></Suspense>} />
         <Route path="agent"       element={<Navigate to="/ai?mode=agent" replace />} />
         <Route path="rag"         element={<Suspense fallback={<PageFallback />}><RAGKnowledge /></Suspense>} />
         <Route path="know"        element={<Suspense fallback={<PageFallback />}><RAGKnowledge /></Suspense>} />
+        <Route path="past-fixes"  element={<Suspense fallback={<PageFallback />}><PastFixes /></Suspense>} />
         <Route path="vision"      element={<Suspense fallback={<PageFallback />}><Vision /></Suspense>} />
         <Route path="audit"       element={<Suspense fallback={<PageFallback />}><Audit /></Suspense>} />
         <Route path="system"      element={<Suspense fallback={<PageFallback />}><SystemPage /></Suspense>} />

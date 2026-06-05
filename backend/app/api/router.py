@@ -13,6 +13,8 @@ from app.api.v1 import (
     cost,
     cooling_tower,
     reports,
+    digest,
+    knowledge,
     threads,
     rag,
     capabilities,
@@ -41,6 +43,8 @@ router.include_router(maintenance.router,   tags=["Predictive Maintenance"])
 router.include_router(cost.router,          tags=["Cost Analytics"])
 router.include_router(cooling_tower.router, tags=["Cooling Tower Optimizer"])
 router.include_router(reports.router,       tags=["Reports"])
+router.include_router(digest.router,         tags=["Daily Digest"])
+router.include_router(knowledge.router,      tags=["Past Fixes"])
 router.include_router(threads.router,       tags=["Threads"])
 router.include_router(rag.router,           tags=["RAG"])
 router.include_router(capabilities.router,  tags=["Capabilities"])
