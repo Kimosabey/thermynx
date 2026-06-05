@@ -235,7 +235,7 @@ export default function AgentHub() {
   };
 
   function handleRun() {
-    if (!goal.trim()) return;
+    if (goal.trim().length < 3) return;
     const ctx = {};
     if (selectedEq) ctx.equipment_id = selectedEq;
     if (hours)      ctx.hours        = hours;
@@ -249,7 +249,7 @@ export default function AgentHub() {
         subtitle={
           <>
             Autonomous HVAC intelligence — 5 specialist agents powered by{" "}
-            <Text as="span" color="accent.primary" fontWeight={600}>qwen2.5:14b</Text>
+            <Text as="span" color="accent.primary" fontWeight={600}>phi4 & mistral</Text>
           </>
         }
         icon={
@@ -455,7 +455,7 @@ export default function AgentHub() {
                     tone="primary"
                     size="md"
                     onClick={handleRun}
-                    isDisabled={!goal.trim() || running}
+                    isDisabled={goal.trim().length < 3 || running}
                   >
                     {running ? "Agent working…" : `Run ${mode?.label}`}
                   </MovingBorder>

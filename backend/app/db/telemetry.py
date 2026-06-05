@@ -180,6 +180,32 @@ async def fetch_all_hvac_context(
     }
 
 
+MIN_TR_FOR_EFFICIENCY = 10.0  # below this load kW/TR is noise (matches model-eval/datasets.py)
+
+
+def gated_avg_kw_per_tr(rows: list[dict], min_tr: float = MIN_TR_FOR_EFFICIENCY) -> float | None:
+    """Average kW/TR over running, meaningfully-loaded samples only.
+
+    kW/TR = kW / TR explodes toward infinity as TR → 0, so an ungated mean is
+    dominated by near-idle samples and reads as absurd (e.g. 4.5 kW/TR). Gating
+    on is_running + tr > min_tr matches the gate used in model-eval/datasets.py.
+    """
+    vals: list[float] = []
+    for r in rows:
+        if not r.get("is_running"):
+            continue
+        tr, kp = r.get("tr"), r.get("kw_per_tr")
+        if tr is None or kp is None:
+            continue
+        try:
+            if float(tr) <= min_tr:
+                continue
+            vals.append(float(kp))
+        except (TypeError, ValueError):
+            continue
+    return round(sum(vals) / len(vals), 3) if vals else None
+
+
 async def compute_summary(data: dict[str, Any]) -> dict[str, Any]:
     def _avg(rows, key):
         vals = [float(r[key]) for r in rows if r.get(key) is not None]  # float() handles Decimal
@@ -204,7 +230,7 @@ async def compute_summary(data: dict[str, Any]) -> dict[str, Any]:
             "running_pct":          _running_pct(rows),
             "avg_kw":               _avg(rows, "kw"),
             "avg_tr":               _avg(rows, "tr"),
-            "avg_kw_per_tr":        _avg(rows, "kw_per_tr"),
+            "avg_kw_per_tr":        gated_avg_kw_per_tr(rows),  # load-gated — ignores near-idle samples
             "avg_chw_delta_t":      _avg(rows, "chw_delta_t"),
             "avg_chiller_load":     _avg(rows, "chiller_load"),
             "latest_ambient_temp":  _latest(rows, "ambient_temp"),

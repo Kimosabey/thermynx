@@ -179,7 +179,7 @@ export default function AIAnalyzer() {
   }, [streamContent, streaming]);
 
   async function handleAnalyze() {
-    if (!question.trim()) return;
+    if (question.trim().length < 3) return;
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -429,7 +429,7 @@ export default function AIAnalyzer() {
                 borderRadius="9px" fontSize="xs" fontWeight={600}
                 px={5}
                 minH="40px"
-                isDisabled={!question.trim()}
+                isDisabled={question.trim().length < 3}
               >
                 Analyze
               </Button>
