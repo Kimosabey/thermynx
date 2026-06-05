@@ -44,32 +44,8 @@ _AUDIT_TIMEOUT_S = 25.0
 _AUDITOR_TEMPERATURE = 0.0
 
 
-_AUDITOR_SYSTEM = """You are a fact-checking auditor for an HVAC operations briefing.
-
-You receive:
-  1. SUMMARY: the JSON telemetry summary the analyst was given.
-  2. ANSWER: the analyst's response text.
-
-Your job: identify every concrete numeric/quantitative claim in ANSWER and
-classify it against SUMMARY. Output ONLY a JSON object of the shape:
-
-{
-  "verified":   [{"claim": "...", "evidence": "..."}],
-  "suspicious": [{"claim": "...", "expected": "...", "found_in_text": "..."}],
-  "unverified": [{"claim": "...", "reason": "no source data for this metric"}],
-  "overall":    "ok" | "review" | "fail",
-  "summary":    "one-sentence operator-facing verdict"
-}
-
-Rules:
-  * Treat percentages, temperatures, kW/TR, kWh, currency, run-hours as claims.
-  * If ANSWER cites a number that DOES match SUMMARY within 3% tolerance, it is `verified`.
-  * If ANSWER cites a number that doesn't match SUMMARY or is invented, it is `suspicious`.
-  * If ANSWER cites a number for which SUMMARY has no row, it is `unverified`.
-  * Trend words ("higher", "spiked", "stable") without numbers — ignore.
-  * `overall` is "fail" if any item is in `suspicious`, "review" if only unverified, else "ok".
-  * Be concise. Each claim 1 sentence max. No prose outside the JSON.
-"""
+# Auditor system prompt lives in app/ai/prompts/agent_prompts.py.
+from app.ai.prompts.agent_prompts import AUDITOR_SYSTEM as _AUDITOR_SYSTEM  # noqa: E402
 
 
 def _extract_numeric_claims(text: str) -> list[str]:
@@ -90,30 +66,8 @@ def _extract_numeric_claims(text: str) -> list[str]:
     return out[:20]
 
 
-def _parse_auditor_json(raw: str) -> dict[str, Any] | None:
-    """Robust JSON parse — strips fences, finds first '{...}' span."""
-    if not raw:
-        return None
-    raw = raw.strip()
-    if raw.startswith("```"):
-        raw = re.sub(r"^```(?:json)?\n?", "", raw)
-        raw = re.sub(r"```\s*$", "", raw)
-    # Find first balanced JSON object
-    start = raw.find("{")
-    if start < 0:
-        return None
-    depth = 0
-    for i in range(start, len(raw)):
-        if raw[i] == "{":
-            depth += 1
-        elif raw[i] == "}":
-            depth -= 1
-            if depth == 0:
-                try:
-                    return json.loads(raw[start : i + 1])
-                except json.JSONDecodeError:
-                    return None
-    return None
+# Auditor JSON parsing uses the shared util (was a near-dup of the planner's parser).
+from app.ai.json_utils import parse_first_json_object as _parse_auditor_json  # noqa: E402
 
 
 async def verify_answer(

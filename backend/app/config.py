@@ -66,7 +66,10 @@ class Settings(BaseSettings):
     # These used to be hardcoded module-level constants; moving them here lets
     # operators tune without touching code or restarting the container.
     AGENT_MAX_STEPS:        int   = 8      # max ReAct iterations before forced stop
-    NL_QUERY_LLM_TIMEOUT_S: float = 25.0  # Ollama SQL generation timeout
+    NL_QUERY_LLM_TIMEOUT_S: float = 40.0  # Ollama SQL generation timeout (bumped 25->40:
+                                          # SQL moved to mistral-small3.2 (24B) which is slower
+                                          # than the old llama3.1:8b, esp. with model-swapping on
+                                          # the 20GB box; complex queries were crossing 25s)
     NL_QUERY_DB_TIMEOUT_S:  float = 10.0  # MySQL execution timeout
     NL_QUERY_MAX_ROWS:      int   = 1000  # hard row cap (LIMIT)
     VISION_TIMEOUT_S:       float = 90.0  # Ollama vision call timeout
