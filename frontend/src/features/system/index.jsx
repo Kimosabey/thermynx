@@ -58,7 +58,7 @@ const SERVICES = [
   {
     group: "AI Runtime",
     items: [
-      { Icon: Cpu,          label: "Ollama API",        url: "http://100.125.103.28:11434",                  port: 11434, healthUrl: "http://100.125.103.28:11434/api/tags",         role: "On-prem LLM server (qwen2.5:14b)" },
+      { Icon: Cpu,          label: "Ollama API",        url: "http://100.125.103.28:11434",                  port: 11434, healthUrl: "http://100.125.103.28:11434/api/tags",         role: "On-prem LLM server (phi4 + mistral-small3.2)" },
       { Icon: Cpu,          label: "Ollama models",     url: "http://100.125.103.28:11434/api/tags",         port: 11434, healthUrl: "http://100.125.103.28:11434/api/tags",         role: "List installed models" },
     ],
   },
@@ -228,6 +228,85 @@ function SummaryBar({ status, poll, lastChecked, loading }) {
   );
 }
 
+// ── AI model roster (per-role map from GET /api/v1/health) ────────────────────
+function useModelInfo() {
+  const [info, setInfo] = useState(null); // { host, default_model, connected, model_roles: [] }
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/v1/health", { signal: AbortSignal.timeout(6000) })
+      .then(r => r.json())
+      .then(d => { if (alive) setInfo(d?.ollama ?? null); })
+      .catch(() => { if (alive) setInfo(null); });
+    return () => { alive = false; };
+  }, []);
+  return info;
+}
+
+function ModelsCard() {
+  const info = useModelInfo();
+  const roles = info?.model_roles ?? [];
+
+  return (
+    <Box mb={5}>
+      <Eyebrow mb={2}>AI Models — which model runs where</Eyebrow>
+      <GlassCard p={2}>
+        {/* header row */}
+        <Flex align="center" gap={3} px={3} py="8px" display={{ base: "none", md: "flex" }}>
+          <Text flex="0 0 150px" fontSize="10px" fontWeight={700} color="text.faint"
+            textTransform="uppercase" letterSpacing="0.08em">Role</Text>
+          <Text flex="0 0 200px" fontSize="10px" fontWeight={700} color="text.faint"
+            textTransform="uppercase" letterSpacing="0.08em">Model</Text>
+          <Text flex="1" fontSize="10px" fontWeight={700} color="text.faint"
+            textTransform="uppercase" letterSpacing="0.08em">Purpose</Text>
+          <Text flex="0 0 110px" fontSize="10px" fontWeight={700} color="text.faint"
+            textTransform="uppercase" letterSpacing="0.08em">Origin</Text>
+        </Flex>
+
+        {roles.length === 0 && (
+          <Flex align="center" gap={2} px={3} py={3} color="text.muted">
+            <Spinner size="xs" /><Text fontSize="sm">Loading model roster from backend…</Text>
+          </Flex>
+        )}
+
+        {roles.map((r, i) => (
+          <MotionBox key={r.role} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18, delay: Math.min(i, 12) * 0.02 }}>
+            <Flex align="center" gap={3} px={3} py="10px" borderRadius="10px"
+              _hover={{ bg: "rgba(31,63,254,0.04)" }} transition="background 0.15s"
+              flexWrap={{ base: "wrap", md: "nowrap" }}>
+              <Flex flex={{ base: "1 0 100%", md: "0 0 150px" }} align="center" gap={2} minW={0}>
+                <Box w="28px" h="28px" borderRadius="8px" flexShrink={0}
+                  display="flex" alignItems="center" justifyContent="center"
+                  bg="accent.glow" border="1px solid" borderColor="border.brand" color="accent.primary">
+                  <Cpu size={14} strokeWidth={2} />
+                </Box>
+                <Text fontSize="sm" fontWeight={700} color="text.primary">{r.role}</Text>
+              </Flex>
+              <Text flex={{ base: "1 0 auto", md: "0 0 200px" }} fontSize="13px" fontFamily="mono"
+                color="text.brand" fontWeight={600} noOfLines={1} title={r.model}>{r.model}</Text>
+              <Text flex="1" fontSize="12px" color="text.muted" minW={0} noOfLines={1}>{r.purpose}</Text>
+              <Badge flex={{ base: "0 0 auto", md: "0 0 110px" }} w="fit-content" fontSize="9px"
+                bg="bg.chip" color="text.muted" border="1px solid" borderColor="border.subtle"
+                borderRadius="6px" px={2} py="2px">{r.origin}</Badge>
+            </Flex>
+          </MotionBox>
+        ))}
+
+        {info && (
+          <Flex px={3} py="8px" gap={2} align="center" flexWrap="wrap"
+            borderTop="1px solid" borderColor="border.subtle" mt={1}>
+            <Text fontSize="11px" color="text.faint">
+              Host <Text as="span" fontFamily="mono" color="text.muted">{info.host}</Text>
+              {"  ·  "}fallback <Text as="span" fontFamily="mono" color="text.muted">{info.default_model}</Text>
+              {"  ·  "}all non-Chinese-origin (Microsoft · Mistral · Meta · Nomic)
+            </Text>
+          </Flex>
+        )}
+      </GlassCard>
+    </Box>
+  );
+}
+
 export default function SystemPage() {
   const { status, poll, lastChecked } = useLiveStatus();
   const loading = Object.values(status).some(s => s === "pending");
@@ -240,6 +319,8 @@ export default function SystemPage() {
         subtitle="Every running service, port, and endpoint — live status, one click to open or copy"
         actions={<SummaryBar status={status} poll={poll} lastChecked={lastChecked} loading={loading} />}
       />
+
+      <ModelsCard />
 
       {SERVICES.map((group) => (
         <Box key={group.group} mb={5}>

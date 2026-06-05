@@ -1,24 +1,15 @@
-import { useState, useEffect, useRef } from "react";
-import { Flex, Box, IconButton, Text, useBreakpointValue } from "@chakra-ui/react";
+import { useEffect, useRef } from "react";
+import { Flex, Box } from "@chakra-ui/react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { Menu } from "lucide-react";
-import Sidebar from "../shared/ui/Sidebar";
+import TopBar from "../shared/ui/TopBar";
 import PageTransition from "../shared/ui/PageTransition";
-import { GraylinxLogo } from "../shared/ui/GraylinxLogo";
 import AuroraBackground from "../shared/ui/AuroraBackground";
 import ServiceStatusBar from "../shared/ui/ServiceStatusBar";
 
 export default function Layout() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const isDockedSidebar = useBreakpointValue({ base: false, xl: true }, { fallback: false });
-  const useDrawerNav = !isDockedSidebar;
   const location = useLocation();
   const mainRef = useRef(null);
-
-  useEffect(() => {
-    if (useDrawerNav) setMobileOpen(false);
-  }, [location.pathname, useDrawerNav]);
 
   // Scroll-reset on route change (UX D5)
   useEffect(() => {
@@ -26,8 +17,8 @@ export default function Layout() {
   }, [location.pathname]);
 
   return (
-    <Flex h="100vh" bg="bg.canvas" align="stretch" overflow="hidden">
-      <Sidebar overlay={useDrawerNav} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
+    <Flex direction="column" h="100vh" bg="bg.canvas" overflow="hidden">
+      <TopBar />
 
       <Box
         ref={mainRef}
@@ -38,7 +29,6 @@ export default function Layout() {
         minW={0}
         overflow="auto"
         overflowX="hidden"
-        minH="100vh"
         position="relative"
         bg="bg.canvas"
         sx={{ "&:focus": { outline: "none" } }}
@@ -56,32 +46,6 @@ export default function Layout() {
         >
           <AuroraBackground />
         </Box>
-        {/* Mobile top bar */}
-        {useDrawerNav && (
-          <Flex
-            px={4} py="11px"
-            borderBottom="1px solid"
-            borderColor="border.subtle"
-            align="center" gap={3}
-            bg="bg.surface"
-            position="sticky" top={0} zIndex={5}
-            boxShadow="0 1px 0 rgba(31,63,254,0.06)"
-          >
-            <IconButton
-              aria-label="Open navigation menu"
-              icon={<Menu size={18} strokeWidth={2} />}
-              variant="ghost" size="sm"
-              onClick={() => setMobileOpen(true)}
-              color="text.secondary"
-              minW="44px"
-              h="44px"
-            />
-            <Flex align="center" gap={2}>
-              <GraylinxLogo variant="mark" size={26} />
-              <GraylinxLogo variant="wordmark" color="text.primary" muted="text.muted" tagline={null} />
-            </Flex>
-          </Flex>
-        )}
 
         <Box position="relative" zIndex={1}>
           <AnimatePresence mode="wait">
