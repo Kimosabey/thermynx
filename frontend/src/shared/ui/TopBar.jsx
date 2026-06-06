@@ -248,16 +248,42 @@ export default function TopBar() {
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <Flex align="center" gap={3} px={{ base: 4, lg: 6 }} h="60px">
-        {/* Brand */}
-        <Flex align="center" gap={2} flexShrink={0}>
-          <GraylinxLogo variant="mark" height={26} />
-          <Box display={{ base: "none", sm: "block" }}>
-            <GraylinxLogo
-              variant="wordmark"
+        {/* Brand — Graylinx mark + THERMYNX product lockup */}
+        <Flex align="center" gap={2.5} flexShrink={0} as={NavLink} to="/dashboard" aria-label="THERMYNX — home">
+          <GraylinxLogo variant="mark" height={24} />
+          <Box display={{ base: "none", sm: "block" }} lineHeight="1.05">
+            <Text
+              as="span"
+              display="block"
+              fontFamily="heading"
+              fontWeight={800}
+              fontSize="17px"
+              letterSpacing="-0.02em"
               color="text.primary"
-              muted="text.muted"
-              tagline={null}
-            />
+              sx={{
+                backgroundImage: "linear-gradient(90deg, #1F3FFE 0%, #6671FF 45%, #1F3FFE 100%)",
+                backgroundSize: "200% 100%",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                animation: "thxSheen 5.5s linear infinite",
+                "@keyframes thxSheen": {
+                  "0%": { backgroundPosition: "200% 0" },
+                  "100%": { backgroundPosition: "-200% 0" },
+                },
+              }}
+            >
+              THERMYNX
+            </Text>
+            <Text
+              fontSize="9px"
+              color="text.muted"
+              letterSpacing="0.16em"
+              textTransform="uppercase"
+              mt="1px"
+            >
+              by Graylinx · HVAC Intelligence
+            </Text>
           </Box>
         </Flex>
 
