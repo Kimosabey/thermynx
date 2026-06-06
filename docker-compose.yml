@@ -17,6 +17,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped   # survive Docker resource pressure / other-stack churn
 
   redis:
     image: redis:7-alpine
@@ -28,6 +29,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    restart: unless-stopped   # survive Docker resource pressure / other-stack churn
 
   # Web UI — browse keys / TTL / pub-sub ( http://localhost:8081 )
   redis-commander:
