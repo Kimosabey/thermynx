@@ -4,7 +4,7 @@ import { BellRing, TriangleAlert, Activity, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
-import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
+import GlassSelect from "../../shared/ui/GlassSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import Eyebrow from "../../shared/ui/Eyebrow";
@@ -60,19 +60,21 @@ export default function AlarmsPage() {
         subtitle="Unified anomaly + maintenance alerts with severity tiers"
         actions={
           <Flex gap={3} flexWrap="wrap">
-            <Select size="sm" value={severity} onChange={(e) => setSeverity(e.target.value)} {...surfaceSelectProps} w="140px" aria-label="Severity">
-              <option value="">All severities</option>
-              <option value="critical">Critical</option>
-              <option value="warning">Warning</option>
-              <option value="info">Info</option>
-            </Select>
-            <Select size="sm" value={hours} onChange={(e) => setHours(Number(e.target.value))} {...surfaceSelectProps} w="120px" aria-label="Time window">
-              <option value={1}>Last 1h</option>
-              <option value={6}>Last 6h</option>
-              <option value={24}>Last 24h</option>
-              <option value={72}>Last 72h</option>
-              <option value={168}>Last 7d</option>
-            </Select>
+            <GlassSelect value={severity} onChange={setSeverity} width="150px"
+              options={[
+                { value: "", label: "All severities" },
+                { value: "critical", label: "Critical" },
+                { value: "warning", label: "Warning" },
+                { value: "info", label: "Info" },
+              ]} />
+            <GlassSelect value={hours} onChange={(v) => setHours(Number(v))} width="130px"
+              options={[
+                { value: 1, label: "Last 1h" },
+                { value: 6, label: "Last 6h" },
+                { value: 24, label: "Last 24h" },
+                { value: 72, label: "Last 72h" },
+                { value: 168, label: "Last 7d" },
+              ]} />
           </Flex>
         }
       />

@@ -18,7 +18,8 @@ import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import Chip from "../../shared/ui/Chip";
-import PeriodSelect, { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
+import PeriodSelect from "../../shared/ui/PeriodSelect";
+import GlassSelect from "../../shared/ui/GlassSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import ErrorAlert from "../../shared/ui/ErrorAlert";
 import useAppToast from "../../shared/hooks/useAppToast";
@@ -278,24 +279,18 @@ export default function AIAnalyzer() {
           <FormLabel htmlFor="analyzer-equipment" fontSize="10px" letterSpacing="0.10em" textTransform="uppercase" color="text.muted" fontWeight={700} mb={2}>
             Equipment
           </FormLabel>
-          <Select
-            id="analyzer-equipment"
-            placeholder="All equipment"
+          <GlassSelect
             value={selectedEq}
-            onChange={(e) => setSelectedEq(e.target.value)}
-            {...surfaceSelectProps}
-            _hover={{ borderColor: "accent.cyan" }}
-          >
-            {["chiller", "cooling_tower", "pump"].map((type) => {
-              const group = equipment.filter((e) => e.type === type);
-              if (!group.length) return null;
-              return (
-                <optgroup key={type} label={type === "chiller" ? "Chillers" : type === "cooling_tower" ? "Cooling Towers" : "Pumps"}>
-                  {group.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-                </optgroup>
-              );
-            })}
-          </Select>
+            onChange={setSelectedEq}
+            placeholder="All equipment"
+            width="100%"
+            options={[
+              { value: "", label: "All equipment" },
+              ...["chiller", "cooling_tower", "pump"].flatMap((type) =>
+                equipment.filter((e) => e.type === type).map((e) => ({ value: e.id, label: e.name }))
+              ),
+            ]}
+          />
         </FormControl>
 
         <FormControl w="auto">
@@ -310,20 +305,18 @@ export default function AIAnalyzer() {
             Conversation thread
           </FormLabel>
           <Flex gap={2} flexWrap="wrap">
-            <Select
-              id="analyzer-thread"
-              placeholder="Memory off"
-              value={activeThreadId}
-              onChange={(e) => setActiveThreadId(e.target.value)}
-              flex={1}
-              minW="160px"
-              {...surfaceSelectProps}
-            >
-              <option value="">Memory off</option>
-              {threads.map((t) => (
-                <option key={t.id} value={t.id}>{t.title || t.id.slice(0, 8)}</option>
-              ))}
-            </Select>
+            <Box flex={1} minW="160px">
+              <GlassSelect
+                value={activeThreadId}
+                onChange={setActiveThreadId}
+                placeholder="Memory off"
+                width="100%"
+                options={[
+                  { value: "", label: "Memory off" },
+                  ...threads.map((t) => ({ value: t.id, label: t.title || t.id.slice(0, 8) })),
+                ]}
+              />
+            </Box>
             <Button size="sm" variant="outline" borderRadius="10px" fontSize="xs" onClick={handleNewThread} minH="40px">
               New thread
             </Button>

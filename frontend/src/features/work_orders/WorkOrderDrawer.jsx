@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
-import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
+import GlassSelect from "../../shared/ui/GlassSelect";
 
 const STATE_LABEL = {
   open: "Open", assigned: "Assigned", in_progress: "In progress",
@@ -271,14 +271,14 @@ export default function WorkOrderDrawer({ woId, equipment, onClose, onChanged })
                   </Button>
                 </Flex>
                 <FormControl>
-                  <Select size="sm" value={wo.assigned_to || ""} onChange={e => assign(e.target.value)} {...surfaceSelectProps}>
-                    <option value="">Unassigned</option>
-                    {technicians.map(t => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}{t.skills?.length ? ` — ${t.skills.slice(0,3).join(", ")}` : ""}
-                      </option>
-                    ))}
-                  </Select>
+                  <GlassSelect value={wo.assigned_to || ""} onChange={assign} width="100%"
+                    options={[
+                      { value: "", label: "Unassigned" },
+                      ...technicians.map(t => ({
+                        value: t.id,
+                        label: `${t.name}${t.skills?.length ? ` — ${t.skills.slice(0, 3).join(", ")}` : ""}`,
+                      })),
+                    ]} />
                 </FormControl>
                 {suggestions.length > 0 && (
                   <Box mt={2}>

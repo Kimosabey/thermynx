@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import ReactECharts from "echarts-for-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
-import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
+import GlassSelect from "../../shared/ui/GlassSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import Eyebrow from "../../shared/ui/Eyebrow";
@@ -161,36 +161,21 @@ export default function ComparePage() {
         icon={<PageHeaderIcon icon={<Columns2 size={20} strokeWidth={1.85} />} />}
         actions={
           <Flex gap={{ base: 2, sm: 3 }} flexWrap="wrap" align="center" w={{ base: "100%", xl: "auto" }} maxW="100%">
-            <Select size="sm" value={eqA} onChange={(e) => setEqA(e.target.value)}
-              aria-label="Equipment A"
-              {...surfaceSelectProps}
-              borderColor={`${COLORS.a}50`}
-              color={COLORS.a}
-              fontWeight={600}
-              w={{ base: "100%", sm: "155px" }}
-              maxW="100%"
-            >
-              {equipment.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </Select>
+            <GlassSelect value={eqA} onChange={setEqA} placeholder="Equipment A"
+              width={{ base: "100%", sm: "155px" }}
+              options={equipment.map((e) => ({ value: e.id, label: e.name }))} />
             <Text color="text.muted" fontSize="sm" fontWeight={700} aria-hidden="true">vs</Text>
-            <Select size="sm" value={eqB} onChange={(e) => setEqB(e.target.value)}
-              aria-label="Equipment B"
-              {...surfaceSelectProps}
-              borderColor={`${COLORS.b}50`}
-              color={COLORS.b}
-              fontWeight={600}
-              w={{ base: "100%", sm: "155px" }}
-              maxW="100%"
-            >
-              {equipment.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </Select>
-            <Select size="sm" value={hours} onChange={(e) => setHours(Number(e.target.value))} aria-label="Time window" {...surfaceSelectProps} w="120px">
-              <option value={6}>6 hours</option>
-              <option value={12}>12 hours</option>
-              <option value={24}>24 hours</option>
-              <option value={48}>48 hours</option>
-              <option value={168}>7 days</option>
-            </Select>
+            <GlassSelect value={eqB} onChange={setEqB} placeholder="Equipment B"
+              width={{ base: "100%", sm: "155px" }}
+              options={equipment.map((e) => ({ value: e.id, label: e.name }))} />
+            <GlassSelect value={hours} onChange={(v) => setHours(Number(v))} width="130px"
+              options={[
+                { value: 6, label: "6 hours" },
+                { value: 12, label: "12 hours" },
+                { value: 24, label: "24 hours" },
+                { value: 48, label: "48 hours" },
+                { value: 168, label: "7 days" },
+              ]} />
           </Flex>
         }
       />

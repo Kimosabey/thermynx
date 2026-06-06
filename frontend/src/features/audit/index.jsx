@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import ReactECharts from "echarts-for-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
-import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
+import GlassSelect from "../../shared/ui/GlassSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import Eyebrow from "../../shared/ui/Eyebrow";
@@ -121,14 +121,15 @@ export default function AuditPage() {
         icon={<PageHeaderIcon icon={<ScrollText size={20} strokeWidth={1.85} />} />}
         subtitle="Every AI request — model, duration, status, prompt+response hashes — for compliance and replay"
         actions={
-          <Select size="sm" value={hours} onChange={e => setHours(Number(e.target.value))} {...surfaceSelectProps} w="140px" aria-label="Time window">
-            <option value={1}>Last 1h</option>
-            <option value={6}>Last 6h</option>
-            <option value={24}>Last 24h</option>
-            <option value={72}>Last 72h</option>
-            <option value={168}>Last 7d</option>
-            <option value={720}>Last 30d</option>
-          </Select>
+          <GlassSelect value={hours} onChange={(v) => setHours(Number(v))} width="140px"
+            options={[
+              { value: 1, label: "Last 1h" },
+              { value: 6, label: "Last 6h" },
+              { value: 24, label: "Last 24h" },
+              { value: 72, label: "Last 72h" },
+              { value: 168, label: "Last 7d" },
+              { value: 720, label: "Last 30d" },
+            ]} />
         }
       />
 

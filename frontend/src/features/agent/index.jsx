@@ -8,7 +8,7 @@ import { ScanSearch, Zap, CalendarCheck, Microscope, Wrench, Bot, Check, Play, N
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
-import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
+import GlassSelect from "../../shared/ui/GlassSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import Chip from "../../shared/ui/Chip";
@@ -321,42 +321,35 @@ export default function AgentHub() {
                   <FormLabel htmlFor="agent-equipment" fontSize="10px" letterSpacing="0.10em" textTransform="uppercase" color="text.muted" fontWeight={700} mb={1}>
                     Equipment (optional)
                   </FormLabel>
-                  <Select
-                    id="agent-equipment"
-                    placeholder="All equipment"
+                  <GlassSelect
                     value={selectedEq}
-                    onChange={(e) => setSelectedEq(e.target.value)}
-                    {...surfaceSelectProps}
-                    _hover={{ borderColor: mode?.color ?? "accent.cyan" }}
-                  >
-                    {["chiller", "cooling_tower", "pump"].map((type) => {
-                      const group = equipment.filter((e) => e.type === type);
-                      if (!group.length) return null;
-                      return (
-                        <optgroup key={type} label={type === "chiller" ? "Chillers" : type === "cooling_tower" ? "Cooling Towers" : "Pumps"}>
-                          {group.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-                        </optgroup>
-                      );
-                    })}
-                  </Select>
+                    onChange={setSelectedEq}
+                    placeholder="All equipment"
+                    width="100%"
+                    options={[
+                      { value: "", label: "All equipment" },
+                      ...["chiller", "cooling_tower", "pump"].flatMap((type) =>
+                        equipment.filter((e) => e.type === type).map((e) => ({ value: e.id, label: e.name }))
+                      ),
+                    ]}
+                  />
                 </FormControl>
                 <FormControl w="auto">
                   <FormLabel htmlFor="agent-window" fontSize="10px" letterSpacing="0.10em" textTransform="uppercase" color="text.muted" fontWeight={700} mb={1}>
                     Window
                   </FormLabel>
-                  <Select
-                    id="agent-window"
+                  <GlassSelect
                     value={hours}
-                    onChange={(e) => setHours(Number(e.target.value))}
-                    w="130px"
-                    {...surfaceSelectProps}
-                  >
-                    <option value={6}>6 hours</option>
-                    <option value={12}>12 hours</option>
-                    <option value={24}>24 hours</option>
-                    <option value={48}>48 hours</option>
-                    <option value={168}>7 days</option>
-                  </Select>
+                    onChange={(v) => setHours(Number(v))}
+                    width="130px"
+                    options={[
+                      { value: 6, label: "6 hours" },
+                      { value: 12, label: "12 hours" },
+                      { value: 24, label: "24 hours" },
+                      { value: 48, label: "48 hours" },
+                      { value: 168, label: "7 days" },
+                    ]}
+                  />
                 </FormControl>
               </Flex>
             )}

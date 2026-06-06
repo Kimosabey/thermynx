@@ -11,7 +11,7 @@ import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
-import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
+import GlassSelect from "../../shared/ui/GlassSelect";
 import WorkOrderDrawer from "./WorkOrderDrawer";
 
 const MotionBox = motion.create(Box);
@@ -123,18 +123,18 @@ function CreateModal({ isOpen, onClose, equipment, onCreated }) {
           <Grid templateColumns="1fr 160px" gap={3} mb={3}>
             <FormControl>
               <FormLabel fontSize="xs" color="text.muted">Equipment</FormLabel>
-              <Select value={equipmentId} onChange={e => setEquipmentId(e.target.value)} placeholder="(none)" {...surfaceSelectProps}>
-                {equipment.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </Select>
+              <GlassSelect value={equipmentId} onChange={setEquipmentId} width="100%" placeholder="(none)"
+                options={[{ value: "", label: "(none)" }, ...equipment.map(e => ({ value: e.id, label: e.name }))]} />
             </FormControl>
             <FormControl>
               <FormLabel fontSize="xs" color="text.muted">Priority</FormLabel>
-              <Select value={priority} onChange={e => setPriority(e.target.value)} {...surfaceSelectProps}>
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </Select>
+              <GlassSelect value={priority} onChange={setPriority} width="100%"
+                options={[
+                  { value: "low", label: "Low" },
+                  { value: "normal", label: "Normal" },
+                  { value: "high", label: "High" },
+                  { value: "critical", label: "Critical" },
+                ]} />
             </FormControl>
           </Grid>
           <FormControl>
@@ -228,29 +228,32 @@ export default function WorkOrdersPage() {
             <Filter size={13} strokeWidth={2} color="#64748b" />
             <Text fontSize="11px" color="text.muted">Filter:</Text>
           </Flex>
-          <Select size="sm" value={filterState} onChange={e => setFilterState(e.target.value)} {...surfaceSelectProps} w="140px">
-            <option value="">All states</option>
-            <option value="open">Open</option>
-            <option value="assigned">Assigned</option>
-            <option value="in_progress">In progress</option>
-            <option value="resolved">Resolved</option>
-            <option value="closed">Closed</option>
-            <option value="cancelled">Cancelled</option>
-          </Select>
-          <Select size="sm" value={filterPriority} onChange={e => setFilterPriority(e.target.value)} {...surfaceSelectProps} w="130px">
-            <option value="">Any priority</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="normal">Normal</option>
-            <option value="low">Low</option>
-          </Select>
-          <Select size="sm" value={filterSource} onChange={e => setFilterSource(e.target.value)} {...surfaceSelectProps} w="130px">
-            <option value="">Any source</option>
-            <option value="manual">Manual</option>
-            <option value="agent">Agent</option>
-            <option value="anomaly">Anomaly</option>
-            <option value="pm">PM</option>
-          </Select>
+          <GlassSelect value={filterState} onChange={setFilterState} width="140px"
+            options={[
+              { value: "", label: "All states" },
+              { value: "open", label: "Open" },
+              { value: "assigned", label: "Assigned" },
+              { value: "in_progress", label: "In progress" },
+              { value: "resolved", label: "Resolved" },
+              { value: "closed", label: "Closed" },
+              { value: "cancelled", label: "Cancelled" },
+            ]} />
+          <GlassSelect value={filterPriority} onChange={setFilterPriority} width="130px"
+            options={[
+              { value: "", label: "Any priority" },
+              { value: "critical", label: "Critical" },
+              { value: "high", label: "High" },
+              { value: "normal", label: "Normal" },
+              { value: "low", label: "Low" },
+            ]} />
+          <GlassSelect value={filterSource} onChange={setFilterSource} width="130px"
+            options={[
+              { value: "", label: "Any source" },
+              { value: "manual", label: "Manual" },
+              { value: "agent", label: "Agent" },
+              { value: "anomaly", label: "Anomaly" },
+              { value: "pm", label: "PM" },
+            ]} />
         </Flex>
       </GlassCard>
 

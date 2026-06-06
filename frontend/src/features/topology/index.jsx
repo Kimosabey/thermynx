@@ -6,7 +6,7 @@ import ReactECharts from "echarts-for-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
-import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
+import GlassSelect from "../../shared/ui/GlassSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import { SkeletonKpiCard } from "../../shared/ui/SkeletonCard";
@@ -154,11 +154,12 @@ export default function TopologyPage() {
         icon={<PageHeaderIcon icon={<Network size={20} strokeWidth={1.85} />} />}
         subtitle="Interactive plant graph — drag nodes, zoom, hover for live state"
         actions={
-          <Select size="sm" value={hours} onChange={e => setHours(Number(e.target.value))} {...surfaceSelectProps} w="140px" aria-label="Window">
-            <option value={1}>Latest 1h</option>
-            <option value={6}>Latest 6h</option>
-            <option value={24}>Latest 24h</option>
-          </Select>
+          <GlassSelect value={hours} onChange={(v) => setHours(Number(v))} width="140px"
+            options={[
+              { value: 1, label: "Latest 1h" },
+              { value: 6, label: "Latest 6h" },
+              { value: 24, label: "Latest 24h" },
+            ]} />
         }
       />
 

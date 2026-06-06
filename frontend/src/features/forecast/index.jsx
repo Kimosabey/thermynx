@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import ReactECharts from "echarts-for-react";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
-import { surfaceSelectProps } from "../../shared/ui/PeriodSelect";
+import GlassSelect from "../../shared/ui/GlassSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import Eyebrow from "../../shared/ui/Eyebrow";
@@ -225,20 +225,16 @@ export default function ForecastPage() {
         subtitle="Hour-of-day mean ± 1σ over 7 days of recent history"
         actions={
           <Flex gap={3} flexWrap="wrap">
-            <Select
-              size="sm" value={selectedEq}
-              onChange={(e) => { setSelectedEq(e.target.value); setMetric("kw_per_tr"); }}
-              aria-label="Equipment" {...surfaceSelectProps} w="160px"
-            >
-              {equipment.filter(e => e.type === "chiller").map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-              {equipment.filter(e => e.type !== "chiller").map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </Select>
-            <Select size="sm" value={metric} onChange={(e) => setMetric(e.target.value)} aria-label="Metric" {...surfaceSelectProps} w="120px">
-              {availMetrics.map(m => <option key={m} value={m}>{m.replace(/_/g, " ")}</option>)}
-            </Select>
-            <Select size="sm" value={horizon} onChange={(e) => setHorizon(Number(e.target.value))} aria-label="Forecast horizon" {...surfaceSelectProps} w="140px">
-              {HORIZON_OPTIONS.map(h => <option key={h.v} value={h.v}>{h.label}</option>)}
-            </Select>
+            <GlassSelect value={selectedEq} width="160px"
+              onChange={(v) => { setSelectedEq(v); setMetric("kw_per_tr"); }}
+              options={[
+                ...equipment.filter(e => e.type === "chiller"),
+                ...equipment.filter(e => e.type !== "chiller"),
+              ].map(e => ({ value: e.id, label: e.name }))} />
+            <GlassSelect value={metric} onChange={setMetric} width="140px"
+              options={availMetrics.map(m => ({ value: m, label: m.replace(/_/g, " ") }))} />
+            <GlassSelect value={horizon} onChange={(v) => setHorizon(Number(v))} width="140px"
+              options={HORIZON_OPTIONS.map(h => ({ value: h.v, label: h.label }))} />
           </Flex>
         }
       />
