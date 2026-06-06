@@ -29,6 +29,7 @@ from app.api.v1 import (
     slack,
     work_orders,
     technicians,
+    assets,
 )
 
 router = APIRouter()
@@ -61,3 +62,4 @@ router.include_router(topology.router,      tags=["Topology"])
 router.include_router(slack.router,         tags=["Slack"])
 router.include_router(work_orders.router,   tags=["Work Orders"])
 router.include_router(technicians.router,   tags=["Technicians"])
+router.include_router(assets.router,        tags=["Asset Registry"])

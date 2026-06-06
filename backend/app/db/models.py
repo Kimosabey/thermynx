@@ -14,6 +14,20 @@ except ImportError:
     _VECTOR_DIM = None  # type: ignore
 
 
+class AssetMeta(Base):
+    """Postgres overlay for IBMS gl_subsystem assets — operator-editable lifecycle
+    fields not present in (and never written back to) the unicharm IBMS DB."""
+    __tablename__ = "asset_meta"
+
+    gl_subsystem_id:  Mapped[str] = mapped_column(String(36), primary_key=True)
+    acquisition_date: Mapped[datetime | None] = mapped_column(DateTime)
+    warranty_end:     Mapped[datetime | None] = mapped_column(DateTime)
+    cost_center:      Mapped[str | None] = mapped_column(String(64))
+    criticality:      Mapped[str | None] = mapped_column(String(16))   # low|medium|high|critical
+    notes:            Mapped[str | None] = mapped_column(Text)
+    updated_at:       Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class AnalysisAudit(Base):
     __tablename__ = "analysis_audit"
 

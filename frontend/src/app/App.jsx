@@ -30,6 +30,7 @@ const Vision        = lazy(() => import("../features/vision"));
 const Audit         = lazy(() => import("../features/audit"));
 const SystemPage    = lazy(() => import("../features/system"));
 const WorkOrders    = lazy(() => import("../features/work_orders"));
+const Assets        = lazy(() => import("../features/assets"));
 
 function PageFallback() {
   return (
@@ -69,6 +70,7 @@ export default function App() {
         <Route path="audit"       element={<Suspense fallback={<PageFallback />}><Audit /></Suspense>} />
         <Route path="system"      element={<Suspense fallback={<PageFallback />}><SystemPage /></Suspense>} />
         <Route path="work-orders" element={<Suspense fallback={<PageFallback />}><WorkOrders /></Suspense>} />
+        <Route path="assets"      element={<Suspense fallback={<PageFallback />}><Assets /></Suspense>} />
       </Route>
     </Routes>
   );

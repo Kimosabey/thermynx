@@ -9,7 +9,7 @@ import {
   LayoutDashboard, BrainCircuit, TriangleAlert,
   TrendingUp, Columns2, Wrench, IndianRupee, FileText,
   BookOpen, Zap, Sparkles, BellRing, Network, Camera, ScrollText,
-  Server, ClipboardList, ChevronDown, Menu as MenuIcon, X, Sun, Moon, Sunrise, Library, Gauge, Activity,
+  Server, ClipboardList, ChevronDown, Menu as MenuIcon, X, Sun, Moon, Sunrise, Library, Gauge, Activity, Boxes,
 } from "lucide-react";
 import { GraylinxLogo } from "./GraylinxLogo";
 
@@ -41,6 +41,7 @@ const NAV_GROUPS = [
   {
     label: "Advanced",
     items: [
+      { label: "Assets",      to: "/assets",      Icon: Boxes },
       { label: "Maintenance", to: "/maintenance", Icon: Wrench },
       { label: "Predictive",  to: "/predictive",  Icon: Activity },
       { label: "Work Orders", to: "/work-orders", Icon: ClipboardList },
@@ -266,7 +267,7 @@ export default function TopBar() {
               letterSpacing="-0.02em"
               color="text.primary"
               sx={{
-                backgroundImage: "linear-gradient(90deg, #1F3FFE 0%, #6671FF 45%, #1F3FFE 100%)",
+                backgroundImage: "linear-gradient(90deg, #1F3FFE 0%, #06B6D4 50%, #1F3FFE 100%)",
                 backgroundSize: "200% 100%",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",

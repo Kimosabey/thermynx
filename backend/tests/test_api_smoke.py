@@ -100,6 +100,9 @@ GET_ENDPOINTS = [
     ("/api/v1/work-orders", None, (200,)),
     ("/api/v1/work-orders/stats", None, (200,)),
     ("/api/v1/technicians", None, (200,)),
+    ("/api/v1/assets", None, (200,)),
+    ("/api/v1/assets/types", None, (200,)),
+    ("/api/v1/locations", None, (200,)),
     ("/api/v1/agent/history", {"limit": 10}, (200,)),
     ("/api/v1/threads", None, (200,)),
     ("/api/v1/slack/health", None, (200,)),
@@ -237,6 +240,19 @@ def test_rag_ingest_then_delete(client):
     # Clean up the throwaway source so real corpus is unchanged.
     d = client.delete(f"{BASE}/api/v1/rag/sources/{fname}")
     assert d.status_code in (200, 204), d.text
+
+
+def test_asset_detail_and_meta(client):
+    """Asset detail + Postgres meta overlay upsert (overlay never touches the IBMS DB)."""
+    assets = client.get(f"{BASE}/api/v1/assets").json().get("assets", [])
+    assert assets, "no assets in IBMS registry"
+    aid = assets[0]["id"]
+    d = client.get(f"{BASE}/api/v1/assets/{aid}")
+    assert d.status_code == 200 and d.json()["id"] == aid, d.text
+    assert "points" in d.json()
+    m = client.put(f"{BASE}/api/v1/assets/{aid}/meta", json={"cost_center": "CC-SMOKE", "criticality": "high"})
+    assert m.status_code == 200, m.text
+    assert m.json()["meta"]["cost_center"] == "CC-SMOKE"
 
 
 def test_vision_describe(client):
