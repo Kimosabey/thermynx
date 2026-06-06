@@ -30,6 +30,7 @@ from app.api.v1 import (
     work_orders,
     technicians,
     assets,
+    energy,
 )
 
 router = APIRouter()
@@ -63,3 +64,4 @@ router.include_router(slack.router,         tags=["Slack"])
 router.include_router(work_orders.router,   tags=["Work Orders"])
 router.include_router(technicians.router,   tags=["Technicians"])
 router.include_router(assets.router,        tags=["Asset Registry"])
+router.include_router(energy.router,        tags=["Energy Management"])

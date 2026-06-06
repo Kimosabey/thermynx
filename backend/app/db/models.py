@@ -28,6 +28,20 @@ class AssetMeta(Base):
     updated_at:       Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class TariffSchedule(Base):
+    """Energy tariff overlay (₹/kWh). When empty, energy cost falls back to the
+    flat settings.TARIFF_INR_PER_KWH. Supports time-bounded / labelled rates."""
+    __tablename__ = "tariff_schedule"
+
+    id:               Mapped[str] = mapped_column(String(36), primary_key=True)
+    label:            Mapped[str | None] = mapped_column(String(64))   # e.g. "peak", "off-peak", "FY26"
+    rate_inr_per_kwh: Mapped[float] = mapped_column(Float, nullable=False)
+    effective_from:   Mapped[datetime | None] = mapped_column(DateTime)
+    effective_to:     Mapped[datetime | None] = mapped_column(DateTime)
+    active:           Mapped[int] = mapped_column(Integer, server_default="1")
+    created_at:       Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class AnalysisAudit(Base):
     __tablename__ = "analysis_audit"
 
