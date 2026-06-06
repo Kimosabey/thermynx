@@ -33,7 +33,7 @@ TRANSITIONS: dict[str, set[str]] = {
 }
 
 VALID_PRIORITIES = ("low", "normal", "high", "critical")
-VALID_SOURCES    = ("manual", "agent", "anomaly", "pm")
+VALID_SOURCES    = ("manual", "agent", "anomaly", "pm", "alarm")
 
 
 class WorkOrderError(Exception):

@@ -32,6 +32,7 @@ const SystemPage    = lazy(() => import("../features/system"));
 const WorkOrders    = lazy(() => import("../features/work_orders"));
 const Assets        = lazy(() => import("../features/assets"));
 const Energy        = lazy(() => import("../features/energy"));
+const IbmsAlarms    = lazy(() => import("../features/ibms_alarms"));
 
 function PageFallback() {
   return (
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="work-orders" element={<Suspense fallback={<PageFallback />}><WorkOrders /></Suspense>} />
         <Route path="assets"      element={<Suspense fallback={<PageFallback />}><Assets /></Suspense>} />
         <Route path="energy"      element={<Suspense fallback={<PageFallback />}><Energy /></Suspense>} />
+        <Route path="ibms-alarms" element={<Suspense fallback={<PageFallback />}><IbmsAlarms /></Suspense>} />
       </Route>
     </Routes>
   );

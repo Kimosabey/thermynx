@@ -31,6 +31,7 @@ from app.api.v1 import (
     technicians,
     assets,
     energy,
+    ibms_alarms,
 )
 
 router = APIRouter()
@@ -65,3 +66,4 @@ router.include_router(work_orders.router,   tags=["Work Orders"])
 router.include_router(technicians.router,   tags=["Technicians"])
 router.include_router(assets.router,        tags=["Asset Registry"])
 router.include_router(energy.router,        tags=["Energy Management"])
+router.include_router(ibms_alarms.router,   tags=["IBMS Alarms"])

@@ -35,6 +35,7 @@ const NAV_GROUPS = [
       { label: "Efficiency",  to: "/efficiency",  Icon: Zap },
       { label: "Anomalies",   to: "/anomalies",   Icon: TriangleAlert },
       { label: "Alarms",      to: "/alarms",      Icon: BellRing },
+      { label: "IBMS Alarms", to: "/ibms-alarms", Icon: BellRing },
       { label: "Forecast",    to: "/forecast",    Icon: TrendingUp },
       { label: "Compare",     to: "/compare",     Icon: Columns2 },
     ],

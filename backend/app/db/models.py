@@ -42,6 +42,19 @@ class TariffSchedule(Base):
     created_at:       Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class AlarmAction(Base):
+    """Operator action overlay for IBMS gl_alarm rows. The IBMS alarm log stays
+    read-only; operator acks and the work order raised from an alarm live here."""
+    __tablename__ = "alarm_action"
+
+    alarm_id:        Mapped[int] = mapped_column(Integer, primary_key=True)  # gl_alarm.id
+    acknowledged_by: Mapped[str | None] = mapped_column(String(64))
+    acked_at:        Mapped[datetime | None] = mapped_column(DateTime)
+    wo_id:           Mapped[str | None] = mapped_column(String(36))   # work order raised from this alarm
+    note:            Mapped[str | None] = mapped_column(Text)
+    updated_at:      Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class AnalysisAudit(Base):
     __tablename__ = "analysis_audit"
 

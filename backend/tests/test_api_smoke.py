@@ -106,6 +106,7 @@ GET_ENDPOINTS = [
     ("/api/v1/energy/usage", {"period": "daily", "days": 7}, (200,)),
     ("/api/v1/energy/cost", {"period": "daily", "days": 7}, (200,)),
     ("/api/v1/energy/meters", None, (200,)),
+    ("/api/v1/alarms/ibms", {"limit": 20}, (200,)),
     ("/api/v1/agent/history", {"limit": 10}, (200,)),
     ("/api/v1/threads", None, (200,)),
     ("/api/v1/slack/health", None, (200,)),

@@ -156,6 +156,69 @@ async def get_asset(db: AsyncSession, asset_id: str) -> dict[str, Any] | None:
     }
 
 
+async def list_ibms_alarms(
+    db: AsyncSession,
+    *,
+    active_only: bool = False,
+    acknowledged: bool | None = None,
+    ss_id: str | None = None,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    """The real IBMS alarm log (gl_alarm), joined to the asset (ss_id)."""
+    sql = """
+        SELECT a.id, a.alarm_code, a.measured_time, a.message, a.param_value,
+               a.acknowledged, a.acknowledged_time, a.restore, a.restored_time,
+               a.possible_causes, a.technician_feedback, a.ss_id,
+               s.name AS asset_name, s.ss_type
+        FROM gl_alarm a
+        LEFT JOIN gl_subsystem s ON s.id = a.ss_id
+        WHERE a.delete_alarm = 0
+    """
+    params: dict[str, Any] = {"lim": limit}
+    if active_only:
+        sql += " AND a.restore = 0"
+    if acknowledged is not None:
+        sql += " AND a.acknowledged = :ack"; params["ack"] = 1 if acknowledged else 0
+    if ss_id:
+        sql += " AND a.ss_id = :ssid"; params["ssid"] = ss_id
+    sql += " ORDER BY a.measured_time DESC LIMIT :lim"
+
+    rows = (await db.execute(text(sql), params)).mappings().all()
+    return [_alarm_dict(r) for r in rows]
+
+
+async def get_ibms_alarm(db: AsyncSession, alarm_id: int) -> dict[str, Any] | None:
+    row = (await db.execute(text("""
+        SELECT a.id, a.alarm_code, a.measured_time, a.message, a.param_value,
+               a.acknowledged, a.acknowledged_time, a.restore, a.restored_time,
+               a.possible_causes, a.technician_feedback, a.ss_id,
+               s.name AS asset_name, s.ss_type
+        FROM gl_alarm a LEFT JOIN gl_subsystem s ON s.id = a.ss_id
+        WHERE a.id = :id AND a.delete_alarm = 0
+    """), {"id": alarm_id})).mappings().first()
+    return _alarm_dict(row) if row else None
+
+
+def _alarm_dict(r) -> dict[str, Any]:
+    return {
+        "id":               int(r["id"]),
+        "alarm_code":       r["alarm_code"],
+        "measured_time":    r["measured_time"].isoformat() if r["measured_time"] else None,
+        "message":          r["message"],
+        "param_value":      r["param_value"],
+        "acknowledged":     bool(r["acknowledged"]),
+        "acknowledged_time": r["acknowledged_time"].isoformat() if r["acknowledged_time"] else None,
+        "restored":         bool(r["restore"]),
+        "restored_time":    r["restored_time"].isoformat() if r["restored_time"] else None,
+        "active":           not bool(r["restore"]),
+        "possible_causes":  r["possible_causes"],
+        "technician_feedback": r["technician_feedback"],
+        "asset_id":         r["ss_id"],
+        "asset_name":       r["asset_name"],
+        "asset_type":       friendly_type(r["ss_type"]),
+    }
+
+
 async def list_locations(db: AsyncSession) -> list[dict[str, Any]]:
     """The org->campus->building->floor->zone hierarchy (gl_location)."""
     rows = (await db.execute(text("""
