@@ -248,10 +248,15 @@ export default function TopBar() {
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <Flex align="center" gap={3} px={{ base: 4, lg: 6 }} h="60px">
-        {/* Brand — Graylinx mark + THERMYNX product lockup */}
-        <Flex align="center" gap={2.5} flexShrink={0} as={NavLink} to="/dashboard" aria-label="THERMYNX — home">
-          <GraylinxLogo variant="mark" height={24} />
-          <Box display={{ base: "none", sm: "block" }} lineHeight="1.05">
+        {/* Brand — full Graylinx logo + THERMYNX product lockup */}
+        <Flex align="center" gap={3} flexShrink={0} as={NavLink} to="/dashboard" aria-label="THERMYNX — home">
+          <GraylinxLogo variant="full" height={28} tagline={null} />
+          {/* divider */}
+          <Box
+            display={{ base: "none", md: "block" }}
+            w="1px" h="26px" bg="border.subtle" flexShrink={0}
+          />
+          <Box display={{ base: "none", md: "block" }} lineHeight="1.05">
             <Text
               as="span"
               display="block"
@@ -282,7 +287,7 @@ export default function TopBar() {
               textTransform="uppercase"
               mt="1px"
             >
-              by Graylinx · HVAC Intelligence
+              Operations Intelligence
             </Text>
           </Box>
         </Flex>
