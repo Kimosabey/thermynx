@@ -14,6 +14,8 @@ Verdict rules:
 """
 import base64
 import json
+import struct
+import zlib
 
 import httpx
 import pytest
@@ -22,10 +24,27 @@ BASE = "http://localhost:8000"
 EQ = "chiller_1"
 TOWER = "cooling_tower_1"
 
-# 1x1 transparent PNG — enough to exercise the vision route end-to-end.
-_PNG_1x1 = base64.b64decode(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
-)
+def _test_png_b64(w: int = 96, h: int = 96) -> str:
+    """Build a valid two-band RGB PNG (stdlib only) for the vision route.
+
+    A degenerate 1x1 image is rejected by the vision model ("too much pixel
+    data"); this produces a real, decodable image the model can describe.
+    """
+    def _chunk(typ: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + typ + data + struct.pack(">I", zlib.crc32(typ + data) & 0xFFFFFFFF)
+
+    rows = bytearray()
+    for y in range(h):
+        rows.append(0)  # filter byte (none)
+        for _ in range(w):
+            rows += bytes((31, 63, 254)) if y < h // 2 else bytes((240, 240, 245))
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + _chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))  # 8-bit RGB
+        + _chunk(b"IDAT", zlib.compress(bytes(rows)))
+        + _chunk(b"IEND", b"")
+    )
+    return base64.b64encode(png).decode()
 
 
 def _backend_up() -> bool:
@@ -221,9 +240,9 @@ def test_rag_ingest_then_delete(client):
 
 
 def test_vision_describe(client):
-    """POST /vision/describe — base64 image (llama3.2-vision; may be slow)."""
-    img = base64.b64encode(_PNG_1x1).decode()
-    r = client.post(f"{BASE}/api/v1/vision/describe", json={"image": img})
-    # 200 = described; 422 = model rejected the degenerate 1x1 — both prove the route works.
-    assert r.status_code in (200, 422), r.text
-    assert r.status_code < 500, r.text
+    """POST /vision/describe — real base64 PNG; asserts a genuine description
+    (llama3.2-vision; may be slow / swap on the 20GB box)."""
+    r = client.post(f"{BASE}/api/v1/vision/describe", json={"image": _test_png_b64()})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body.get("description"), f"no description returned: {body}"
