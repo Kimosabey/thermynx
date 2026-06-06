@@ -1,6 +1,8 @@
-import { Select } from "@chakra-ui/react";
+import { Menu, MenuButton, MenuList, MenuItem, Button, Flex, Text, Box } from "@chakra-ui/react";
+import { ChevronDown, Check } from "lucide-react";
 
-/** Shared native-select styling so every page matches (dark surface + cyan focus ring). */
+/** Shared native-select styling — kept for the few raw <Select> usages elsewhere.
+ *  New code should prefer <PeriodSelect/>, which is a custom glass dropdown. */
 export const surfaceSelectProps = {
   size: "sm",
   bg: "bg.surface",
@@ -31,6 +33,10 @@ export const HOURS_OPTIONS_ANOMALY = [
   { value: 24, label: "Last 24 hours" },
 ];
 
+/**
+ * Custom glass dropdown (Chakra Menu) — matches the top-bar menu styling instead
+ * of the OS-native <select>. Same API as before: value, onChange, options, width.
+ */
 export default function PeriodSelect({
   value,
   onChange,
@@ -38,19 +44,70 @@ export default function PeriodSelect({
   width = "150px",
   ...rest
 }) {
+  const current = options.find((o) => o.value === value) ?? options[0];
+
   return (
-    <Select
-      {...surfaceSelectProps}
-      w={width}
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      {...rest}
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </Select>
+    <Menu isLazy placement="bottom-end" gutter={6} {...rest}>
+      <MenuButton
+        as={Button}
+        size="sm"
+        w={width}
+        justifyContent="space-between"
+        fontWeight={600}
+        fontSize="13px"
+        px="12px"
+        bg="bg.surface"
+        color="text.primary"
+        border="1px solid"
+        borderColor="border.subtle"
+        borderRadius="10px"
+        rightIcon={<ChevronDown size={15} strokeWidth={2} />}
+        _hover={{ borderColor: "border.strong", bg: "bg.elevated" }}
+        _active={{ bg: "bg.elevated" }}
+        _focusVisible={{ borderColor: "accent.primary", boxShadow: "0 0 0 3px rgba(31,63,254,0.12)" }}
+      >
+        {current?.label ?? "Select"}
+      </MenuButton>
+
+      <MenuList
+        bg="bg.surface"
+        borderColor="border.subtle"
+        borderRadius="14px"
+        boxShadow="xl"
+        py="6px"
+        minW={width}
+        zIndex={30}
+      >
+        {options.map((o) => {
+          const active = o.value === value;
+          return (
+            <MenuItem
+              key={o.value}
+              onClick={() => onChange(o.value)}
+              mx="6px"
+              px="10px"
+              py="8px"
+              w="auto"
+              borderRadius="10px"
+              fontSize="13px"
+              fontWeight={active ? 700 : 500}
+              color={active ? "text.brand" : "text.secondary"}
+              bg={active ? "accent.glow" : "transparent"}
+              _hover={{ bg: "bg.elevated", color: "text.primary" }}
+              _focus={{ bg: "bg.elevated" }}
+            >
+              <Flex align="center" justify="space-between" gap={3} w="100%">
+                <Text as="span">{o.label}</Text>
+                {active && (
+                  <Box color="accent.primary" flexShrink={0}>
+                    <Check size={15} strokeWidth={2.5} />
+                  </Box>
+                )}
+              </Flex>
+            </MenuItem>
+          );
+        })}
+      </MenuList>
+    </Menu>
   );
 }
