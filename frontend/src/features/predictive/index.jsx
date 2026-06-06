@@ -11,6 +11,7 @@ import Eyebrow from "../../shared/ui/Eyebrow";
 import GlassCard from "../../shared/ui/GlassCard";
 import EmptyState from "../../shared/ui/EmptyState";
 import ErrorAlert from "../../shared/ui/ErrorAlert";
+import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 import useApi from "../../shared/hooks/useApi";
 import { apiFetch } from "../../shared/api/client";
 
@@ -93,7 +94,9 @@ export default function PredictivePage() {
       <ErrorAlert error={error} onRetry={refetch} />
 
       {isLoading ? (
-        <Flex h="40vh" align="center" justify="center"><Spinner size="lg" color="accent.primary" thickness="3px" /></Flex>
+        <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={4}>
+          {Array.from({ length: 2 }).map((_, i) => <SkeletonEquipCard key={i} />)}
+        </Grid>
       ) : assets.length === 0 ? (
         <EmptyState icon={<Activity size={28} strokeWidth={1.6} />} title="No chiller data" description="Need a multi-day window of running telemetry to assess trends." />
       ) : (

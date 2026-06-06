@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Box, Flex, Text, Grid, Button, Input, Badge, Table, Thead, Tbody, Tr, Th, Td, Spinner, useToast,
+  Box, Flex, Text, Grid, Button, Input, Badge, Table, Thead, Tbody, Tr, Th, Td, useToast,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { Gauge, Sparkles, CheckCircle2, ClipboardList } from "lucide-react";
@@ -9,22 +9,14 @@ import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import GlassCard from "../../shared/ui/GlassCard";
+import KpiCard from "../../shared/ui/KpiCard";
 import ErrorAlert from "../../shared/ui/ErrorAlert";
+import { SkeletonKpiCard, SkeletonChartCard } from "../../shared/ui/SkeletonCard";
 import useApi from "../../shared/hooks/useApi";
 import { apiFetch } from "../../shared/api/client";
 
 const MotionBox = motion.create(Box);
 const fmt = (v, d = 1) => (v == null ? "—" : Number(v).toLocaleString(undefined, { maximumFractionDigits: d }));
-
-function Kpi({ label, value, accent, sub }) {
-  return (
-    <GlassCard>
-      <Eyebrow mb={2}>{label}</Eyebrow>
-      <Text fontSize="2xl" fontWeight={800} color={accent} sx={{ fontVariantNumeric: "tabular-nums" }}>{value}</Text>
-      {sub && <Text fontSize="xs" color="text.muted" mt={1}>{sub}</Text>}
-    </GlassCard>
-  );
-}
 
 export default function EnergyOptimizerPage() {
   const [whatIf, setWhatIf] = useState("");      // target TR override (string)
@@ -79,14 +71,25 @@ export default function EnergyOptimizerPage() {
       <ErrorAlert error={error} onRetry={refetch} />
 
       {isLoading ? (
-        <Flex h="40vh" align="center" justify="center"><Spinner size="lg" color="accent.primary" thickness="3px" /></Flex>
+        <>
+          <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={4} mb={6}>
+            {Array.from({ length: 4 }).map((_, i) => <SkeletonKpiCard key={i} />)}
+          </Grid>
+          <SkeletonChartCard />
+        </>
       ) : !data ? null : (
         <>
           <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={4} mb={6}>
-            <Kpi label="Target demand" value={`${fmt(data.target_tr)} TR`} accent="accent.cyan" sub={data.target_source === "user" ? "what-if" : "observed now"} />
-            <Kpi label="Current staging" value={data.current_chillers?.length ? `${data.current_chillers.length} on` : "none"} accent="text.primary" sub={data.current_est_kw != null ? `est ${fmt(data.current_est_kw)} kW` : "—"} />
-            <Kpi label="Recommended" value={rec ? rec.label : "—"} accent={saves ? "green.400" : "text.primary"} sub={rec ? `est ${fmt(rec.est_kw)} kW` : ""} />
-            <Kpi label="Potential saving" value={saves ? `${fmt(data.savings_kw)} kW` : "0"} accent={saves ? "green.400" : "text.muted"} sub={saves ? `${fmt(data.savings_pct)}% · ₹${fmt(data.savings_inr_per_hr)}/h` : "already optimal"} />
+            <KpiCard label="Target demand" value={data.target_tr} unit="TR" decimals={1}
+              accent="accent.cyan" helpText={data.target_source === "user" ? "what-if" : "observed now"} />
+            <KpiCard label="Current staging"
+              value={data.current_chillers?.length ? `${data.current_chillers.length} on` : "none"}
+              accent="text.primary" helpText={data.current_est_kw != null ? `est ${fmt(data.current_est_kw)} kW` : "—"} />
+            <KpiCard label="Recommended" value={rec ? rec.label : "—"}
+              accent={saves ? "status.good" : "text.primary"} helpText={rec ? `est ${fmt(rec.est_kw)} kW` : ""} />
+            <KpiCard label="Potential saving" value={saves ? data.savings_kw : 0} unit={saves ? "kW" : ""} decimals={1}
+              accent={saves ? "status.good" : "text.muted"}
+              helpText={saves ? `${fmt(data.savings_pct)}% · ₹${fmt(data.savings_inr_per_hr)}/h` : "already optimal"} />
           </Grid>
 
           {/* Recommendation + narrative */}

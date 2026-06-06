@@ -9,8 +9,10 @@ import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import GlassCard from "../../shared/ui/GlassCard";
+import KpiCard from "../../shared/ui/KpiCard";
 import EmptyState from "../../shared/ui/EmptyState";
 import ErrorAlert from "../../shared/ui/ErrorAlert";
+import { SkeletonKpiCard, SkeletonListCard } from "../../shared/ui/SkeletonCard";
 import useApi from "../../shared/hooks/useApi";
 import { apiFetch } from "../../shared/api/client";
 
@@ -32,18 +34,6 @@ const fmtWhen = (iso) => {
 
 const titleCase = (s) =>
   (s || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-
-function KpiTile({ label, value, accent, sub }) {
-  return (
-    <GlassCard>
-      <Eyebrow mb={2}>{label}</Eyebrow>
-      <Text fontSize="2xl" fontWeight={800} color={accent} sx={{ fontVariantNumeric: "tabular-nums" }}>
-        {value}
-      </Text>
-      {sub && <Text fontSize="xs" color="text.muted" mt={1}>{sub}</Text>}
-    </GlassCard>
-  );
-}
 
 export default function DigestPage() {
   const { data, isLoading, error, refetch } = useApi("/api/v1/digest/latest");
@@ -95,9 +85,12 @@ export default function DigestPage() {
       {!digest && <ErrorAlert error={error} onRetry={refetch} />}
 
       {isLoading && !digest ? (
-        <Flex h="40vh" align="center" justify="center">
-          <Spinner size="lg" color="accent.primary" thickness="3px" speed="0.7s" />
-        </Flex>
+        <>
+          <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={4} mb={6}>
+            {Array.from({ length: 4 }).map((_, i) => <SkeletonKpiCard key={i} />)}
+          </Grid>
+          <SkeletonListCard rows={4} />
+        </>
       ) : !digest ? (
         <EmptyState
           icon={<Sun size={28} strokeWidth={1.6} />}
@@ -126,23 +119,25 @@ export default function DigestPage() {
 
           {/* KPI grid */}
           <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={4} mb={6}>
-            <KpiTile label="Plant energy" value={`${fmtNum(digest.total_kwh)} kWh`} accent="accent.cyan" />
-            <KpiTile
-              label="Plant cost"
-              value={digest.total_cost_inr == null ? "—" : `₹ ${fmtNum(digest.total_cost_inr)}`}
-              accent="green.400"
+            <KpiCard
+              label="Plant energy" value={digest.total_kwh} unit="kWh" decimals={0}
+              accent="accent.cyan" icon={<Zap size={16} strokeWidth={1.85} />}
             />
-            <KpiTile
-              label="Anomalies"
-              value={digest.anomaly_count}
-              accent={digest.critical_count > 0 ? "red.400" : "text.primary"}
-              sub={`${digest.critical_count} critical`}
+            <KpiCard
+              label="Plant cost (₹)" value={digest.total_cost_inr} decimals={0}
+              accent="status.good" icon={<IndianRupee size={16} strokeWidth={1.85} />}
             />
-            <KpiTile
+            <KpiCard
+              label="Anomalies" value={digest.anomaly_count} decimals={0}
+              accent={digest.critical_count > 0 ? "status.bad" : "text.primary"}
+              helpText={`${digest.critical_count} critical`}
+              icon={<TriangleAlert size={16} strokeWidth={1.85} />}
+            />
+            <KpiCard
               label="Least-efficient chiller"
               value={digest.worst_equipment ? titleCase(digest.worst_equipment) : "—"}
-              accent="purple.400"
-              sub={digest.worst_kw_per_tr == null ? undefined : `${fmtNum(digest.worst_kw_per_tr, 3)} kW/TR`}
+              accent="accent.primary"
+              helpText={digest.worst_kw_per_tr == null ? undefined : `${fmtNum(digest.worst_kw_per_tr, 3)} kW/TR`}
             />
           </Grid>
 

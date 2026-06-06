@@ -11,6 +11,7 @@ import Eyebrow from "../../shared/ui/Eyebrow";
 import GlassCard from "../../shared/ui/GlassCard";
 import EmptyState from "../../shared/ui/EmptyState";
 import ErrorAlert from "../../shared/ui/ErrorAlert";
+import { SkeletonListCard } from "../../shared/ui/SkeletonCard";
 import useApi from "../../shared/hooks/useApi";
 import { apiFetch } from "../../shared/api/client";
 
@@ -168,7 +169,9 @@ export default function PastFixesPage() {
 
       {/* List */}
       {isLoading && !showingSearch ? (
-        <Flex h="30vh" align="center" justify="center"><Spinner size="lg" color="accent.primary" thickness="3px" /></Flex>
+        <Flex direction="column" gap={3}>
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonListCard key={i} rows={3} />)}
+        </Flex>
       ) : list.length === 0 ? (
         <EmptyState
           icon={<Library size={28} strokeWidth={1.6} />}
