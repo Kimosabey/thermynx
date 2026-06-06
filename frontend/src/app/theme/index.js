@@ -61,9 +61,11 @@ const semanticTokens = {
     // Brand accents
     "accent.primary":   { default: "#1F3FFE",              _dark: "#6671FF" },
     "accent.secondary": { default: "#0123B4",              _dark: "#3D52FE" },
-    "accent.cyan":      { default: "#6671FF",              _dark: "#989DFF" },
+    // THERMYNX sibling signature — real thermal cyan (OMNYX stays pure blue).
+    "accent.cyan":      { default: "#06B6D4",              _dark: "#22D3EE" },
     "accent.glow":      { default: "rgba(31,63,254,0.1)",  _dark: "rgba(102,113,255,0.12)" },
     "accent.glowHover": { default: "rgba(31,63,254,0.18)", _dark: "rgba(102,113,255,0.22)" },
+    "accent.cyanGlow":  { default: "rgba(6,182,212,0.12)", _dark: "rgba(34,211,238,0.16)" },
 
     // Status (data-only — never UI chrome)
     "status.good": { default: "#059669", _dark: "#34d399" },

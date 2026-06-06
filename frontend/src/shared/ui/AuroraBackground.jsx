@@ -23,6 +23,8 @@ import {
   useReducedMotion,
 } from "framer-motion";
 
+import { THERMAL_CYAN } from "../theme/brandColors";
+
 const MotionBox = motion.create(Box);
 
 const BRAND_500 = "#1F3FFE";
@@ -112,7 +114,7 @@ export default function AuroraBackground({ intensity = 0.6 }) {
         borderRadius="50%"
         filter="blur(96px)"
         opacity={intensity * 0.5}
-        bg={`radial-gradient(circle, ${BRAND_100}66, transparent 70%)`}
+        bg={`radial-gradient(circle, ${THERMAL_CYAN}40, transparent 70%)`}
         animate={reduced ? undefined : { x: [0, 50, 0], y: [0, 30, 0] }}
         transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -150,10 +152,10 @@ export default function AuroraBackground({ intensity = 0.6 }) {
           left={0}
           w="40%"
           h="2px"
-          bg={`linear-gradient(90deg, transparent 0%, ${BRAND_500}aa 50%, transparent 100%)`}
+          bg={`linear-gradient(90deg, transparent 0%, ${THERMAL_CYAN}aa 50%, transparent 100%)`}
           sx={{
             animation: "glxScan 9s ease-in-out infinite",
-            filter: `drop-shadow(0 0 6px ${BRAND_500}aa)`,
+            filter: `drop-shadow(0 0 6px ${THERMAL_CYAN}aa)`,
           }}
         />
       )}

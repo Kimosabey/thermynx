@@ -15,10 +15,12 @@ import { Box } from "@chakra-ui/react";
  *     icon={<ScanSearch size={20} strokeWidth={1.85} />}
  *     gradient="linear-gradient(135deg, #1F3FFE, #000F64)"
  *   />
+ *
+ * Default gradient is THERMYNX's blue→thermal-cyan signature.
  */
 export default function PageHeaderIcon({
   icon,
-  gradient = "linear-gradient(135deg, #1F3FFE, #000F64)",
+  gradient = "linear-gradient(135deg, #1F3FFE, #06B6D4)",
 }) {
   return (
     <Box
