@@ -290,7 +290,8 @@ async def fetch_bucket_series(
     if eq_type == "chiller":
         extra = (
             "AVG(tr) AS tr, AVG(kw_per_tr) AS kw_per_tr, AVG(chw_delta_t) AS chw_delta_t, "
-            "AVG(chiller_load) AS chiller_load"
+            "AVG(chiller_load) AS chiller_load, "
+            "AVG(cond_entering_temp) AS cond_entering_temp, AVG(cond_leaving_temp) AS cond_leaving_temp"
         )
     elif eq_type == "cooling_tower":
         extra = "AVG(kwh) AS kwh, AVG(run_hours) AS run_hours"

@@ -23,6 +23,7 @@ class AnomalyEvent:
     baseline_std:   float
     z_score:        float
     severity:       str    # "warning" | "critical"
+    confidence:     float  # 0.5–1.0 — how far past the trip line × baseline support
     description:    str
 
 
@@ -77,6 +78,12 @@ def detect_anomalies(
                 severity = "critical" if abs(z) >= Z_THRESHOLD * 1.5 else "warning"
                 ts = str(row.get("slot_time", ""))
 
+                # Confidence 0.5–1.0: scales with how far past the trip line the
+                # value is, dampened by how much baseline data backed the call.
+                mag = max(0.0, min(1.0, (abs(z) - Z_THRESHOLD) / (Z_THRESHOLD * 1.5)))
+                sample_factor = min(1.0, baseline.count / 30.0)
+                confidence = round(0.5 + 0.5 * mag * sample_factor, 2)
+
                 description = (
                     f"{metric.replace('_', ' ')} = {val:.3f} "
                     f"({'%.1f' % abs(z)}σ {'above' if z > 0 else 'below'} baseline "
@@ -92,6 +99,7 @@ def detect_anomalies(
                     baseline_std=baseline.std,
                     z_score=round(z, 2),
                     severity=severity,
+                    confidence=confidence,
                     description=description,
                 ))
 

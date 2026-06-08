@@ -129,6 +129,15 @@ function AnomalyCard({ anomaly }) {
           </Box>
           <Flex gap={2} align="center">
             <ZScorePill value={anomaly.z_score} />
+            {anomaly.confidence != null && (
+              <Badge
+                fontSize="9px" px={2} py="2px" borderRadius="full"
+                bg="bg.chip" color="text.muted" border="1px solid" borderColor="border.subtle"
+                fontWeight={700} title="Detection confidence"
+              >
+                {Math.round(anomaly.confidence * 100)}% conf
+              </Badge>
+            )}
             <Badge
               fontSize="9px" px={2} py="2px" borderRadius="full"
               bg={meta.bg} color={meta.color} border="1px solid" borderColor={meta.border}
