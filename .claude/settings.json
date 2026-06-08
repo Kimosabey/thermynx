@@ -48,7 +48,26 @@
       "Bash(../.venv/Scripts/python.exe -c ' *)",
       "Bash(../.venv/Scripts/python.exe -m py_compile llm.py)",
       "Bash(.venv/Scripts/python.exe -m py_compile model-eval/runners.py model-eval/run_sequential.py)",
-      "Bash(.venv/Scripts/python.exe -u model-eval/run_sequential.py --reduced --judge claude-opus-4-8)"
+      "Bash(.venv/Scripts/python.exe -u model-eval/run_sequential.py --reduced --judge claude-opus-4-8)",
+      "Bash(curl -s -m 5 -o /dev/null -w \"healthz -> %{http_code}\\\\n\" http://localhost:8000/healthz)",
+      "Bash(.venv/Scripts/python.exe model-eval/_probe.py)",
+      "Bash(curl -s -m 15 http://100.125.103.28:11434/api/tags)",
+      "Bash(python -c ' *)",
+      "Bash(.venv/Scripts/python.exe -m py_compile model-eval/run_sequential.py)",
+      "Bash(curl -sS -m 12 -o /dev/null -w \"HTTP %{http_code} | connect=%{time_connect}s\\\\n\" http://100.125.103.28:11434/api/tags)",
+      "Bash(curl -s -m 12 http://100.125.103.28:11434/api/tags)",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('OLLAMA OK —',len\\(d.get\\('models',[]\\)\\),'models'\\)\")",
+      "Bash(curl -s -m 10 http://100.125.103.28:11434/api/ps)",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('loaded:',[m['name'] for m in d.get\\('models',[]\\)] or 'none'\\)\")",
+      "Bash(python -m pytest tests/test_anomaly_detection.py tests/test_degradation.py -q)",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\([m['name'] for m in d.get\\('models',[]\\)] or 'none'\\)\")",
+      "PowerShell(\"ping\")",
+      "Bash(python -m py_compile app/api/v1/capabilities.py)",
+      "Bash(cd \"d:/Harshan/HVAC AI Operations Intelligence Platform/frontend/src/features/forecast\" && grep -nE \"backend|fallback_reason|confidence|data\\\\.\\(backend|confidence\\)|Badge\" index.jsx | head -20; echo \"--- ForecastResult fields ---\"; grep -nE \"backend|fallback_reason|confidence\" ../../../../backend/app/analytics/forecast_ml.py | head)",
+      "Read(//d/backend/app/analytics/**)",
+      "Bash(cd \"d:/Harshan/HVAC AI Operations Intelligence Platform/model-eval\")",
+      "Bash(ls -1 *.py *.md *.json)",
+      "Bash(ls -1 reports/)"
     ]
   }
 }
