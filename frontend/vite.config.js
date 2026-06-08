@@ -15,7 +15,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: `http://localhost:${BACKEND_PORT}`,
+        // 127.0.0.1 (not "localhost") — on Windows, Node may resolve localhost
+        // to IPv6 ::1 while uvicorn binds IPv4, causing proxy 500s.
+        target: `http://127.0.0.1:${BACKEND_PORT}`,
         changeOrigin: true,
       },
       "/proxy/grafana": { target: "http://localhost:3030", changeOrigin: true, rewrite: () => "/api/health" },
