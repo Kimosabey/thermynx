@@ -94,33 +94,29 @@ class Settings(BaseSettings):
     OLLAMA_DIGEST_TOOL_MODEL:    str = ""   # llama3.1:8b digest
     OLLAMA_DIGEST_VISION_MODEL:  str = ""   # llama3.2-vision digest
 
-    # ── Model right-sizing per task (eval verdict 2026-06-03 + non-Chinese policy) ──
-    # Each task can use a different model. Empty string = fall back to
-    # OLLAMA_DEFAULT_MODEL (now phi4). Assignments are the eval winners, with
-    # Chinese-origin models (qwen/deepseek/qwq) EXCLUDED by policy — so the
-    # narration winner (qwen2.5:14b) is replaced by its tying runner-up phi4,
-    # and the executor by gemma3:27b (Google). See MODEL_FIT_VERDICT.md.
-    #   - TEXT:     narration / answer streaming  → phi4 (4.5, ties qwen; non-Chinese)
-    #   - TOOL:     agent ReAct executor          → mistral-small3.2 (Mistral/FR; best non-Chinese tool-caller)
-    #   - SQL:      NL→SQL generation             → mistral-small3.2 + nl_to_sql guardrails
-    #   - PLANNER:  multi-agent planner JSON       → mistral-small3.2
+    # ── Model right-sizing per task (eval verdict 2026-06 · Claude-Opus-4.8 judge · non-Chinese) ──
+    # Each task can use a different model. Empty string = fall back to OLLAMA_DEFAULT_MODEL (phi4).
+    # Assignments = Claude-judged winners that ALSO pass the in-app golden check. Full report:
+    # model-eval/reports/MODEL_EVAL_FINAL_REPORT.md.
+    #   - TEXT:     narration / answer streaming  → phi4 (5.0; direct answerer; 16K ctx)
+    #   - TOOL:     agent ReAct executor          → devstral (Mistral/FR; best tool-caller 4.5; tools, 128K)
+    #   - SQL:      NL→SQL generation             → codestral (Mistral/FR; best deployable SQL; beat sqlcoder) + nl_to_sql guards
+    #   - PLANNER:  multi-agent planner JSON       → gemma4:12b (Google; best plans 3.3-4.0; THINKING model, JSON path only)
     #   - AUDITOR:  self-critique / validator      → phi4 (validator winner 5.0)
-    #   - RAG:      RAG-grounded analyzer answer    → "" = TEXT model (phi4; RAG winner-tie 4.4)
-    # IMPORTANT — why not gpt-oss / gemma3 (the raw eval winners):
-    #   gpt-oss:20b is a REASONING model: it spends num_predict tokens on a hidden
-    #   "thinking" channel before answering, so under the backend's token caps
-    #   (analyze=400) with large RAG prompts it returns an EMPTY response. gemma3:27b
-    #   scored worst on tool-calling (2.0) and broke agent runs. Both verified to fail
-    #   the golden eval (2026-06-05). phi4 + mistral-small3.2 answer DIRECTLY (no
-    #   thinking channel) and pass cleanly. Revisit gpt-oss only with a higher token
-    #   budget + thinking-aware streaming in llm/ollama.py.
-    # Production set on the Ollama host: phi4, mistral-small3.2, llama3.2-vision,
-    # nomic-embed-text — all non-Chinese-origin.
+    #   - RAG:      RAG-grounded analyzer answer    → "" = TEXT model (phi4; RAG 5.0)
+    # IMPORTANT — PLANNER is a thinking model (gemma4): it works in the JSON-mode planner path
+    #   (roomy → thinks AND emits valid JSON), but goes BLANK in a tight plain-text cap. Keep the
+    #   planner on JSON-mode with a generous budget. ~25s/plan (background step, acceptable).
+    # Why NOT the raw scorers gpt-oss / gemma3 / phi4-reasoning: they return EMPTY under the
+    #   text token cap (analyze=400) or break tool-calling — all failed the in-app golden check.
+    #   devstral/codestral/phi4 answer DIRECTLY and pass. qwen/deepseek/qwq excluded (Chinese).
+    # Production set on the Ollama host: gemma4:12b, devstral, codestral, phi4, llama3.2-vision,
+    # nomic-embed-text — all non-Chinese-origin. (mistral-small3.2 = fast Planner fallback.)
     # Override any one via env var; set to "" to force the OLLAMA_DEFAULT_MODEL fallback.
     OLLAMA_MODEL_TEXT:     str = "phi4"                  # narration & analyzer answer
-    OLLAMA_MODEL_TOOL:     str = "mistral-small3.2:latest"  # agent ReAct executor — best non-Chinese tool-caller
-    OLLAMA_MODEL_SQL:      str = "mistral-small3.2:latest"  # NL→SQL — nl_to_sql validator/deny-list still guards
-    OLLAMA_MODEL_PLANNER:  str = "mistral-small3.2:latest"  # multi-agent planner JSON
+    OLLAMA_MODEL_TOOL:     str = "devstral:latest"       # agent ReAct executor — best tool-caller (4.5)
+    OLLAMA_MODEL_SQL:      str = "codestral:latest"      # NL→SQL — code specialist; nl_to_sql validator/deny-list still guards
+    OLLAMA_MODEL_PLANNER:  str = "gemma4:12b"            # multi-agent planner JSON — best plans (thinking model, JSON path)
     OLLAMA_AUDITOR_MODEL:  str = "phi4"                  # self-critique / validator — eval validator winner (5.0)
     OLLAMA_MODEL_RAG:      str = ""                      # RAG-grounded answer → TEXT model (phi4); split disabled
 
