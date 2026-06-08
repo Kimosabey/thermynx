@@ -67,7 +67,12 @@
       "Read(//d/backend/app/analytics/**)",
       "Bash(cd \"d:/Harshan/HVAC AI Operations Intelligence Platform/model-eval\")",
       "Bash(ls -1 *.py *.md *.json)",
-      "Bash(ls -1 reports/)"
+      "Bash(ls -1 reports/)",
+      "Bash(.venv/Scripts/python.exe -m py_compile backend/app/config.py)",
+      "Bash(curl -s -m 8 http://localhost:8000/api/v1/health)",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -m 8 http://localhost:8000/health)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('keys:', list\\(d.keys\\(\\)\\)\\); print\\('ollama keys:', list\\(d.get\\('ollama',{}\\).keys\\(\\)\\)\\)\")"
     ]
   }
 }
