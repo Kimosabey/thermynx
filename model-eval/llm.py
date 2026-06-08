@@ -21,26 +21,44 @@ from app.config import settings
 
 HOST = settings.OLLAMA_HOST.rstrip("/")
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
+ANTHROPIC_BASE = "https://api.anthropic.com/v1"
 
 
-def _load_openrouter_key() -> str | None:
-    """Key from env, else from the gitignored model-eval/.env.local. Never logged."""
-    k = os.getenv("OPENROUTER_API_KEY")
-    if not k:
-        envf = Path(__file__).resolve().parent / ".env.local"
-        if envf.exists():
-            for line in envf.read_text(encoding="utf-8").splitlines():
-                if line.strip().startswith("OPENROUTER_API_KEY="):
-                    k = line.split("=", 1)[1].strip()
-                    break
-    return k or None
+def _norm(s: str) -> str:
+    """Normalise a key name for tolerant matching: lowercase, drop -/_/space."""
+    return s.lower().replace("-", "").replace("_", "").replace(" ", "")
 
 
-_OR_KEY = _load_openrouter_key()
+def _load_key(*names: str) -> str | None:
+    """Read a key from env, else from the gitignored model-eval/.env.local. Tolerant of the
+    exact var name (ignores case, -, _, spaces) and spaces around '='. Never logged.
+    Pass one or more accepted aliases; the first non-empty match wins."""
+    wanted = {_norm(n) for n in names}
+    for n in names:  # exact env var first
+        if os.getenv(n):
+            return os.getenv(n)
+    envf = Path(__file__).resolve().parent / ".env.local"
+    if envf.exists():
+        for line in envf.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            name, _, val = line.partition("=")
+            if _norm(name) in wanted and val.strip():
+                return val.strip()
+    return None
+
+
+_OR_KEY = _load_key("OPENROUTER_API_KEY")
+_ANTHROPIC_KEY = _load_key("ANTHROPIC_API_KEY", "CLAUDE_API", "CLAUDE-API", "ANTHROPIC_KEY")
 
 
 def _is_openrouter(model: str) -> bool:
     return "/" in model
+
+
+def _is_anthropic(model: str) -> bool:
+    return model.startswith("claude")
 
 
 def _or_headers() -> dict:
@@ -71,7 +89,19 @@ async def chat_json(model: str, system: str, user: str,
     """JSON-mode chat. Returns (parsed_obj, latency_s)."""
     msgs = [{"role": "system", "content": system}, {"role": "user", "content": user}]
     t0 = time.time()
-    if _is_openrouter(model):
+    if _is_anthropic(model):
+        if not _ANTHROPIC_KEY:
+            raise RuntimeError("ANTHROPIC_API_KEY not set (env or model-eval/.env.local)")
+        # NOTE: Opus 4.8 rejects the `temperature` param ("deprecated for this model"), so omit it.
+        payload = {"model": model, "max_tokens": 1024,
+                   "system": system, "messages": [{"role": "user", "content": user}]}
+        headers = {"x-api-key": _ANTHROPIC_KEY, "anthropic-version": "2023-06-01",
+                   "content-type": "application/json"}
+        async with httpx.AsyncClient(timeout=cfg.REQUEST_TIMEOUT_S) as c:
+            r = await c.post(f"{ANTHROPIC_BASE}/messages", json=payload, headers=headers)
+            r.raise_for_status()
+            content = r.json()["content"][0]["text"] or ""
+    elif _is_openrouter(model):
         payload = {"model": model, "messages": msgs, "temperature": temperature,
                    "response_format": {"type": "json_object"}}
         async with httpx.AsyncClient(timeout=cfg.REQUEST_TIMEOUT_S) as c:

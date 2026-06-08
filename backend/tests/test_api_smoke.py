@@ -107,6 +107,11 @@ GET_ENDPOINTS = [
     ("/api/v1/energy/cost", {"period": "daily", "days": 7}, (200,)),
     ("/api/v1/energy/meters", None, (200,)),
     ("/api/v1/alarms/ibms", {"limit": 20}, (200,)),
+    ("/api/v1/vendors", None, (200,)),
+    ("/api/v1/parts", None, (200,)),
+    ("/api/v1/inventory/low-stock", None, (200,)),
+    ("/api/v1/purchase-orders", None, (200,)),
+    ("/api/v1/purchase-orders/reorder-suggestions", None, (200,)),
     ("/api/v1/agent/history", {"limit": 10}, (200,)),
     ("/api/v1/threads", None, (200,)),
     ("/api/v1/slack/health", None, (200,)),
@@ -257,6 +262,35 @@ def test_asset_detail_and_meta(client):
     m = client.put(f"{BASE}/api/v1/assets/{aid}/meta", json={"cost_center": "CC-SMOKE", "criticality": "high"})
     assert m.status_code == 200, m.text
     assert m.json()["meta"]["cost_center"] == "CC-SMOKE"
+
+
+def test_flow_supply_chain(client):
+    """Vendor -> part -> PO -> receive (stock increments) -> consume on a WO (decrements)."""
+    v = client.post(f"{BASE}/api/v1/vendors", json={"name": "Smoke Supplier", "lead_time_days": 5})
+    assert v.status_code == 200, v.text
+    vid = v.json()["id"]
+    p = client.post(f"{BASE}/api/v1/parts", json={"code": "SMK-1", "name": "Smoke part",
+                    "vendor_id": vid, "unit_cost": 10.0, "reorder_point": 2, "reorder_qty": 8})
+    assert p.status_code == 200, p.text
+    pid = p.json()["id"]
+    po = client.post(f"{BASE}/api/v1/purchase-orders", json={"vendor_id": vid,
+                     "lines": [{"part_id": pid, "qty": 8, "unit_cost": 10.0}]})
+    assert po.status_code == 200, po.text
+    po_id = po.json()["id"]
+    for st in ("submitted", "approved", "received"):
+        r = client.post(f"{BASE}/api/v1/purchase-orders/{po_id}/transition", json={"to_state": st, "actor": "smoke"})
+        assert r.status_code == 200, r.text
+    # stock incremented to 8 on receive
+    assert client.get(f"{BASE}/api/v1/parts/{pid}").json()["qty_on_hand"] == 8
+    # consume 5 on a real work order -> 3 left
+    wo = client.post(f"{BASE}/api/v1/work-orders", json={"equipment_id": "chiller_1", "title": "smoke consume"})
+    cons = client.post(f"{BASE}/api/v1/inventory/consume",
+                       json={"wo_id": wo.json()["id"], "part_id": pid, "qty": 5})
+    assert cons.status_code == 200, cons.text
+    assert cons.json()["qty_on_hand"] == 3
+    # invalid transition rejected (422)
+    bad = client.post(f"{BASE}/api/v1/purchase-orders/{po_id}/transition", json={"to_state": "draft"})
+    assert bad.status_code == 422, bad.text
 
 
 def test_vision_describe(client):

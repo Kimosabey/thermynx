@@ -39,17 +39,21 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         (settings.OLLAMA_MODEL_TOOL or settings.OLLAMA_DEFAULT_MODEL, settings.OLLAMA_DIGEST_TOOL_MODEL),
         (settings.OLLAMA_VISION_MODEL, settings.OLLAMA_DIGEST_VISION_MODEL),
     ]
+    _model_data = {}
     if ollama_ok:
         try:
             import httpx as _httpx
             async with _httpx.AsyncClient(timeout=5.0) as _c:
                 _r = await _c.get(f"{settings.OLLAMA_HOST}/api/tags")
-                _model_digests = {
-                    m["name"]: m.get("digest", "") for m in (_r.json().get("models") or [])
-                }
+                raw_models = _r.json().get("models") or []
+                _model_digests = {m["name"]: m.get("digest", "") for m in raw_models}
+                for m in raw_models:
+                    size = m.get("size", 0)
+                    sz = f"{size / 1024**3:.1f} GB" if size > 1024**3 else (f"{size / 1024**2:.1f} MB" if size > 0 else "")
+                    _model_data[m["name"]] = {"param_size": m.get("details", {}).get("parameter_size", ""), "size": sz}
             for model_name, expected_digest in pin_pairs:
                 if not expected_digest:
-                    continue   # no pin set — skip
+                    continue
                 actual = _model_digests.get(model_name, "")
                 if actual and not actual.startswith(expected_digest[:12]):
                     msg = f"Digest mismatch for {model_name}: expected …{expected_digest[:12]}, got …{actual[:12]}"
@@ -58,9 +62,6 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         except Exception as _e:
             log.debug("digest_check_failed err=%s", _e)
 
-    # Per-role model map — single source of truth for "which model runs where",
-    # surfaced in the System page UI. Resolves "" fallbacks the same way the
-    # services do (role-specific → TEXT → OLLAMA_DEFAULT_MODEL).
     _text_model = settings.OLLAMA_MODEL_TEXT or settings.OLLAMA_DEFAULT_MODEL
     model_roles = [
         {"role": "Narration",      "model": _text_model,
@@ -80,6 +81,19 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         {"role": "Embeddings",     "model": "nomic-embed-text",
          "purpose": "RAG vector search", "origin": "Nomic (US)"},
     ]
+    
+    # Attach size metadata to roles
+    for r in model_roles:
+        target = r["model"]
+        # Exact match or colon suffix (e.g. "phi4" matches "phi4:latest")
+        match = _model_data.get(target)
+        if not match:
+            for k, v in _model_data.items():
+                if k == target or k.startswith(f"{target}:"):
+                    match = v
+                    break
+        r["param_size"] = match["param_size"] if match else ""
+        r["size"] = match["size"] if match else ""
 
     # Data-freshness signal — populates the Prometheus gauge for alerting +
     # surfaces a human-readable warning in the response when wall_clock mode is

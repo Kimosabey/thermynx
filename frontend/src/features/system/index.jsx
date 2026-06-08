@@ -20,7 +20,7 @@ const SERVICES = [
     group: "Frontend",
     items: [
       { Icon: Server,       label: "Frontend",         url: "http://localhost:5173",                         port: 5173,  healthUrl: "http://localhost:5173",                        role: "Vite dev server (this app)" },
-      { Icon: Server,       label: "Frontend (preview)",url: "http://localhost:4173",                        port: 4173,  healthUrl: "http://localhost:4173",                        role: "Vite preview build (npm run preview)" },
+      { Icon: Server,       label: "Frontend (preview)",url: "http://localhost:4173",                        port: 4173,  healthUrl: null,                                           role: "Vite preview build (npm run preview)" },
     ],
   },
   {
@@ -39,11 +39,11 @@ const SERVICES = [
   {
     group: "Observability",
     items: [
-      { Icon: BarChart2,    label: "Grafana",           url: "http://localhost:3030",                        port: 3030,  healthUrl: "http://localhost:3030/api/health",             role: "Dashboards — API Overview + AI Operations" },
-      { Icon: Radio,        label: "Prometheus",        url: "http://localhost:9292",                        port: 9292,  healthUrl: "http://localhost:9292/-/healthy",              role: "Metrics store + alert evaluation" },
-      { Icon: Bell,         label: "Alertmanager",      url: "http://localhost:9394",                        port: 9394,  healthUrl: "http://localhost:9394/-/healthy",              role: "Alert routing + silences" },
-      { Icon: FileText,     label: "Loki",              url: "http://localhost:3100",                        port: 3100,  healthUrl: "http://localhost:3100/ready",                  role: "Log aggregation (Promtail → Loki)" },
-      { Icon: Radio,        label: "Promtail targets",  url: "http://localhost:9080/targets",                port: 9080,  healthUrl: "http://localhost:9080/ready",                  role: "Log scrape agent — target list" },
+      { Icon: BarChart2,    label: "Grafana",           url: "http://localhost:3030",                        port: 3030,  healthUrl: "/proxy/grafana",             role: "Dashboards — API Overview + AI Operations" },
+      { Icon: Radio,        label: "Prometheus",        url: "http://localhost:9292",                        port: 9292,  healthUrl: "/proxy/prometheus",              role: "Metrics store + alert evaluation" },
+      { Icon: Bell,         label: "Alertmanager",      url: "http://localhost:9394",                        port: 9394,  healthUrl: "/proxy/alertmanager",              role: "Alert routing + silences" },
+      { Icon: FileText,     label: "Loki",              url: "http://localhost:3100",                        port: 3100,  healthUrl: "/proxy/loki",                  role: "Log aggregation (Promtail → Loki)" },
+      { Icon: Radio,        label: "Promtail targets",  url: "http://localhost:9080/targets",                port: 9080,  healthUrl: "/proxy/promtail",                  role: "Log scrape agent — target list" },
     ],
   },
   {
@@ -52,7 +52,7 @@ const SERVICES = [
       { Icon: Database,     label: "Unicharm MySQL",    url: "mysql://localhost:3307",                       port: 3307,  healthUrl: null,                                           role: "Telemetry source (read-only)" },
       { Icon: Database,     label: "Postgres (pgvector)",url: "postgres://localhost:5442",                   port: 5442,  healthUrl: null,                                           role: "App state + RAG embeddings" },
       { Icon: HardDrive,    label: "Redis",             url: "redis://localhost:6380",                       port: 6380,  healthUrl: null,                                           role: "Cache + arq queue" },
-      { Icon: HardDrive,    label: "Redis Commander",   url: "http://localhost:8181",                        port: 8181,  healthUrl: "http://localhost:8181",                        role: "Browser UI for Redis" },
+      { Icon: HardDrive,    label: "Redis Commander",   url: "http://localhost:8181",                        port: 8181,  healthUrl: "/proxy/redis-commander",                        role: "Browser UI for Redis" },
     ],
   },
   {
@@ -230,20 +230,21 @@ function SummaryBar({ status, poll, lastChecked, loading }) {
 
 // ── AI model roster (per-role map from GET /api/v1/health) ────────────────────
 function useModelInfo() {
-  const [info, setInfo] = useState(null); // { host, default_model, connected, model_roles: [] }
+  const [state, setState] = useState({ loading: true, info: null });
   useEffect(() => {
     let alive = true;
-    fetch("/api/v1/health", { signal: AbortSignal.timeout(6000) })
+    setState({ loading: true, info: null });
+    fetch("/api/v1/health", { signal: AbortSignal.timeout(12000) })
       .then(r => r.json())
-      .then(d => { if (alive) setInfo(d?.ollama ?? null); })
-      .catch(() => { if (alive) setInfo(null); });
+      .then(d => { if (alive) setState({ loading: false, info: d?.ollama ?? null }); })
+      .catch(() => { if (alive) setState({ loading: false, info: null }); });
     return () => { alive = false; };
   }, []);
-  return info;
+  return state;
 }
 
 function ModelsCard() {
-  const info = useModelInfo();
+  const { loading, info } = useModelInfo();
   const roles = info?.model_roles ?? [];
 
   return (
@@ -256,15 +257,23 @@ function ModelsCard() {
             textTransform="uppercase" letterSpacing="0.08em">Role</Text>
           <Text flex="0 0 200px" fontSize="10px" fontWeight={700} color="text.faint"
             textTransform="uppercase" letterSpacing="0.08em">Model</Text>
+          <Text flex="0 0 120px" fontSize="10px" fontWeight={700} color="text.faint"
+            textTransform="uppercase" letterSpacing="0.08em">Size / Params</Text>
           <Text flex="1" fontSize="10px" fontWeight={700} color="text.faint"
             textTransform="uppercase" letterSpacing="0.08em">Purpose</Text>
           <Text flex="0 0 110px" fontSize="10px" fontWeight={700} color="text.faint"
             textTransform="uppercase" letterSpacing="0.08em">Origin</Text>
         </Flex>
 
-        {roles.length === 0 && (
+        {loading && (
           <Flex align="center" gap={2} px={3} py={3} color="text.muted">
             <Spinner size="xs" /><Text fontSize="sm">Loading model roster from backend…</Text>
+          </Flex>
+        )}
+        
+        {!loading && roles.length === 0 && (
+          <Flex align="center" gap={2} px={3} py={3} color="#ef4444">
+            <Text fontSize="sm">Failed to load model roster (backend timeout or Ollama unreachable).</Text>
           </Flex>
         )}
 
@@ -283,8 +292,11 @@ function ModelsCard() {
                 <Text fontSize="sm" fontWeight={700} color="text.primary">{r.role}</Text>
               </Flex>
               <Text flex={{ base: "1 0 auto", md: "0 0 200px" }} fontSize="13px" fontFamily="mono"
-                color="text.brand" fontWeight={600} noOfLines={1} title={r.model}>{r.model}</Text>
-              <Text flex="1" fontSize="12px" color="text.muted" minW={0} noOfLines={1}>{r.purpose}</Text>
+                color="text.brand" fontWeight={600} title={r.model}>{r.model}</Text>
+              <Text flex={{ base: "0 0 auto", md: "0 0 120px" }} fontSize="11px" color="text.muted" fontFamily="mono">
+                {r.param_size ? `${r.param_size} · ${r.size}` : (r.size || "—")}
+              </Text>
+              <Text flex="1" fontSize="12px" color="text.muted" minW={0}>{r.purpose}</Text>
               <Badge flex={{ base: "0 0 auto", md: "0 0 110px" }} w="fit-content" fontSize="9px"
                 bg="bg.chip" color="text.muted" border="1px solid" borderColor="border.subtle"
                 borderRadius="6px" px={2} py="2px">{r.origin}</Badge>
@@ -293,14 +305,40 @@ function ModelsCard() {
         ))}
 
         {info && (
-          <Flex px={3} py="8px" gap={2} align="center" flexWrap="wrap"
-            borderTop="1px solid" borderColor="border.subtle" mt={1}>
-            <Text fontSize="11px" color="text.faint">
+          <Box px={3} py="8px" borderTop="1px solid" borderColor="border.subtle" mt={1}>
+            <Text fontSize="11px" color="text.faint" mb={2}>
               Host <Text as="span" fontFamily="mono" color="text.muted">{info.host}</Text>
               {"  ·  "}fallback <Text as="span" fontFamily="mono" color="text.muted">{info.default_model}</Text>
               {"  ·  "}all non-Chinese-origin (Microsoft · Mistral · Meta · Nomic)
             </Text>
-          </Flex>
+            <Flex gap={6} flexWrap="wrap">
+              {info.available_models && info.available_models.length > 0 && (
+                <Box maxW="500px">
+                  <Text fontSize="10px" fontWeight={700} color="text.faint" textTransform="uppercase" mb={1}>Available Models</Text>
+                  <Text fontSize="11px" color="text.muted" fontFamily="mono" lineHeight={1.4}>
+                    {info.available_models.join(", ")}
+                  </Text>
+                </Box>
+              )}
+              {info.circuit && (
+                <Box>
+                  <Text fontSize="10px" fontWeight={700} color="text.faint" textTransform="uppercase" mb={1}>Circuit Breaker</Text>
+                  <Text fontSize="11px" color={info.circuit.open ? "#ef4444" : "#10b981"} fontFamily="mono">
+                    {info.circuit.open ? `Open (${info.circuit.open_seconds_left}s left)` : "Closed"} 
+                    {" "}— {info.circuit.recent_failures}/{info.circuit.threshold} fails (window: {info.circuit.window_seconds}s)
+                  </Text>
+                </Box>
+              )}
+              {info.digest_warnings && info.digest_warnings.length > 0 && (
+                <Box w="100%" mt={1}>
+                  <Text fontSize="10px" fontWeight={700} color="#f59e0b" textTransform="uppercase" mb={1}>Digest Warnings</Text>
+                  {info.digest_warnings.map((w, i) => (
+                    <Text key={i} fontSize="11px" color="#f59e0b" fontFamily="mono">• {w}</Text>
+                  ))}
+                </Box>
+              )}
+            </Flex>
+          </Box>
         )}
       </GlassCard>
     </Box>

@@ -37,7 +37,18 @@
       "Bash(../.venv/Scripts/python -c \"import main; print\\('main:app imports OK — app =', type\\(main.app\\).__name__\\)\")",
       "Bash(python -m uvicorn main:app --port 8001 --log-level warning)",
       "Bash(curl -s -m 10 http://localhost:8001/api/v1/digest/latest)",
-      "Bash(curl -s -m 10 \"http://localhost:8001/api/v1/digest?limit=5\")"
+      "Bash(curl -s -m 10 \"http://localhost:8001/api/v1/digest?limit=5\")",
+      "Bash(echo \"---exit:$?---\")",
+      "Bash(python -m uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info)",
+      "Bash(curl -s -m 5 -o /dev/null -w \"  localhost:5173 -> HTTP %{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s -m 10 http://localhost:8000/api/v1/health)",
+      "Bash(curl -s -m 15 http://localhost:8000/api/v1/equipment)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('  equipment count:', len\\(d if isinstance\\(d,list\\) else d.get\\('equipment',d\\)\\)\\)\")",
+      "Bash(../.venv/Scripts/python.exe -m py_compile llm.py run_sequential.py)",
+      "Bash(../.venv/Scripts/python.exe -c ' *)",
+      "Bash(../.venv/Scripts/python.exe -m py_compile llm.py)",
+      "Bash(.venv/Scripts/python.exe -m py_compile model-eval/runners.py model-eval/run_sequential.py)",
+      "Bash(.venv/Scripts/python.exe -u model-eval/run_sequential.py --reduced --judge claude-opus-4-8)"
     ]
   }
 }

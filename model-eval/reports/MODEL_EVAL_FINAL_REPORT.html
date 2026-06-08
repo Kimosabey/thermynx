@@ -1,0 +1,612 @@
+<!doctype html><html><head><meta charset="utf-8"><title>OMNYX Model Evaluation — Final Report</title>
+<style>
+ body{font-family:Segoe UI,Arial,sans-serif;max-width:980px;margin:24px auto;padding:0 20px;color:#1a1a1a;line-height:1.5}
+ h1{border-bottom:3px solid #2b6cb0;padding-bottom:6px;color:#1a365d}
+ h2{background:#f0f4f8;padding:6px 10px;border-left:4px solid #2b6cb0;margin-top:22px;color:#1a365d}
+ h3{color:#2b6cb0}
+ table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+ th,td{border:1px solid #cbd5e0;padding:6px 9px;text-align:left;vertical-align:top}
+ th{background:#2b6cb0;color:#fff}
+ tr:nth-child(even){background:#f7fafc}
+ blockquote{background:#fffbea;border-left:4px solid #d69e2e;margin:10px 0;padding:8px 14px;color:#555}
+ code{background:#edf2f7;padding:1px 5px;border-radius:3px;font-size:12px}
+ @media print{body{margin:0}h2{break-after:avoid}table{break-inside:avoid}}
+</style></head><body><h1 id="omnyx-thermynx-model-evaluation-final-combined-report">OMNYX / THERMYNX — Model Evaluation: Final Combined Report</h1>
+<blockquote>
+<p><strong>One document, everything:</strong> decision · evidence (local + cloud) · hardware · deployment.
+Real test on live Unicharm data. Judge = <code>qwen2.5:32b</code>. Scores 1–5, <strong>pass = 4+</strong>.
+Dates: 2026-06-03 (eval) · 2026-06-05 (in-app golden-eval filter). Everything <strong>on-prem</strong>
+(cloud used for testing big models only). Source files: REAL_DATA_MODEL_EVAL.md,
+OPENROUTER_MODEL_EVAL.md.</p>
+</blockquote>
+<hr />
+<h2 id="1-decision-deploy-these-all-non-chinese">1. DECISION — deploy these (all non-Chinese)</h2>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Model</th>
+<th>Params</th>
+<th>Maker</th>
+<th>Country</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Planner</td>
+<td><strong>mistral-small3.2</strong></td>
+<td>24B</td>
+<td>Mistral AI</td>
+<td>🇫🇷 FR</td>
+</tr>
+<tr>
+<td>Executor</td>
+<td><strong>mistral-small3.2</strong></td>
+<td>24B</td>
+<td>Mistral AI</td>
+<td>🇫🇷 FR</td>
+</tr>
+<tr>
+<td>NL→SQL</td>
+<td><strong>mistral-small3.2</strong> + guardrails</td>
+<td>24B</td>
+<td>Mistral AI</td>
+<td>🇫🇷 FR</td>
+</tr>
+<tr>
+<td>Validator</td>
+<td><strong>phi4</strong></td>
+<td>14B</td>
+<td>Microsoft</td>
+<td>🇺🇸 US</td>
+</tr>
+<tr>
+<td>Narration / Text</td>
+<td><strong>phi4</strong></td>
+<td>14B</td>
+<td>Microsoft</td>
+<td>🇺🇸 US</td>
+</tr>
+<tr>
+<td>RAG</td>
+<td><strong>phi4</strong></td>
+<td>14B</td>
+<td>Microsoft</td>
+<td>🇺🇸 US</td>
+</tr>
+<tr>
+<td>Vision</td>
+<td><strong>llama3.2-vision</strong></td>
+<td>11B</td>
+<td>Meta</td>
+<td>🇺🇸 US</td>
+</tr>
+<tr>
+<td>Embeddings</td>
+<td><strong>nomic-embed-text</strong></td>
+<td>~0.1B</td>
+<td>Nomic AI</td>
+<td>🇺🇸 US</td>
+</tr>
+</tbody>
+</table>
+<p><strong>4 models, ~32 GB total → fit together on the 48 GB box. No upgrade needed.</strong></p>
+<hr />
+<h2 id="2-key-decisions-to-take">2. KEY DECISIONS TO TAKE</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Decision</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Deploy mistral-small3.2 + phi4 (+vision +nomic)</td>
+<td>Best non-Chinese, in-app-working set</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Keep planned <strong>48 GB</strong> box</td>
+<td>Whole team fits (~32 GB); no upgrade</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Don't use 70B/120B</td>
+<td>Cloud test: no quality gain, slower</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Exclude Chinese models (qwen/deepseek/qwq)</td>
+<td>Policy</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Treat <strong>NL→SQL as #1 risk</strong></td>
+<td>All models weak → fix guardrails/retry</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Final sign-off: full-depth re-run + FP8 latency test</td>
+<td>This was a quick ranking run</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Rotate OpenRouter API key</td>
+<td>Was shared during testing</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-how-we-tested">3. HOW WE TESTED</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data</td>
+<td>Real Unicharm MySQL telemetry + real pgvector document corpus</td>
+</tr>
+<tr>
+<td>Jobs (7)</td>
+<td>Planner, Validator, Executor, NL→SQL, RAG, Narration, Embeddings</td>
+</tr>
+<tr>
+<td>Check 1 (hard rule)</td>
+<td>valid JSON / runnable SQL / grounded work order</td>
+</tr>
+<tr>
+<td>Check 2 (judge AI)</td>
+<td><code>qwen2.5:32b</code> rates quality 1–5; pass = 4+</td>
+</tr>
+<tr>
+<td>Local</td>
+<td>≤32B models on the 20 GB box (Ollama Q4)</td>
+</tr>
+<tr>
+<td>Cloud</td>
+<td>70B/120B via OpenRouter — <strong>quality only</strong> (speed ≠ our hardware)</td>
+</tr>
+<tr>
+<td>Final filter</td>
+<td>in-app golden eval (2026-06-05) drops models that score well but break live</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-evidence-local-results-32b-on-our-hardware">4. EVIDENCE — local results (≤32B, on our hardware)</h2>
+<p>Avg score (pass-rate). <strong>Bold = deployed.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Planner</th>
+<th>Validator</th>
+<th>Executor</th>
+<th>NL→SQL</th>
+<th>RAG</th>
+<th>Narration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>mistral-small3.2</strong></td>
+<td>3.0</td>
+<td><strong>5.0</strong></td>
+<td>3.0</td>
+<td>2.8 (best non-CN)</td>
+<td>4.4</td>
+<td>4.5</td>
+</tr>
+<tr>
+<td><strong>phi4</strong></td>
+<td>3.0*</td>
+<td><strong>5.0</strong></td>
+<td>3.0</td>
+<td>2.0</td>
+<td>4.4</td>
+<td>4.5</td>
+</tr>
+<tr>
+<td>gpt-oss:20b</td>
+<td>3.5</td>
+<td>5.0</td>
+<td>3.0</td>
+<td><strong>3.2</strong></td>
+<td>4.4</td>
+<td>4.0</td>
+</tr>
+<tr>
+<td>gemma3:27b</td>
+<td><strong>4.0</strong></td>
+<td>5.0</td>
+<td>2.0</td>
+<td>2.4</td>
+<td>4.4</td>
+<td>4.5</td>
+</tr>
+<tr>
+<td>qwen2.5:14b 🇨🇳</td>
+<td>3.5</td>
+<td>5.0</td>
+<td><strong>3.5</strong></td>
+<td>2.6</td>
+<td>4.4</td>
+<td>4.5</td>
+</tr>
+<tr>
+<td>qwen2.5:32b 🇨🇳</td>
+<td>3.5</td>
+<td>5.0</td>
+<td>3.0</td>
+<td>2.5</td>
+<td>4.4</td>
+<td>4.5</td>
+</tr>
+<tr>
+<td>llama3.1:8b</td>
+<td>3.0</td>
+<td>5.0</td>
+<td>2.5</td>
+<td>2.5</td>
+<td>4.2</td>
+<td>3.0</td>
+</tr>
+<tr>
+<td>deepseek-r1:32b 🇨🇳</td>
+<td>3.0 (75s)</td>
+<td>2.5</td>
+<td>1.5 (434s)</td>
+<td>0.0</td>
+<td>4.4</td>
+<td>err</td>
+</tr>
+<tr>
+<td>qwq:32b 🇨🇳</td>
+<td>4.0</td>
+<td>5.0</td>
+<td>2.5 (226s)</td>
+<td>0.0</td>
+<td>4.4</td>
+<td>4.0</td>
+</tr>
+<tr>
+<td>qwen2.5-coder:32b 🇨🇳</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>2.25</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Embeddings: nomic = mxbai</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>both <strong>5.0</strong></td>
+</tr>
+</tbody>
+</table>
+<p>* phi4 had 1 malformed plan on the reduced run; strong elsewhere → deployed for Validator/RAG/Narration.</p>
+<hr />
+<h2 id="5-evidence-cloud-results-big-models-quality-only">5. EVIDENCE — cloud results (big models, quality-only)</h2>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Params</th>
+<th>Planner</th>
+<th>Validator</th>
+<th>Executor</th>
+<th>RAG</th>
+<th>Narration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>gpt-oss-120b</td>
+<td>120B</td>
+<td>4.0 (errored 2/3)</td>
+<td>5.0</td>
+<td>2.33</td>
+<td>4.4</td>
+<td>4.0</td>
+</tr>
+<tr>
+<td>llama-3.3-70b</td>
+<td>70B</td>
+<td>3.67</td>
+<td>5.0</td>
+<td>2.33</td>
+<td>4.4</td>
+<td>4.5</td>
+</tr>
+<tr>
+<td>qwen-2.5-72b 🇨🇳</td>
+<td>72B</td>
+<td>3.0</td>
+<td>5.0</td>
+<td>3.33</td>
+<td>4.25</td>
+<td>4.0</td>
+</tr>
+<tr>
+<td>deepseek-r1-distill-70b 🇨🇳</td>
+<td>70B</td>
+<td>0 (fail)</td>
+<td>1.0</td>
+<td>1.0</td>
+<td>4.4</td>
+<td>4.5</td>
+</tr>
+<tr>
+<td>gpt-oss-20b</td>
+<td>20B</td>
+<td>4.0</td>
+<td>5.0</td>
+<td>2.33</td>
+<td>4.5</td>
+<td>4.0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Verdict: bigger did NOT win</strong> — 70B/120B tie at best, run slower, 120B timed out on planning.
+(NL→SQL not run on cloud — backend SQL path can't route cloud models.)</p>
+<hr />
+<h2 id="6-why-the-raw-winners-arent-deployed">6. WHY THE RAW WINNERS AREN'T DEPLOYED</h2>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>gpt-oss:20b</td>
+<td><strong>Good &amp; fits</strong>, won 3 jobs — but <strong>reasoning model → empty answers</strong> under our token caps; <strong>failed golden eval</strong>. Fixable (raise token budget + thinking-aware streaming).</td>
+</tr>
+<tr>
+<td>gemma3:27b</td>
+<td>Won planner but <strong>broke tool-calling (2.0)</strong>; failed golden eval; 27B blocks co-residency.</td>
+</tr>
+<tr>
+<td>qwen / deepseek / qwq</td>
+<td><strong>Chinese-origin — excluded by policy.</strong> (qwen2.5:32b used only as offline judge.)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-hardware-servers-fit">7. HARDWARE — servers &amp; fit</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Current (test)</th>
+<th>Future (production)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU VRAM</td>
+<td><strong>20 GB</strong> (RTX 4000 Ada)</td>
+<td><strong>48 GB</strong></td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>32 GB</td>
+<td>48 GB</td>
+</tr>
+<tr>
+<td>Serving</td>
+<td>Ollama (Q4)</td>
+<td>vLLM (FP8)</td>
+</tr>
+<tr>
+<td>Loadable at once</td>
+<td>1 chat model</td>
+<td>all 4 models</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What fits in the 20 GB box today</strong> (one chat model + tiny embedder):</p>
+<table>
+<thead>
+<tr>
+<th>Loadout</th>
+<th>VRAM</th>
+<th>OK?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>phi4 + nomic</td>
+<td>~9 GB</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>mistral-small3.2 + nomic</td>
+<td>~15 GB</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>llama3.2-vision + nomic</td>
+<td>~8 GB</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>phi4 + mistral together</td>
+<td>~24 GB</td>
+<td>❌ swap</td>
+</tr>
+<tr>
+<td>70B / 120B</td>
+<td>42 / 65 GB</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Model size → fit:</strong> 11–24B ✅ ideal · 27–32B ✅ alone only · 70B needs 80 GB (FP8) · 120B can't run on-prem.</p>
+<p><strong>Hardware tiers:</strong> A = <strong>48 GB (recommended, proven best)</strong> · B = 80 GB (optional, no gain) · C = 160 GB (not justified).</p>
+<h3 id="20-gb-box-vs-48-gb-box-pros-cons-limitations">20 GB box vs 48 GB box — pros / cons / limitations</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th><strong>20 GB box (current / test)</strong></th>
+<th><strong>48 GB box (future / production)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Models loaded at once</td>
+<td><strong>1 chat model</strong> + tiny embedder</td>
+<td><strong>All 4 models</strong> together</td>
+</tr>
+<tr>
+<td>Multi-agent (Planner+Validator+Executor)</td>
+<td>❌ run one at a time</td>
+<td>✅ run in parallel</td>
+</tr>
+<tr>
+<td>Model swapping</td>
+<td>⚠️ yes — reload delay when role changes</td>
+<td>✅ none — all resident</td>
+</tr>
+<tr>
+<td>Precision / quality</td>
+<td>Q4 (lower)</td>
+<td><strong>FP8 (higher quality)</strong></td>
+</tr>
+<tr>
+<td>Biggest model</td>
+<td>≤32B (alone, tight)</td>
+<td>≤32B easily; 70B only 4-bit alone</td>
+</tr>
+<tr>
+<td>Production-ready?</td>
+<td>❌ dev/screening only</td>
+<td>✅ yes</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>already owned</td>
+<td>new GPU spend</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pros — 20 GB box:</strong> already have it; free; runs <strong>all our chosen models</strong> (one at a time); perfect for testing, screening, and the eval we just did.</p>
+<p><strong>Cons / limitations — 20 GB box:</strong> only <strong>one chat model fits at a time</strong>, so a live agent flow (plan → validate → execute) must <strong>swap models between steps</strong> (seconds of delay each switch); <strong>no concurrency</strong>; tight for 27–32B; reasoning models very slow; <strong>cannot host 70B/120B</strong>. → <strong>Not suitable for production multi-agent load.</strong></p>
+<p><strong>Pros — 48 GB box:</strong> the <strong>whole 4-model team stays loaded</strong> (~32 GB, ~16 GB spare) → <strong>no swapping, agents run together</strong>, lower latency; <strong>FP8 = better quality</strong> than the Q4 we tested; production-grade; headroom for concurrent users.</p>
+<p><strong>Cons / limitations — 48 GB box:</strong> new GPU cost; still <strong>can't run a 70B at FP8</strong> (only 4-bit, and then <em>alone</em>) or a 120B — those need an <strong>80 GB</strong> card. (Per the eval, that's fine — bigger models gave no benefit.)</p>
+<p><strong>Verdict:</strong> keep the <strong>20 GB box for dev/testing</strong>; deploy production on the <strong>48 GB box</strong> — it removes the swapping limit and runs the full agent team at higher precision. No need to go beyond 48 GB.</p>
+<hr />
+<h2 id="8-deployment-live-config-backendappconfigpy">8. DEPLOYMENT — live config (<code>backend/app/config.py</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Setting</th>
+<th>Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Default</td>
+<td><code>OLLAMA_DEFAULT_MODEL</code></td>
+<td>phi4</td>
+</tr>
+<tr>
+<td>Text / Narration</td>
+<td><code>OLLAMA_MODEL_TEXT</code></td>
+<td>phi4</td>
+</tr>
+<tr>
+<td>Tool / Executor</td>
+<td><code>OLLAMA_MODEL_TOOL</code></td>
+<td>mistral-small3.2</td>
+</tr>
+<tr>
+<td>NL→SQL</td>
+<td><code>OLLAMA_MODEL_SQL</code></td>
+<td>mistral-small3.2</td>
+</tr>
+<tr>
+<td>Planner</td>
+<td><code>OLLAMA_MODEL_PLANNER</code></td>
+<td>mistral-small3.2</td>
+</tr>
+<tr>
+<td>Validator</td>
+<td><code>OLLAMA_AUDITOR_MODEL</code></td>
+<td>phi4</td>
+</tr>
+<tr>
+<td>RAG</td>
+<td><code>OLLAMA_MODEL_RAG</code></td>
+<td>(empty)→phi4</td>
+</tr>
+<tr>
+<td>Vision</td>
+<td><code>OLLAMA_VISION_MODEL</code></td>
+<td>llama3.2-vision</td>
+</tr>
+<tr>
+<td>Embeddings</td>
+<td>pipeline</td>
+<td>nomic-embed-text</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tuning:</strong> AGENT_MAX_STEPS=8 · NL_QUERY_LLM_TIMEOUT=40s · CHAT_TIMEOUT=60s · VISION_TIMEOUT=90s.
+<strong>Guardrails:</strong> NL→SQL validator + deny-list + LIMIT cap · work-order numeric-citation guard (never auto-persists).</p>
+<hr />
+<h2 id="9-bottom-line">9. BOTTOM LINE</h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Best models</td>
+<td><strong>mistral-small3.2 (24B) + phi4 (14B)</strong> + llama3.2-vision + nomic-embed-text — all non-Chinese</td>
+</tr>
+<tr>
+<td>Best hardware</td>
+<td><strong>Planned 48 GB box (FP8)</strong> — fits the team (~32 GB); no upgrade</td>
+</tr>
+<tr>
+<td>Need 70B/120B?</td>
+<td><strong>No</strong> — bigger ties/loses; would need 80 GB+</td>
+</tr>
+<tr>
+<td>Biggest risk</td>
+<td><strong>NL→SQL</strong> — fix with guardrails/retry, not a bigger model</td>
+</tr>
+<tr>
+<td>Revisit later</td>
+<td><strong>gpt-oss:20b</strong> — with higher token budget + thinking-aware streaming</td>
+</tr>
+<tr>
+<td>Cross-check</td>
+<td>Confirms earlier synthetic pick on real data — <strong>safe to lock in</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>One line:</strong> run <strong>mistral-small3.2 + phi4</strong> (+ vision + nomic) on the <strong>planned 48 GB FP8 box</strong> —
+best-grade, best-fit, all-non-Chinese, no extra hardware needed.</p>
+<hr />
+<p><em>Detailed companions: MODEL_FIT_VERDICT.md (decision) · ONPREM_HARDWARE_SIZING.md (hardware/deploy) ·
+REAL_DATA_MODEL_EVAL.md &amp; OPENROUTER_MODEL_EVAL.md (raw per-case tables).</em></p></body></html>

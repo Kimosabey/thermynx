@@ -55,6 +55,89 @@ class AlarmAction(Base):
     updated_at:      Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+# ── Phase 2: supply-chain ERP ────────────────────────────────────────────────
+class Vendor(Base):
+    __tablename__ = "vendors"
+    id:             Mapped[str] = mapped_column(String(36), primary_key=True)
+    name:           Mapped[str] = mapped_column(String(128), nullable=False)
+    contact:        Mapped[str | None] = mapped_column(String(128))
+    email:          Mapped[str | None] = mapped_column(String(128))
+    lead_time_days: Mapped[int | None] = mapped_column(Integer)
+    rating:         Mapped[float | None] = mapped_column(Float)   # 0..5
+    active:         Mapped[int] = mapped_column(Integer, server_default="1")
+    notes:          Mapped[str | None] = mapped_column(Text)
+    created_at:     Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Part(Base):
+    __tablename__ = "parts"
+    id:            Mapped[str] = mapped_column(String(36), primary_key=True)
+    code:          Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    name:          Mapped[str] = mapped_column(String(256), nullable=False)
+    vendor_id:     Mapped[str | None] = mapped_column(String(36), ForeignKey("vendors.id", ondelete="SET NULL"))
+    unit_cost:     Mapped[float | None] = mapped_column(Float)
+    uom:           Mapped[str] = mapped_column(String(16), server_default="ea")
+    reorder_point: Mapped[int] = mapped_column(Integer, server_default="0")
+    reorder_qty:   Mapped[int] = mapped_column(Integer, server_default="0")
+    active:        Mapped[int] = mapped_column(Integer, server_default="1")
+    created_at:    Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class PartStock(Base):
+    __tablename__ = "part_stock"
+    id:           Mapped[str] = mapped_column(String(36), primary_key=True)
+    part_id:      Mapped[str] = mapped_column(String(36), ForeignKey("parts.id", ondelete="CASCADE"), index=True)
+    location:     Mapped[str] = mapped_column(String(64), server_default="main")
+    qty_on_hand:  Mapped[float] = mapped_column(Float, server_default="0")
+    qty_reserved: Mapped[float] = mapped_column(Float, server_default="0")
+    updated_at:   Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class PurchaseOrder(Base):
+    __tablename__ = "purchase_orders"
+    id:          Mapped[str] = mapped_column(String(36), primary_key=True)
+    vendor_id:   Mapped[str | None] = mapped_column(String(36), ForeignKey("vendors.id", ondelete="SET NULL"), index=True)
+    state:       Mapped[str] = mapped_column(String(16), server_default="draft", index=True)
+    total_cost:  Mapped[float] = mapped_column(Float, server_default="0")
+    created_by:  Mapped[str | None] = mapped_column(String(64))
+    expected_at: Mapped[datetime | None] = mapped_column(DateTime)
+    received_at: Mapped[datetime | None] = mapped_column(DateTime)
+    notes:       Mapped[str | None] = mapped_column(Text)
+    created_at:  Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at:  Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class PurchaseOrderLine(Base):
+    __tablename__ = "purchase_order_lines"
+    id:        Mapped[str] = mapped_column(String(36), primary_key=True)
+    po_id:     Mapped[str] = mapped_column(String(36), ForeignKey("purchase_orders.id", ondelete="CASCADE"), index=True)
+    part_id:   Mapped[str] = mapped_column(String(36), ForeignKey("parts.id", ondelete="RESTRICT"))
+    qty:       Mapped[float] = mapped_column(Float, nullable=False)
+    unit_cost: Mapped[float | None] = mapped_column(Float)
+
+
+class PurchaseOrderEvent(Base):
+    __tablename__ = "purchase_order_events"
+    id:         Mapped[str] = mapped_column(String(36), primary_key=True)
+    po_id:      Mapped[str] = mapped_column(String(36), ForeignKey("purchase_orders.id", ondelete="CASCADE"), index=True)
+    kind:       Mapped[str] = mapped_column(String(24), nullable=False)
+    from_state: Mapped[str | None] = mapped_column(String(16))
+    to_state:   Mapped[str | None] = mapped_column(String(16))
+    actor:      Mapped[str | None] = mapped_column(String(64))
+    notes:      Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+
+
+class WoPart(Base):
+    """Parts consumed by a work order — decrements part_stock on resolution."""
+    __tablename__ = "wo_parts"
+    id:         Mapped[str] = mapped_column(String(36), primary_key=True)
+    wo_id:      Mapped[str] = mapped_column(String(36), ForeignKey("work_orders.id", ondelete="CASCADE"), index=True)
+    part_id:    Mapped[str] = mapped_column(String(36), ForeignKey("parts.id", ondelete="RESTRICT"))
+    qty_used:   Mapped[float] = mapped_column(Float, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class AnalysisAudit(Base):
     __tablename__ = "analysis_audit"
 

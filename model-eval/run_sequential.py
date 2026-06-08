@@ -58,11 +58,16 @@ async def main() -> None:
     ap.add_argument("--cloud", action="store_true", help="run OpenRouter cloud candidates instead of local Ollama")
     ap.add_argument("--reduced", action="store_true",
                     help="fewer cases per mode (full decider, faster): planner/exec=2, NL=5, RAG=5")
+    ap.add_argument("--judge", default=cfg.JUDGE_MODEL,
+                    help="judge model (e.g. claude-opus-4-8 for the Anthropic judge)")
     args = ap.parse_args()
 
     if args.reduced:
         cfg.N_FAULT_CASES = 2; cfg.N_EXEC_CASES = 2
         cfg.N_NL_QUESTIONS = 5; cfg.N_RAG_QUESTIONS = 5
+
+    cfg.JUDGE_MODEL = args.judge  # judge.py + run_eval._md read this at call time
+    print(f"Judge model: {cfg.JUDGE_MODEL}", flush=True)
 
     cloud = args.cloud
     models = cfg.CLOUD_MODELS if cloud else LOCAL_ORDER

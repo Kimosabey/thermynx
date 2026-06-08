@@ -18,6 +18,12 @@ export default defineConfig({
         target: `http://localhost:${BACKEND_PORT}`,
         changeOrigin: true,
       },
+      "/proxy/grafana": { target: "http://localhost:3030", changeOrigin: true, rewrite: () => "/api/health" },
+      "/proxy/prometheus": { target: "http://localhost:9292", changeOrigin: true, rewrite: () => "/-/healthy" },
+      "/proxy/alertmanager": { target: "http://localhost:9394", changeOrigin: true, rewrite: () => "/-/healthy" },
+      "/proxy/loki": { target: "http://localhost:3100", changeOrigin: true, rewrite: () => "/ready" },
+      "/proxy/promtail": { target: "http://localhost:9080", changeOrigin: true, rewrite: () => "/ready" },
+      "/proxy/redis-commander": { target: "http://localhost:8181", changeOrigin: true, rewrite: () => "/" },
     },
   },
   build: {

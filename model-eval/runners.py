@@ -13,9 +13,9 @@ import datasets
 import judge as judging
 import llm
 from app.db.session import MySQLSession, PGSession
-from app.domain.tools import TOOL_SCHEMAS, TOOL_EXECUTORS, execute_tool
-from app.services import rag as rag_svc
-from app.services.nl_to_sql import run_nl_query, NLQueryError
+from app.ai.tools import TOOL_SCHEMAS, TOOL_EXECUTORS, execute_tool  # moved from app.domain.tools
+from app.ai import rag as rag_svc  # moved from app.services.rag
+from app.ai.nl_to_sql import run_nl_query, NLQueryError  # moved from app.services.nl_to_sql
 
 # ── system prompts (JSON-mode where structured) ──────────────────────────────
 PLANNER_SYS = (

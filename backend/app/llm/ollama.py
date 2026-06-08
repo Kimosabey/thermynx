@@ -175,7 +175,28 @@ async def list_models() -> list[str]:
 
     _circuit_record_success()
     log.debug("ollama_list_models count=%s request_id=%s", len(raw), current_request_id.get())
-    return [m["name"] for m in raw]
+    
+    result = []
+    for m in raw:
+        name = m.get("name", "")
+        size = m.get("size", 0)
+        details = m.get("details", {})
+        param_size = details.get("parameter_size", "")
+        
+        size_str = ""
+        if size > 0:
+            if size > 1024**3:
+                size_str = f"{size / 1024**3:.1f} GB"
+            else:
+                size_str = f"{size / 1024**2:.1f} MB"
+        
+        extras = [x for x in (param_size, size_str) if x]
+        if extras:
+            result.append(f"{name} ({', '.join(extras)})")
+        else:
+            result.append(name)
+            
+    return result
 
 
 async def stream_generate(

@@ -59,7 +59,15 @@ async def fetch_table_latest_slot_time(db: AsyncSession, table: str) -> datetime
     row = result.mappings().first()
     if not row or row["mx"] is None:
         return None
-    return row["mx"]
+    val = row["mx"]
+    if isinstance(val, str):
+        try:
+            val = datetime.fromisoformat(val.replace(" ", "T"))
+        except ValueError:
+            pass
+    if isinstance(val, datetime) and val.tzinfo is not None:
+        val = val.replace(tzinfo=None)
+    return val
 
 
 async def fetch_plant_latest_slot_time(db: AsyncSession) -> datetime | None:
@@ -72,7 +80,15 @@ async def fetch_plant_latest_slot_time(db: AsyncSession) -> datetime | None:
     row = result.mappings().first()
     if not row or row["latest"] is None:
         return None
-    return row["latest"]
+    val = row["latest"]
+    if isinstance(val, str):
+        try:
+            val = datetime.fromisoformat(val.replace(" ", "T"))
+        except ValueError:
+            pass
+    if isinstance(val, datetime) and val.tzinfo is not None:
+        val = val.replace(tzinfo=None)
+    return val
 
 
 async def resolve_telemetry_until(db: AsyncSession, *, table: str | None = None) -> datetime:

@@ -265,7 +265,7 @@ function EmptyState() {
 
 export default function AnomaliesPage() {
   const [anomalies, setAnomalies] = useState([]);
-  const [hours,     setHours]     = useState(1);
+  const [hours,     setHours]     = useState(6);
   const [loading,   setLoading]   = useState(true);
   const [lastScan,  setLastScan]  = useState(null);
 
