@@ -70,16 +70,40 @@ chat models = a **model swap** (slow reload).
 
 # PART B — MODELS
 
-## B1. Deployed model team (4 models, all non-Chinese)
+## B1. Deployed model team (all non-Chinese, Claude-judged + app-confirmed)
+
+> Updated 2026-06 (Ollama 0.30.6): judge = **Claude Opus 4.8**; **3 upgrades** — **gemma4**
+> (Planner), **devstral** (Executor), **codestral** (NL→SQL). Plain-English: [MODEL_EVAL_FINAL_REPORT.md](MODEL_EVAL_FINAL_REPORT.md).
 
 | Model | Params | Maker | Country | VRAM (Q4) | Jobs it does |
 |---|---|---|---|---|---|
-| **mistral-small3.2** | 24B | Mistral AI | 🇫🇷 FR | ~15 GB | Planner, Executor, NL→SQL |
+| **gemma4:12b** ⬆🧠 | 12B | Google | 🇺🇸 US | ~8 GB | **Planner** — best plans (3.3–4.0), JSON path |
+| **devstral** ⬆ | 24B | Mistral AI | 🇫🇷 FR | ~14 GB | **Executor** (tool-calling) — best (4.5) |
+| **codestral** ⬆ | 22B | Mistral AI | 🇫🇷 FR | ~12 GB | **NL→SQL** (+ guardrails) |
 | **phi4** | 14B | Microsoft | 🇺🇸 US | ~9 GB | Validator, Text, Narration, RAG |
 | **llama3.2-vision** | 11B | Meta | 🇺🇸 US | ~8 GB | Vision |
 | **nomic-embed-text** | ~0.1B | Nomic AI | 🇺🇸 US | ~0.3 GB | Embeddings |
 
-**Total ≈ 32 GB** → all fit together on the 48 GB box (~16 GB spare); each runs alone on 20 GB.
+**On the 48 GB box** the core agents (gemma4 + phi4 + devstral, ~31 GB) stay loaded together;
+codestral/vision rotate in as needed. Each runs alone on the 20 GB box.
+**mistral-small3.2** is the **safe fast fallback for Planner** if gemma4's ~25s is too slow.
+**Key insight:** gemma4 is a *thinking* model — it works great in the **JSON planner path**
+(roomy) but goes blank in the short capped *text* path, so we use it for Planner only.
+
+**Specs (from the server) — context window + input matter for memory & prompt sizing:**
+
+| Name | Size / Usage | Context | Input / capabilities |
+|---|---|---|---|
+| gemma4:12b (Planner) | 11.9B / ~8 GB | **256K** | Text + Vision + Audio + Tools + thinking |
+| devstral (Executor) | 23.6B / ~14 GB | 128K | Text + Tools |
+| codestral (NL→SQL) | 22.2B / ~12 GB | 32K | Text (code) |
+| phi4 (Validator/Narration/RAG) | 14.7B / ~9 GB | **16K** | Text only |
+| mistral-small3.2 (fallback) | 24.0B / ~15 GB | 128K | Text + Vision + Tools |
+| llama3.2-vision (Vision) | 10.7B / ~8 GB | 128K | Text + Images + Tools |
+| nomic-embed-text (Embeddings) | 137M / ~0.3 GB | 2K | Text (search) |
+
+> Bigger context = more KV-cache VRAM. phi4 is capped at **16K** — keep big RAG prompts trimmed
+> for the phi4 jobs; gemma4/devstral/mistral have plenty of room (128–256K).
 
 ## B2. All models tested — local / on-prem candidates
 
@@ -140,9 +164,9 @@ chat models = a **model swap** (slow reload).
 |---|---|---|---|
 | Default fallback | `OLLAMA_DEFAULT_MODEL` | phi4 | Microsoft |
 | Narration / Text | `OLLAMA_MODEL_TEXT` | phi4 | Microsoft |
-| Tool / Executor | `OLLAMA_MODEL_TOOL` | mistral-small3.2 | Mistral AI |
-| NL→SQL | `OLLAMA_MODEL_SQL` | mistral-small3.2 | Mistral AI |
-| Planner | `OLLAMA_MODEL_PLANNER` | mistral-small3.2 | Mistral AI |
+| Tool / Executor | `OLLAMA_MODEL_TOOL` | **devstral** ⬆ (was mistral-small3.2) | Mistral AI |
+| NL→SQL | `OLLAMA_MODEL_SQL` | **codestral** ⬆ (was mistral-small3.2) | Mistral AI |
+| Planner | `OLLAMA_MODEL_PLANNER` | **gemma4:12b** ⬆ (fallback: mistral-small3.2) | Google |
 | Validator / Auditor | `OLLAMA_AUDITOR_MODEL` | phi4 | Microsoft |
 | RAG answer | `OLLAMA_MODEL_RAG` | *(empty)* → phi4 | Microsoft |
 | Vision | `OLLAMA_VISION_MODEL` | llama3.2-vision | Meta |
@@ -175,11 +199,12 @@ chat models = a **model swap** (slow reload).
 
 | Question | Answer |
 |---|---|
-| Best models? | **mistral-small3.2 (24B) + phi4 (14B)** + llama3.2-vision + nomic-embed-text — all non-Chinese |
-| Best hardware? | **The planned 48 GB box (FP8)** — fits the whole team (~32 GB), no upgrade needed |
+| Best models? | Planner **gemma4:12b** · Executor **devstral** · NL→SQL **codestral** · Validator/Narration/RAG **phi4** · Embeddings **nomic** · Vision **llama3.2-vision** — all non-Chinese, all app-confirmed |
+| Best hardware? | **The planned 48 GB box (FP8)** — fits the team, no upgrade needed |
 | Need a 70B/120B? | **No** — cloud test showed bigger ties/loses; would also need an 80 GB+ GPU |
 | Biggest risk? | **NL→SQL** — fix with guardrails/retry, not a bigger model |
-| Revisit later? | **gpt-oss:20b** — only with a higher token budget + thinking-aware streaming |
+| Excluded (blank in app) | **gemma4, gpt-oss** — scored well but return blank answers under the app's word limit |
+| Revisit later? | gpt-oss / gemma4 — only with a higher word budget + thinking-aware streaming |
 
-**One line:** run **mistral-small3.2 + phi4** (+ vision + nomic) on the **planned 48 GB FP8 box** —
+**One line:** run **gemma4 + devstral + codestral + phi4** (+ vision + nomic) on the **planned 48 GB FP8 box** —
 that is the best-grade, best-fit, all-non-Chinese setup for our tasks; no bigger hardware needed.

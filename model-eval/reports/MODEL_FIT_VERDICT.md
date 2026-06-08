@@ -2,31 +2,32 @@
 
 > **Purpose:** pick the best on-prem AI model for each job, based on a real test against live
 > Unicharm plant data, then filter by what actually works in our app + our **non-Chinese policy**.
-> **Date:** 2026-06-03 (eval) · 2026-06-05 (golden-eval filter) ·
-> **Data:** [REAL_DATA_MODEL_EVAL.md](REAL_DATA_MODEL_EVAL.md) (local) ·
-> [OPENROUTER_MODEL_EVAL.md](OPENROUTER_MODEL_EVAL.md) (cloud) ·
-> **Hardware:** [ONPREM_HARDWARE_SIZING.md](ONPREM_HARDWARE_SIZING.md).
+> **Judge = Claude Opus 4.8** (top model). **Updated 2026-06 with new candidates + golden check.**
+> **➡ The single, current, plain-English report is [MODEL_EVAL_FINAL_REPORT.md](MODEL_EVAL_FINAL_REPORT.md).**
+> **Data:** [REAL_DATA_MODEL_EVAL.md](REAL_DATA_MODEL_EVAL.md) · **Hardware:** [ONPREM_HARDWARE_SIZING.md](ONPREM_HARDWARE_SIZING.md).
 
 ---
 
-## 1. The decision — deployed models (non-Chinese, golden-eval-passing)
+## 1. The decision — deployed models (non-Chinese, app-confirmed, Claude-judged)
 
-| Job | **Deployed model** | Params | Maker | Country |
+| Job | **Deployed model** | Params | Maker | Why (justification) |
 |---|---|---|---|---|
-| **Planner** (decide action) | **mistral-small3.2** | 24B | Mistral AI | 🇫🇷 FR |
-| **Executor** (call tools) | **mistral-small3.2** | 24B | Mistral AI | 🇫🇷 FR |
-| **NL→SQL** (question → DB) | **mistral-small3.2** + guardrails | 24B | Mistral AI | 🇫🇷 FR |
-| **Validator** (approve/reject) | **phi4** | 14B | Microsoft | 🇺🇸 US |
-| **Narration / Text** | **phi4** | 14B | Microsoft | 🇺🇸 US |
-| **RAG** (answer from manuals) | **phi4** | 14B | Microsoft | 🇺🇸 US |
-| **Vision** (images) | **llama3.2-vision** | 11B | Meta | 🇺🇸 US |
-| **Embeddings** (search) | **nomic-embed-text** | ~0.1B | Nomic AI | 🇺🇸 US |
+| **Planner** (decide action) | **gemma4:12b** 🧠⬆ | 12B | Google 🇺🇸 | **Best plans (3.3–4.0)**; works in the JSON planner path (no blank); thinking-where-needed. ~25s/plan (background) |
+| **Executor** (call tools) | **devstral** ⬆ | 24B | Mistral 🇫🇷 | **Best tool-caller (4.5/5)** & passes golden check — UPGRADE (was mistral-small3.2) |
+| **NL→SQL** (question → DB) | **codestral** ⬆ + guardrails | 22B | Mistral 🇫🇷 | Best *deployable* SQL & passes golden — UPGRADE (was mistral-small3.2) |
+| **Validator** (approve/reject) | **phi4** | 14B | Microsoft 🇺🇸 | 5.0, fast, independent family = good cross-check |
+| **Narration / Text** | **phi4** | 14B | Microsoft 🇺🇸 | 5.0, clean summaries |
+| **RAG** (answer from manuals) | **phi4** | 14B | Microsoft 🇺🇸 | 5.0, stays grounded |
+| **Vision** (images) | **llama3.2-vision** | 11B | Meta 🇺🇸 | non-Chinese vision model in use |
+| **Embeddings** (search) | **nomic-embed-text** | ~0.1B | Nomic 🇺🇸 | ties best, smallest |
 
-**Deployed = 4 distinct models, all non-Chinese:** mistral-small3.2 (FR) · phi4 (US) ·
-llama3.2-vision (US) · nomic-embed-text (US). Total ~32 GB → all fit together on the 48 GB box.
+**Deployed = mistral-small3.2 + devstral + codestral + phi4 (+vision +nomic), all non-Chinese.**
+**Two upgrades vs prior:** Executor → **devstral**, NL→SQL → **codestral** (both Claude-judged
+winners that also passed the in-app golden check).
 
-> These are **"best that actually works in our app,"** not just "highest raw score." The raw
-> eval winners (gpt-oss / gemma3 / qwen) were dropped — see §5.
+> "Best that actually works in our app," not just "highest score." gemma4/gpt-oss scored well
+> but return **blank answers** in the app (thinking-model trap) → dropped. qwen/deepseek/qwq =
+> Chinese, excluded. Full plain-English reasoning in [MODEL_EVAL_FINAL_REPORT.md](MODEL_EVAL_FINAL_REPORT.md) §3 & §5.
 
 ---
 
