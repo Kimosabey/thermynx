@@ -38,10 +38,13 @@ ALL_MODES = ["planner", "validator", "executor", "nl_to_sql", "rag_qa", "narrati
 # Run: run_eval.py --modes planner,validator,executor,nl_to_sql,rag_qa,narration \
 #                  --models <CLOUD_MODELS> --out OPENROUTER_MODEL_EVAL
 CLOUD_MODELS = [
-    "openai/gpt-oss-120b", "openai/gpt-oss-20b", "microsoft/phi-4",
-    "mistralai/mistral-small-3.2-24b-instruct", "google/gemma-3-27b-it",
-    "deepseek/deepseek-r1-distill-qwen-32b", "meta-llama/llama-3.3-70b-instruct",
-    "qwen/qwen-2.5-72b-instruct", "deepseek/deepseek-r1-distill-llama-70b",
+    # 70B–120B range — big NON-CHINESE models we CAN'T run on-prem, scored via OpenRouter
+    # to answer "is a bigger model worth bigger hardware?". Chinese models are EXCLUDED by
+    # policy (they can't deploy, so testing them is pointless). All entries are US/FR/CA.
+    "openai/gpt-oss-120b",                     # 120B  OpenAI   US  — flagship OSS
+    "mistralai/mistral-large-2512",            # 123B  Mistral  FR  — non-Chinese flagship
+    "cohere/command-r-plus-08-2024",           # 104B  Cohere   CA  — RAG + tool-use flagship
+    "meta-llama/llama-3.3-70b-instruct",       # 70B   Meta     US
 ]
 
 # run knobs

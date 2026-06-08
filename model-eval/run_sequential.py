@@ -60,6 +60,10 @@ async def main() -> None:
                     help="fewer cases per mode (full decider, faster): planner/exec=2, NL=5, RAG=5")
     ap.add_argument("--judge", default=cfg.JUDGE_MODEL,
                     help="judge model (e.g. claude-opus-4-8 for the Anthropic judge)")
+    ap.add_argument("--models", default="",
+                    help="comma-separated model override (e.g. a follow-up set); skips coder+embeddings extras")
+    ap.add_argument("--out", default="",
+                    help="report basename override (e.g. FOLLOWUP_NEW); default depends on --cloud")
     args = ap.parse_args()
 
     if args.reduced:
@@ -70,14 +74,31 @@ async def main() -> None:
     print(f"Judge model: {cfg.JUDGE_MODEL}", flush=True)
 
     cloud = args.cloud
-    models = cfg.CLOUD_MODELS if cloud else LOCAL_ORDER
-    out = "OPENROUTER_MODEL_EVAL" if cloud else "REAL_DATA_MODEL_EVAL"
+    override = [m.strip() for m in args.models.split(",") if m.strip()]
+    models = override or (cfg.CLOUD_MODELS if cloud else LOCAL_ORDER)
+    out = args.out or ("OPENROUTER_MODEL_EVAL" if cloud else "REAL_DATA_MODEL_EVAL")
     # cloud: no local embeddings, and no NL→SQL (backend SQL path can't route cloud slugs)
     modes = [m for m in CHAT_MODES if m != "nl_to_sql"] if cloud else ALL_MODES
     all_rows: list[dict] = []
 
     print(f"Sequential run · {'CLOUD/OpenRouter' if cloud else 'LOCAL/Ollama'} · "
           f"{len(models)} models · modes={modes}", flush=True)
+
+    # Preflight: for LOCAL runs, Ollama MUST be reachable — otherwise every candidate call
+    # fails and we'd silently score all-zeros (the failure we just hit). Abort loudly instead.
+    if not cloud:
+        import httpx
+        from app.config import settings
+        url = settings.OLLAMA_HOST.rstrip("/") + "/api/tags"
+        try:
+            n = len(httpx.get(url, timeout=10).json().get("models", []))
+            print(f"Ollama reachable ✓ ({n} models at {settings.OLLAMA_HOST})", flush=True)
+        except Exception as exc:  # noqa: BLE001
+            print(f"\nABORT — Ollama NOT reachable at {settings.OLLAMA_HOST} ({str(exc)[:90]}).\n"
+                  "On the server: set OLLAMA_HOST=0.0.0.0, restart Ollama, allow TCP 11434 in the\n"
+                  "firewall — then verify `curl http://100.125.103.28:11434/api/tags` works from a\n"
+                  "remote machine. Not running (would otherwise score all-zeros).", flush=True)
+            return
 
     async with MySQLSession() as db:
         for i, model in enumerate(models, 1):
@@ -93,8 +114,8 @@ async def main() -> None:
             print(f"  {model}: {len(rows)} rows · {done}", flush=True)
             print(f"  -> wrote partial {out}.md ({len(all_rows)} rows so far)", flush=True)
 
-    # NL->SQL also has a code-tuned candidate (local only)
-    if not cloud:
+    # NL->SQL also has a code-tuned candidate (local only) — skip when a custom --models set is given
+    if not cloud and not override:
         print("\n=== NL->SQL extra: qwen2.5-coder:32b ===", flush=True)
         try:
             all_rows += await runners.run_nl_to_sql(["qwen2.5-coder:32b"])
