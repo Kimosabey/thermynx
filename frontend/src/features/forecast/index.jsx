@@ -143,9 +143,17 @@ function ForecastChart({ data, metric }) {
           {data.name} — {metric.replace(/_/g, " ")} forecast (next {data.horizon_hours}h)
         </Text>
         <Flex gap={2}>
-          <Badge fontSize="9px" bg="rgba(124,58,237,0.12)" color="#a78bfa" border="1px solid rgba(124,58,237,0.25)" borderRadius="6px" px={2}>
-            Statistical · hour-of-day profile
-          </Badge>
+          {data.backend === "ml" ? (
+            <Badge fontSize="9px" bg="rgba(6,182,212,0.12)" color="#06B6D4" border="1px solid rgba(6,182,212,0.3)" borderRadius="6px" px={2}
+              title="Holt-Winters triple-exponential (trend + 24h seasonality)">
+              ML · Holt-Winters
+            </Badge>
+          ) : (
+            <Badge fontSize="9px" bg="rgba(245,158,11,0.12)" color="#f59e0b" border="1px solid rgba(245,158,11,0.3)" borderRadius="6px" px={2}
+              title={data.fallback_reason || "hour-of-day statistical profile"}>
+              {data.fallback_reason ? "Heuristic · fallback ⚠" : "Heuristic · hour-of-day"}
+            </Badge>
+          )}
           <Badge fontSize="9px" bg="bg.elevated" color="text.muted" border="1px solid" borderColor="border.subtle" borderRadius="6px" px={2}>
             {data.points.length} points
           </Badge>
