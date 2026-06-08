@@ -14,6 +14,7 @@ import ErrorAlert from "../../shared/ui/ErrorAlert";
 import { SkeletonKpiCard, SkeletonChartCard } from "../../shared/ui/SkeletonCard";
 import useApi from "../../shared/hooks/useApi";
 import { apiFetch } from "../../shared/api/client";
+import { useModelToast } from "../../shared/ai/useModels";
 
 const MotionBox = motion.create(Box);
 const fmt = (v, d = 1) => (v == null ? "—" : Number(v).toLocaleString(undefined, { maximumFractionDigits: d }));
@@ -22,6 +23,7 @@ export default function EnergyOptimizerPage() {
   const [whatIf, setWhatIf] = useState("");      // target TR override (string)
   const [appliedTr, setAppliedTr] = useState(null);
   const toast = useToast();
+  const notifyModel = useModelToast();
   const [creating, setCreating] = useState(false);
 
   const url = `/api/v1/optimizer/staging?hours=72${appliedTr ? `&target_tr=${appliedTr}` : ""}`;
@@ -62,7 +64,7 @@ export default function EnergyOptimizerPage() {
               value={whatIf} onChange={(e) => setWhatIf(e.target.value.replace(/[^0-9.]/g, ""))}
               onKeyDown={(e) => { if (e.key === "Enter") setAppliedTr(whatIf || null); }}
             />
-            <Button size="sm" onClick={() => setAppliedTr(whatIf || null)}>Simulate</Button>
+            <Button size="sm" onClick={() => { notifyModel("text", { prefix: "Optimizer" }); setAppliedTr(whatIf || null); }}>Simulate</Button>
             {appliedTr && <Button size="sm" variant="ghost" onClick={() => { setWhatIf(""); setAppliedTr(null); }}>reset</Button>}
           </Flex>
         }

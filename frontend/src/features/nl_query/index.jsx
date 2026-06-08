@@ -12,6 +12,7 @@ import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import { AIHealthBanner } from "../../shared/ui/AIHealthBanner";
+import { useModelToast } from "../../shared/ai/useModels";
 
 const MotionBox = motion.create(Box);
 
@@ -79,6 +80,7 @@ export default function NLQueryPage() {
   const { colorMode } = useColorMode();
   const isDark = colorMode === "dark";
   const toast  = useToast();
+  const notifyModel = useModelToast();
   const taRef  = useRef(null);
 
   const [question, setQuestion] = useState("");
@@ -103,6 +105,7 @@ export default function NLQueryPage() {
   async function run(q) {
     const text = (q ?? question).trim();
     if (text.length < 3) return;
+    notifyModel("sql", { prefix: "NL→SQL" });
     setLoading(true); setError(null); setResult(null);
     try {
       const r = await fetch("/api/v1/nl-query", {

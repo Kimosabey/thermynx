@@ -15,6 +15,7 @@ import ErrorAlert from "../../shared/ui/ErrorAlert";
 import { SkeletonKpiCard, SkeletonListCard } from "../../shared/ui/SkeletonCard";
 import useApi from "../../shared/hooks/useApi";
 import { apiFetch } from "../../shared/api/client";
+import { useModelToast } from "../../shared/ai/useModels";
 
 const MotionBox = motion.create(Box);
 
@@ -40,11 +41,13 @@ export default function DigestPage() {
   const { data: hist, refetch: refetchHist } = useApi("/api/v1/digest?limit=14");
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState(null);
+  const notifyModel = useModelToast();
 
   const digest = data?.digest || null;
   const history = (hist?.digests || []).filter((d) => d.id !== digest?.id);
 
   async function generateNow() {
+    notifyModel("text", { prefix: "Digest" });
     setGenerating(true);
     setGenError(null);
     try {

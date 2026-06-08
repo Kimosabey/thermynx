@@ -23,6 +23,7 @@ import GlassSelect from "../../shared/ui/GlassSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import ErrorAlert from "../../shared/ui/ErrorAlert";
 import useAppToast from "../../shared/hooks/useAppToast";
+import { useModelToast } from "../../shared/ai/useModels";
 import TimeseriesChart from "./TimeseriesChart";
 
 const MotionBox = motion.create(Box);
@@ -104,6 +105,7 @@ export default function AIAnalyzer() {
   const scrollAreaRef = useRef(null);
   const threadRef     = useRef("");
   const toast         = useAppToast();
+  const notifyModel   = useModelToast();
 
   useEffect(() => { threadRef.current = activeThreadId; }, [activeThreadId]);
 
@@ -181,6 +183,7 @@ export default function AIAnalyzer() {
 
   async function handleAnalyze() {
     if (question.trim().length < 3) return;
+    notifyModel("text", { prefix: "Analyzing" });
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;

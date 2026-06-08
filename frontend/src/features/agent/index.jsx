@@ -18,6 +18,7 @@ import AgentRunner from "./AgentRunner";
 import MultiAgentRunner from "./MultiAgentRunner";
 import { useAgentStream } from "./useAgentStream";
 import { buildAgentPrompts } from "../../shared/ai/promptTemplates";
+import { useModelToast } from "../../shared/ai/useModels";
 
 const MotionBox = motion.create(Box);
 
@@ -220,6 +221,7 @@ export default function AgentHub() {
   const { trace, output, running, done, meta, error, plan, delegations, synthesis, agentAudit, start, stop } = useAgentStream();
   const mode = MODES.find((m) => m.id === activeMode);
   const isOrchestrator = activeMode === "orchestrator";
+  const notifyModel = useModelToast();
 
   useEffect(() => {
     fetch("/api/v1/equipment")
@@ -236,6 +238,7 @@ export default function AgentHub() {
 
   function handleRun() {
     if (goal.trim().length < 3) return;
+    notifyModel(isOrchestrator ? "planner" : "tool", { prefix: "Agent" });
     const ctx = {};
     if (selectedEq) ctx.equipment_id = selectedEq;
     if (hours)      ctx.hours        = hours;

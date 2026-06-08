@@ -17,6 +17,39 @@ from app.config import settings
 
 router = APIRouter()
 
+# Embedding model used by the RAG service (app/ai/rag.py:EMBED_MODEL).
+_EMBED_MODEL = "nomic-embed-text"
+
+
+@router.get("/models")
+async def models() -> dict:
+    """Live model routing — which Ollama model powers each task right now.
+
+    Resolves each task the same way the services do (specific setting, falling
+    back to OLLAMA_DEFAULT_MODEL). Powers the UI 'model in use' toasts so
+    operators can see, dynamically, which model is doing what."""
+    d = settings.OLLAMA_DEFAULT_MODEL
+
+    def pick(v: str) -> str:
+        return v or d
+
+    # task key → (model, human label). Keys are what the frontend toasts use.
+    tasks = {
+        "text":     (pick(settings.OLLAMA_MODEL_TEXT),    "Narration / Analyzer answer"),
+        "tool":     (pick(settings.OLLAMA_MODEL_TOOL),    "Agent tool calls (ReAct)"),
+        "sql":      (pick(settings.OLLAMA_MODEL_SQL),     "Natural-language → SQL"),
+        "planner":  (pick(settings.OLLAMA_MODEL_PLANNER), "Multi-agent planner"),
+        "auditor":  (pick(settings.OLLAMA_AUDITOR_MODEL), "Self-critique / fact-check"),
+        "rag":      (pick(settings.OLLAMA_MODEL_RAG),     "RAG-grounded answer"),
+        "vision":   (settings.OLLAMA_VISION_MODEL,        "Vision (image analysis)"),
+        "embed":    (_EMBED_MODEL,                        "Embeddings (RAG index)"),
+    }
+    return {
+        "host": settings.OLLAMA_HOST,
+        "default": d,
+        "tasks": {k: {"model": m, "label": lbl} for k, (m, lbl) in tasks.items()},
+    }
+
 
 @router.get("/capabilities")
 async def capabilities() -> dict:
