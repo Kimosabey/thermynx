@@ -40,7 +40,7 @@ from app.llm.ollama import generate_json
 log = get_logger("services.critique")
 
 
-_AUDIT_TIMEOUT_S = 25.0
+_AUDIT_TIMEOUT_S = 45.0  # headroom for a cold model-load on the shared Ollama box
 _AUDITOR_TEMPERATURE = 0.0
 
 
