@@ -14,13 +14,19 @@
 | **Planner** (decide the action) | **gemma4:12b** (12B) 🧠 | Google 🇺🇸 | **Best plans (3.3–4.0)** and works in the app's JSON path (no blank). A "thinking" model — used here because planning needs judgment. ~25s/plan is fine (runs in the background). |
 | **Executor** (use the tools) | **devstral** (24B) | Mistral 🇫🇷 | **Best at tool-calling (4.5/5)** and works in the app. A coding-agent model — clear upgrade. |
 | **NL→SQL** (question → database) | **codestral** (22B) | Mistral 🇫🇷 | Best *deployable* at writing SQL. A code specialist — upgrade for our weakest area. |
-| **Validator** (approve/reject) | **phi4** (14B) | Microsoft 🇺🇸 | Top score (5/5), fast, and a *different family* — good independent cross-check. |
-| **Narration** (summarise numbers) | **phi4** (14B) | Microsoft 🇺🇸 | Top score (5/5), writes clean summaries. |
-| **RAG** (answer from manuals) | **phi4** (14B) | Microsoft 🇺🇸 | Top score (5/5), stays grounded in the documents. |
+| **Validator** (approve/reject) | **mistral-small3.2** * | Mistral 🇫🇷 | 5.0 (ties phi4). *phi4 is the winner but won't run — see ⚠ below.* |
+| **Narration** (summarise numbers) | **mistral-small3.2** * | Mistral 🇫🇷 | 4.5 (phi4 winner 5.0, can't run). |
+| **RAG** (answer from manuals) | **mistral-small3.2** * | Mistral 🇫🇷 | 4.4 (phi4 winner 5.0, can't run). |
 | **Embeddings** (search) | **nomic-embed-text** | Nomic 🇺🇸 | Ties the best, smallest/cheapest. |
 | **Vision** (images) | **llama3.2-vision** (11B) | Meta 🇺🇸 | The non-Chinese vision model we run. |
 
-**Change vs what's deployed today:** **3 upgrades** — Planner → **gemma4:12b**, Executor → **devstral**, NL→SQL → **codestral**. Validator/Narration/RAG stay **phi4**; embeddings/vision unchanged.
+> **⚠ RUNTIME NOTE (phi4):** phi4 (14B) is the **eval winner** for Validator/Narration/RAG (5.0/5.0/5.0),
+> but the **Ollama 0.30.6 runner CRASHES loading it** (`0xc0000409` stack overrun). 0.30.6 is required
+> for **gemma4** (Planner), so phi4 and gemma4 **can't share one Ollama version**. Until Ollama fixes
+> phi4-14B, **mistral-small3.2 is the runtime substitute** for those 3 roles — near-identical scores,
+> runs cleanly. (phi4-mini works; phi4-reasoning also crashes.)
+
+**Change vs what's deployed today:** Planner → **gemma4:12b**, Executor → **devstral**, NL→SQL → **codestral**, Validator/Narration/RAG → **mistral-small3.2** (phi4 blocked by the 0.30.6 crash). Embeddings/vision unchanged.
 *Planner alternative if ~25s is too slow: mistral-small3.2 (faster, lower quality).*
 
 ### Model specs (pulled from the server)

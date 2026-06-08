@@ -15,15 +15,18 @@
 | **Planner** (decide action) | **gemma4:12b** 🧠⬆ | 12B | Google 🇺🇸 | **Best plans (3.3–4.0)**; works in the JSON planner path (no blank); thinking-where-needed. ~25s/plan (background) |
 | **Executor** (call tools) | **devstral** ⬆ | 24B | Mistral 🇫🇷 | **Best tool-caller (4.5/5)** & passes golden check — UPGRADE (was mistral-small3.2) |
 | **NL→SQL** (question → DB) | **codestral** ⬆ + guardrails | 22B | Mistral 🇫🇷 | Best *deployable* SQL & passes golden — UPGRADE (was mistral-small3.2) |
-| **Validator** (approve/reject) | **phi4** | 14B | Microsoft 🇺🇸 | 5.0, fast, independent family = good cross-check |
-| **Narration / Text** | **phi4** | 14B | Microsoft 🇺🇸 | 5.0, clean summaries |
-| **RAG** (answer from manuals) | **phi4** | 14B | Microsoft 🇺🇸 | 5.0, stays grounded |
+| **Validator** (approve/reject) | **mistral-small3.2** * | 24B | Mistral 🇫🇷 | 5.0 (ties phi4) |
+| **Narration / Text** | **mistral-small3.2** * | 24B | Mistral 🇫🇷 | 4.5 |
+| **RAG** (answer from manuals) | **mistral-small3.2** * | 24B | Mistral 🇫🇷 | 4.4 |
 | **Vision** (images) | **llama3.2-vision** | 11B | Meta 🇺🇸 | non-Chinese vision model in use |
 | **Embeddings** (search) | **nomic-embed-text** | ~0.1B | Nomic 🇺🇸 | ties best, smallest |
 
-**Deployed = mistral-small3.2 + devstral + codestral + phi4 (+vision +nomic), all non-Chinese.**
-**Two upgrades vs prior:** Executor → **devstral**, NL→SQL → **codestral** (both Claude-judged
-winners that also passed the in-app golden check).
+> **\* phi4 is the eval winner for these 3 roles (5.0) but the Ollama 0.30.6 runner CRASHES on
+> phi4-14B (0xc0000409); 0.30.6 is required for gemma4, so mistral-small3.2 is the runtime
+> substitute until Ollama fixes it.**
+
+**Deployed = gemma4 + devstral + codestral + mistral-small3.2 (+vision +nomic), all non-Chinese.**
+**Upgrades vs prior:** Planner → **gemma4**, Executor → **devstral**, NL→SQL → **codestral**.
 
 > "Best that actually works in our app," not just "highest score." gemma4/gpt-oss scored well
 > but return **blank answers** in the app (thinking-model trap) → dropped. qwen/deepseek/qwq =

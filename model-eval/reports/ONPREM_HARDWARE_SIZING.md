@@ -80,7 +80,7 @@ chat models = a **model swap** (slow reload).
 | **gemma4:12b** ⬆🧠 | 12B | Google | 🇺🇸 US | ~8 GB | **Planner** — best plans (3.3–4.0), JSON path |
 | **devstral** ⬆ | 24B | Mistral AI | 🇫🇷 FR | ~14 GB | **Executor** (tool-calling) — best (4.5) |
 | **codestral** ⬆ | 22B | Mistral AI | 🇫🇷 FR | ~12 GB | **NL→SQL** (+ guardrails) |
-| **phi4** | 14B | Microsoft | 🇺🇸 US | ~9 GB | Validator, Text, Narration, RAG |
+| **mistral-small3.2** | 24B | Mistral | 🇫🇷 FR | ~15 GB | Validator, Text, Narration, RAG *(phi4 is the winner but crashes Ollama 0.30.6)* |
 | **llama3.2-vision** | 11B | Meta | 🇺🇸 US | ~8 GB | Vision |
 | **nomic-embed-text** | ~0.1B | Nomic AI | 🇺🇸 US | ~0.3 GB | Embeddings |
 
@@ -162,13 +162,13 @@ codestral/vision rotate in as needed. Each runs alone on the 20 GB box.
 
 | Job | Config setting | Model | Maker |
 |---|---|---|---|
-| Default fallback | `OLLAMA_DEFAULT_MODEL` | phi4 | Microsoft |
-| Narration / Text | `OLLAMA_MODEL_TEXT` | phi4 | Microsoft |
+| Default fallback | `OLLAMA_DEFAULT_MODEL` | **mistral-small3.2** (phi4 crashes 0.30.6) | Mistral |
+| Narration / Text | `OLLAMA_MODEL_TEXT` | **mistral-small3.2** (phi4 winner, crashes 0.30.6) | Mistral |
 | Tool / Executor | `OLLAMA_MODEL_TOOL` | **devstral** ⬆ (was mistral-small3.2) | Mistral AI |
 | NL→SQL | `OLLAMA_MODEL_SQL` | **codestral** ⬆ (was mistral-small3.2) | Mistral AI |
 | Planner | `OLLAMA_MODEL_PLANNER` | **gemma4:12b** ⬆ (fallback: mistral-small3.2) | Google |
-| Validator / Auditor | `OLLAMA_AUDITOR_MODEL` | phi4 | Microsoft |
-| RAG answer | `OLLAMA_MODEL_RAG` | *(empty)* → phi4 | Microsoft |
+| Validator / Auditor | `OLLAMA_AUDITOR_MODEL` | **mistral-small3.2** (phi4 winner, crashes 0.30.6) | Mistral |
+| RAG answer | `OLLAMA_MODEL_RAG` | *(empty)* → TEXT = mistral-small3.2 | Mistral |
 | Vision | `OLLAMA_VISION_MODEL` | llama3.2-vision | Meta |
 | Embeddings | (embeddings pipeline) | nomic-embed-text | Nomic AI |
 
@@ -199,7 +199,7 @@ codestral/vision rotate in as needed. Each runs alone on the 20 GB box.
 
 | Question | Answer |
 |---|---|
-| Best models? | Planner **gemma4:12b** · Executor **devstral** · NL→SQL **codestral** · Validator/Narration/RAG **phi4** · Embeddings **nomic** · Vision **llama3.2-vision** — all non-Chinese, all app-confirmed |
+| Best models? | Planner **gemma4:12b** · Executor **devstral** · NL→SQL **codestral** · Validator/Narration/RAG **mistral-small3.2** (phi4 is eval winner but crashes Ollama 0.30.6) · Embeddings **nomic** · Vision **llama3.2-vision** — all non-Chinese |
 | Best hardware? | **The planned 48 GB box (FP8)** — fits the team, no upgrade needed |
 | Need a 70B/120B? | **No** — cloud test showed bigger ties/loses; would also need an 80 GB+ GPU |
 | Biggest risk? | **NL→SQL** — fix with guardrails/retry, not a bigger model |
