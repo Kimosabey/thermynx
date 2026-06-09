@@ -23,6 +23,16 @@ MODEL_INFO: dict[str, dict] = {
     "llama3.2-vision":         {"maker": "Meta",       "country": "US", "params": "11B",  "kind": "vision"},
     "nomic-embed-text":        {"maker": "Nomic AI",   "country": "US", "params": "0.1B", "kind": "embeddings"},
     "mxbai-embed-large":       {"maker": "Mixedbread", "country": "DE", "params": "0.3B", "kind": "embeddings"},
+    # Other models on the server (e.g. for a quick demo swap). qwen/qwq are
+    # Chinese-origin — excluded from prod by policy, fine for an ad-hoc demo.
+    "gpt-oss:20b":             {"maker": "OpenAI",     "country": "US", "params": "20B",  "kind": "thinking"},
+    "llama3.1:8b":             {"maker": "Meta",       "country": "US", "params": "8B",   "kind": "general"},
+    "llama3.3:latest":         {"maker": "Meta",       "country": "US", "params": "70B",  "kind": "general"},
+    "mistral-small:latest":    {"maker": "Mistral AI", "country": "FR", "params": "22B",  "kind": "general"},
+    "qwen2.5:14b":             {"maker": "Alibaba",    "country": "CN", "params": "14B",  "kind": "general"},
+    "qwen2.5:32b":             {"maker": "Alibaba",    "country": "CN", "params": "32B",  "kind": "general"},
+    "qwen2.5-coder:32b":       {"maker": "Alibaba",    "country": "CN", "params": "32B",  "kind": "code / SQL"},
+    "qwq:32b":                 {"maker": "Alibaba",    "country": "CN", "params": "32B",  "kind": "thinking"},
 }
 
 # ── Roles: what each job is for + which settings knob holds its model ──────────
