@@ -1,0 +1,24 @@
+# Agentic framework rewrite — runtime dependencies
+# Branch: rewrite/agentic-framework · governed by ADR-0002.
+# All OSI open-source (MIT/Apache/BSD). ADDITIVE to requirements.txt so the
+# existing product keeps installing cleanly; merged into requirements.txt at cutover (F7).
+#
+# NOTE: version FLOORS only. Freeze exact "==" pins after `pip install` resolves
+# on the target box and build the offline wheel bundle (task F0.4).
+
+# ── Orchestration spine (LangGraph) ──────────────────────────────────────────
+langgraph>=0.2            # MIT — agent/multi-agent StateGraph, checkpointer, streaming
+langchain-core>=0.3       # MIT — message/tool/structured-output primitives
+langchain-ollama>=0.2     # MIT — ChatOllama; per-task model routing (keeps Ollama)
+
+# ── RAG engine over the existing pgvector (LlamaIndex) ───────────────────────
+llama-index-core>=0.12              # MIT
+llama-index-llms-ollama>=0.4        # MIT — LLM calls via Ollama
+llama-index-embeddings-ollama>=0.4  # MIT — nomic-embed-text via Ollama
+llama-index-vector-stores-postgres>=0.4  # MIT — PGVectorStore over `embeddings`
+docling>=2.0              # MIT (IBM) — PDF/table/scanned manual ingestion
+
+# ── Reranking (CPU, millisecond latency — never a new LLM hop) ───────────────
+flashrank>=0.2            # Apache-2.0 — cross-encoder rerank after vector top-k
+
+# langfuse SDK + pydantic are already pinned in requirements.txt
