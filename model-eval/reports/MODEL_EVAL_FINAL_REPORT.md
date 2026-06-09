@@ -130,6 +130,7 @@ We tested **25+ models**. Here is the full list of the ones **not chosen**, grou
 |---|---|---|---|
 | mistral-small3.2 | 24B 🇫🇷 | Planner 2.0 | solid all-rounder → kept only as **Planner fallback** |
 | magistral | 24B 🇫🇷 | Planner 2.0 | no better than baseline; gemma4 wins |
+| **gemma4:31b** | 31B 🇺🇸 | Planner 2.83 | **the "bigger brain" test** — *lost* to gemma4:12b (3.0) over 6 cases, **2.4× slower** (~49s vs 20s), 19 GB blocks co-residency. Bigger ≠ better even for reasoning → **12B wins on both boxes.** |
 | nemotron-cascade-2 | 31.6B 🇺🇸 | Executor 3.5 | devstral (4.5) better; 24 GB is tight |
 | mistral-nemo | 12B 🇫🇷 | Executor 3.5 | devstral better; not top at any role |
 | command-r7b | 7B 🇨🇦 | Narration ~4 | Executor weak (1); not top anywhere |

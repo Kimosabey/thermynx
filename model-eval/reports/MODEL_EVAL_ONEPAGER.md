@@ -62,7 +62,7 @@ context is small (16K) — fine for its short jobs (validate/narrate), keep big 
 | qwen, deepseek, qwq | Chinese — policy |
 | gemma3:27b | broke tool-calling; too big to co-reside |
 | 70B / 120B (cloud-tested) | won't fit our hardware; no quality gain |
-| phi4-reasoning / magistral / sqlcoder 7B & 15B | tested as challengers (Planner / NL→SQL) — **none beat gemma4 / codestral** |
+| phi4-reasoning / magistral / sqlcoder 7B & 15B / **gemma4:31b** | tested as challengers (Planner / NL→SQL) — **none beat gemma4:12b / codestral**. gemma4:31b "bigger brain" *lost* to 12B (2.83 vs 3.0) at 2.4× slower → 12B wins both boxes |
 | *(note)* gpt-oss/gemma4 only go blank on the **text/narration** path, **not** Planner — so gemma4 is fine as Planner | — |
 
 ## 💻 Hardware
