@@ -29,6 +29,33 @@ composed around it**. So we adopt a coherent maximal stack:
 > **AutoGen** (conversational) or **PydanticAI** (type-safe/lean), we swap *that one layer* — the rest
 > of the stack is unchanged. LangGraph is the recommendation (most standard, explicit, on-prem-clean).
 
+## Model routing (from `model-eval/`) — only what the agentic framework needs
+
+The graph's nodes each call a model per task; these eval-backed picks are the model-eval input the
+framework strictly needs. F1 wires them as `ChatOllama` instances.
+
+| Role (graph node) | Model | Eval | Note |
+|-------------------|-------|------|------|
+| Planner | `gemma4:12b` | 4.0 | thinking model → **JSON path only** (blank in tight text); 12B beats 31B |
+| Tool executor | `devstral` (24B) | 4.5 | best native tool-caller |
+| NL→SQL | `codestral` (22B) | 3.2 | **guards/validator carry it**, not the model |
+| Narration / critique / RAG / default | `mistral-small3.2` | 4.5–5.0 | substitute for phi4 (crashes Ollama 0.30.6) |
+| Vision | `llama3.2-vision` (11B) | — | |
+| Embeddings | `nomic-embed-text` | — | 768-dim, pgvector |
+
+**Runtime constraints the framework must honor (F0/F1):**
+- Run on **Ollama 0.30.6** (gemma4 needs it); **keep phi4 off it** → `mistral-small3.2` substitute.
+- **gemma4 (planner) stays on the roomy JSON path only** — goes blank under tight word-limits (aligns with our Pydantic structured-output design).
+- **Non-Chinese only** — `qwen`/`deepseek`/`qwq` excluded.
+
+> **Not frozen:** the real-data run (`FOLLOWUP_NEW.md`) flags `command-r7b` (validator/narration) +
+> `gemma3:12b` (RAG) as candidates the shipped config didn't adopt; **final sign-off is the pending
+> Round-3 vLLM/FP8 run**. `ChatOllama` per-role makes any swap trivial — re-confirm before locking.
+
+> **Out of agentic scope (referenced, not duplicated):** hardware/VRAM sizing, co-residency, and
+> per-model latency live in `model-eval/reports/ONPREM_HARDWARE_SIZING.md` + `REAL_DATA_MODEL_EVAL.md`
+> — an ops/deployment concern.
+
 ## Non-negotiable: the safety layer survives the rewrite
 
 THERMYNX's value is that the LLM is guard-railed. The rewrite **keeps** these as **LangGraph nodes**,
@@ -40,6 +67,30 @@ not as things a framework hides:
 - **Audit trail** tables (`analysis_audit`, `agent_runs`) and the **SSE frame contract** the UI depends on.
 
 If a phase can't preserve these, it doesn't ship.
+
+## Performance (must-hold — measured every phase)
+
+**Reality (`PERFORMANCE_PLAN.md`):** ~80% of slow-path latency is **LLM token generation**, not
+platform glue. LangGraph/LangChain add millisecond-level overhead — negligible vs 17–35s generation.
+The rewrite's job: **preserve every existing optimization, add parallelism, never regress.**
+
+**Targets (P50):** `/analyze` <15s · `/agent/run` <10s · `/nl-query` <2s · vision <8s. *(Today `/analyze` ~48s and `/agent` ~27s are over target — the rewrite must not worsen them and should help where it can.)*
+
+**Must preserve (else it's a regression):** A1 per-task model right-sizing (the routing table) · A2 response token caps (`OLLAMA_MAX_TOKENS_*`) · A3 Redis answer cache (F1.13) · parallel DB fetches (`asyncio.gather`) + connection pools + tool-payload caps · preflight short-circuit (saves the 30–60s refusal tax).
+
+**Framework adds (genuine wins):**
+- **Parallel specialists** — LangGraph runs multi-agent specialists concurrently (vs today's sequential): the biggest latency win in the rewrite.
+- **Parallel nodes** — context-fetch ∥ RAG-retrieve as concurrent edges.
+- **Stream-first / TTFT** — `astream_events`; expensive context at prompt end (B3).
+- **Cheap rerank** — reranker stays CPU-ms (FlashRank), never a new LLM hop.
+- **Structured output** removes prose-parse retries (fewer wasted generations).
+
+**Honest ceiling:** LangGraph does **not** speed up inference. Hitting the hard targets needs the
+inference-side levers — token caps (done), right-sizing (done), and **vLLM** for throughput (deferred
+until concurrency grows). Don't over-parallelize Ollama — it's GPU-bound (queues/OOM, not faster).
+
+**Gate:** every phase measured via `analysis_audit.total_ms` + Prometheus histograms against the
+targets; a phase that regresses P50 does not ship (F7 load test is the final check).
 
 ---
 
@@ -101,12 +152,12 @@ two, F2–F6 parallelize to ~3 weeks. Every phase ends green on `pytest tests/ev
 - F0.5 Add Langfuse service to `docker-compose.yml` (obs profile) + env — 0.25d
 - F0.6 Boot + reach Langfuse; create project keys — 0.1d
 - F0.7 Baseline `pytest tests/eval` → record 27/27 — 0.25d
-- F0.8 GPU/VRAM headroom check with the model set loaded — 0.4d
+- F0.8 Confirm per-task models load on the Ollama host — **Ollama 0.30.6** running (gemma4 needs it; phi4 kept off it → mistral-small3.2); VRAM/co-residency sizing is ops (`ONPREM_HARDWARE_SIZING.md`) — 0.4d
 
 ### F1 — Model · structured output · memory · prompt registry · **3.5d**
 - F1.1 `ChatOllama` factory keyed by task — 0.4d
-- F1.2 Map `config.py` routing → instances (text/tool/sql/planner/auditor) — 0.25d
-- F1.3 Pydantic schema: planner plan — 0.2d
+- F1.2 Map `config.py` routing → instances (text/tool/sql/planner/auditor) — values + rationale come from the Model routing & hardware table (eval-backed); keep the phi4→mistral-small3.2 substitution — 0.25d
+- F1.3 Pydantic schema: planner plan — **typed steps `{action, tool, expected_output, fallback}`** + rationale/tier (per `PLANNER_IMPROVEMENT_PLAYBOOK.md` — forces complete plans); **no explicit CoT block** (gemma4 thinks internally) — 0.2d
 - F1.4 Pydantic schema: critique verdict — 0.2d
 - F1.5 Pydantic schemas: tool-call args — 0.25d
 - F1.6 `with_structured_output` for planner — 0.2d
@@ -147,10 +198,10 @@ two, F2–F6 parallelize to ~3 weeks. Every phase ends green on `pytest tests/ev
 - F3.13 Eval gate green — 0.1d
 
 ### F4 — Multi-agent supervisor · **3d**
-- F4.1 `planner` node (structured plan schema) — 0.4d
+- F4.1 `planner` node (`gemma4:12b`, **JSON path only** — goes blank in tight text; ~33s background-OK; fallback `mistral-small3.2`; tuning per `model-eval/.../PLANNER_IMPROVEMENT_PLAYBOOK.md`: few-shot + typed steps, no explicit CoT) — 0.4d
 - F4.2 Plan validation/repair — 0.3d
 - F4.3 Specialist subgraph template (reuse F3) — 0.4d
-- F4.4 Supervisor routing to specialists — 0.4d
+- F4.4 Supervisor routing to specialists — **run independent specialists in parallel (LangGraph fan-out)** = the main latency win — 0.4d
 - F4.5 Shared-state tool-result cache — 0.3d
 - F4.6 Per-specialist postcheck before synthesis — 0.3d
 - F4.7 Failed-specialist "do not infer" marker — 0.2d
@@ -173,7 +224,7 @@ two, F2–F6 parallelize to ~3 weeks. Every phase ends green on `pytest tests/ev
 - F6.2 Verify spans per node + tool in Langfuse UI — 0.2d
 - F6.3 Wire RAGAS metrics into eval runner — 0.3d
 - F6.4 Wire DeepEval metrics — 0.25d
-- F6.5 Wire S2 LLM-judge into runner (built-not-run today) — 0.3d
+- F6.5 Wire S2 LLM-judge into runner (built-not-run today) — **judge runs on a LOCAL model** (on-prem rule; the Claude-Opus grading in `model-eval/` was a one-off offline campaign, not a runtime dep); pass threshold **≥4/5** + deterministic S1 checks — 0.3d
 - F6.6 Author new agentic golden cases (27 → 50+) — 1d
 - F6.7 `make eval` target (S1 + S2) — 0.15d
 - F6.8 git pre-push hook running `make eval` — 0.1d
@@ -185,7 +236,7 @@ two, F2–F6 parallelize to ~3 weeks. Every phase ends green on `pytest tests/ev
 - F7.1 Shadow harness: new graph alongside current pipeline on live traffic — 0.6d
 - F7.2 Output + audit diff logger; review mismatches — 0.4d
 - F7.3 Locust scripts (`/analyze` + `/agent/run`) — 0.3d
-- F7.4 Run load test; verify pool/latency/rate-limit — 0.2d
+- F7.4 Run load test; verify pool/latency/rate-limit against eval-run baselines (planner ~33s, executor ~72s, RAG ~11s, validator ~2s) and timeouts (`OLLAMA_CHAT_TIMEOUT_S`=60, `OLLAMA_STREAM_TIMEOUT_S`=120, `NL_QUERY_LLM_TIMEOUT_S`=40) — 0.2d
 - F7.5 Flip endpoints behind `pipeline.py` facade (feature flag) — 0.4d
 - F7.6 Full parity + eval run post-flip — 0.3d
 - F7.7 Remove dead custom orchestration code (after parity) — 0.5d
@@ -251,6 +302,7 @@ These are the behaviors the new graph must satisfy — carried over so nothing i
 - **Threat model:** the agentic stack maps to [SECURITY_PLAN.md](../planning/ai/SECURITY_PLAN.md) (OWASP-LLM-Top-10); injection defended by DATA-wrapping + preflight, automated probing by **Giskard** (OSS).
 - **Data handling:** operational telemetry only — **no PII**; nothing leaves the facility (on-prem, zero egress). Stated explicitly, not assumed.
 - **Decisions:** governed by [ADR-0002](../architecture/decisions/0002-adopt-agentic-framework-stack.md) (supersedes ADR-0001).
+- **Licensing (software only):** all *software* in the stack is OSI open-source — MIT/Apache/BSD (Langfuse **self-hosted only**; Redis → pin BSD-7.x or **Valkey**). **Model picks are settled per `model-eval/` and kept as-is** — model selection is out of scope for this rewrite.
 
 ## Spine decision
 
