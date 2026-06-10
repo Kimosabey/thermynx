@@ -6,6 +6,12 @@
 > **➡ The single, current, plain-English report is [MODEL_EVAL_FINAL_REPORT.md](MODEL_EVAL_FINAL_REPORT.md).**
 > **Data:** [REAL_DATA_MODEL_EVAL.md](REAL_DATA_MODEL_EVAL.md) · **Hardware:** [ONPREM_HARDWARE_SIZING.md](ONPREM_HARDWARE_SIZING.md).
 
+> **🔄 UPDATE 2026-06-10 — phi4 RESTORED.** Ollama was upgraded **0.30.6 → 0.30.7**, which fixes the
+> phi4 `0xc0000409` runner crash. phi4 (the eval winner, 5.0) is now **deployed** for **Validator /
+> Narration / RAG**, confirmed stable under the tuned runtime (flash-attn + q8_0 KV). `mistral-small3.2`
+> steps back to the **default fallback**. gemma4 (Planner) still runs on 0.30.7. Tables below reflect this.
+> Pin a known-good Ollama version so an auto-update can't silently re-break phi4 or gemma4.
+
 ---
 
 ## 1. The decision — deployed models (non-Chinese, app-confirmed, Claude-judged)
@@ -15,18 +21,19 @@
 | **Planner** (decide action) | **gemma4:12b** 🧠⬆ | 12B | Google 🇺🇸 | **Best plans (3.3–4.0)**; works in the JSON planner path (no blank); thinking-where-needed. ~25s/plan (background) |
 | **Executor** (call tools) | **devstral** ⬆ | 24B | Mistral 🇫🇷 | **Best tool-caller (4.5/5)** & passes golden check — UPGRADE (was mistral-small3.2) |
 | **NL→SQL** (question → DB) | **codestral** ⬆ + guardrails | 22B | Mistral 🇫🇷 | Best *deployable* SQL & passes golden — UPGRADE (was mistral-small3.2) |
-| **Validator** (approve/reject) | **mistral-small3.2** * | 24B | Mistral 🇫🇷 | 5.0 (ties phi4) |
-| **Narration / Text** | **mistral-small3.2** * | 24B | Mistral 🇫🇷 | 4.5 |
-| **RAG** (answer from manuals) | **mistral-small3.2** * | 24B | Mistral 🇫🇷 | 4.4 |
+| **Validator** (approve/reject) | **phi4** ✅⬆ | 14B | Microsoft 🇺🇸 | **5.0** — eval winner; live on 0.30.7 |
+| **Narration / Text** | **phi4** ✅⬆ | 14B | Microsoft 🇺🇸 | **4.5** — eval winner; live on 0.30.7 |
+| **RAG** (answer from manuals) | **phi4** ✅⬆ | 14B | Microsoft 🇺🇸 | **4.4–5.0** — eval winner; live on 0.30.7 |
+| **Default / fallback** | **mistral-small3.2** | 24B | Mistral 🇫🇷 | safe general fallback (was the phi4 substitute) |
 | **Vision** (images) | **llama3.2-vision** | 11B | Meta 🇺🇸 | non-Chinese vision model in use |
 | **Embeddings** (search) | **nomic-embed-text** | ~0.1B | Nomic 🇺🇸 | ties best, smallest |
 
-> **\* phi4 is the eval winner for these 3 roles (5.0) but the Ollama 0.30.6 runner CRASHES on
-> phi4-14B (0xc0000409); 0.30.6 is required for gemma4, so mistral-small3.2 is the runtime
-> substitute until Ollama fixes it.**
+> **\* ✅ RESOLVED 2026-06-10:** phi4 was blocked by the Ollama 0.30.6 `0xc0000409` crash and
+> temporarily substituted by mistral-small3.2. **Ollama 0.30.7 fixes it** — phi4 is now deployed for
+> these 3 roles (confirmed under flash-attn + q8_0 KV). mistral-small3.2 is now the default fallback.
 
-**Deployed = gemma4 + devstral + codestral + mistral-small3.2 (+vision +nomic), all non-Chinese.**
-**Upgrades vs prior:** Planner → **gemma4**, Executor → **devstral**, NL→SQL → **codestral**.
+**Deployed = gemma4 (Planner) + devstral (Executor) + codestral (NL→SQL) + phi4 (Validator/Narration/RAG) + mistral-small3.2 (fallback) (+vision +nomic), all non-Chinese.**
+**Upgrades vs prior:** Planner → **gemma4**, Executor → **devstral**, NL→SQL → **codestral**, Validator/Narration/RAG → **phi4** (restored on Ollama 0.30.7).
 
 > "Best that actually works in our app," not just "highest score." gemma4/gpt-oss scored well
 > but return **blank answers** in the app (thinking-model trap) → dropped. qwen/deepseek/qwq =
@@ -41,8 +48,8 @@
 | Model | Params | Maker | Country | Result summary |
 |---|---|---|---|---|
 | gpt-oss:20b | 20B | OpenAI | 🇺🇸 US | Strong raw scores, but **failed golden eval** (reasoning/empty) → not used |
-| **phi4** | 14B | Microsoft | 🇺🇸 US | ✅ **deployed** — validator 5.0, narration 4.5 |
-| **mistral-small3.2** | 24B | Mistral AI | 🇫🇷 FR | ✅ **deployed** — best non-Chinese tool-caller |
+| **phi4** | 14B | Microsoft | 🇺🇸 US | ✅ **deployed (0.30.7)** — Validator/Narration/RAG; eval winner 5.0 |
+| **mistral-small3.2** | 24B | Mistral AI | 🇫🇷 FR | ✅ **deployed** — default / fallback model |
 | gemma3:27b | 27B | Google | 🇺🇸 US | Won planner (4.0) but **broke tool-calling (2.0)** → not used |
 | llama3.1:8b | 8B | Meta | 🇺🇸 US | Baseline — too weak (one NL→SQL 0/5) |
 | **llama3.2-vision** | 11B | Meta | 🇺🇸 US | ✅ **deployed** — vision only |
@@ -125,8 +132,9 @@ Full hardware sizing in [ONPREM_HARDWARE_SIZING.md](ONPREM_HARDWARE_SIZING.md).
 
 ## 7. Final recommendation
 
-1. **Deploy:** mistral-small3.2 (Planner/Executor/NL→SQL) + phi4 (Validator/Narration/RAG) +
-   llama3.2-vision (Vision) + nomic-embed-text (Embeddings). **All non-Chinese.**
+1. **Deploy:** gemma4:12b (Planner) + devstral (Executor) + codestral (NL→SQL) + phi4
+   (Validator/Narration/RAG) + mistral-small3.2 (fallback) + llama3.2-vision (Vision) +
+   nomic-embed-text (Embeddings). **All non-Chinese.** *(phi4 restored on Ollama 0.30.7, 2026-06-10.)*
 2. **Keep the planned 48 GB box** — the 4-model team (~32 GB) fits together; no upgrade.
 3. **NL→SQL is the #1 engineering risk** — invest in the SQL validation + retry layer, not a
    bigger model.

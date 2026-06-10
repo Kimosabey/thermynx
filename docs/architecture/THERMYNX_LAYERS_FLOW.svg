@@ -171,12 +171,12 @@
   <text x="972" y="658" font-size="13" class="green" font-weight="700">codestral</text>
   <text x="972" y="678" font-size="11" class="muted">Mistral · FR · 22B · code</text>
   <text x="972" y="698" font-size="11" class="muted">+ validator / deny-list guardrails</text>
-  <!-- M4 mistral-small3.2 multi-role -->
+  <!-- M4 phi4 multi-role (restored on Ollama 0.30.7) -->
   <rect class="row" x="956" y="734" width="348" height="112" rx="9"/>
   <text x="972" y="760" font-size="13" class="white" font-weight="700">Narration · RAG · Validator</text>
-  <text x="972" y="782" font-size="13" class="green" font-weight="700">mistral-small3.2</text>
-  <text x="972" y="802" font-size="11" class="muted">Mistral · FR · 24B · general (default)</text>
-  <text x="972" y="822" font-size="11" class="muted">runtime sub for phi4 (crashes Ollama 0.30.6)</text>
+  <text x="972" y="782" font-size="13" class="green" font-weight="700">phi4</text>
+  <text x="972" y="802" font-size="11" class="muted">Microsoft · US · 14B · eval winner 5.0</text>
+  <text x="972" y="822" font-size="11" class="muted">restored on Ollama 0.30.7 (mistral-small3.2 = fallback)</text>
   <!-- M5 executor -->
   <rect class="row" x="956" y="858" width="348" height="112" rx="9"/>
   <text x="972" y="884" font-size="13" class="white" font-weight="700">Executor</text>

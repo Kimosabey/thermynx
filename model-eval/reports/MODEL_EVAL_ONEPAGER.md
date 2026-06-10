@@ -9,16 +9,15 @@
 | **Planner** | **gemma4:12b** | 12B | Google 🇺🇸 | 🧠 thinking | Best plans (4.0); works in JSON path; ~25s OK (background step) |
 | **Executor** | **devstral** | 24B | Mistral 🇫🇷 | ⚡ direct | Best tool-calling (4.5) |
 | **NL→SQL** | **codestral** | 22B | Mistral 🇫🇷 | ⚡ direct | Best deployable SQL (+ guardrails) |
-| **Validator** | **mistral-small3.2** * | 24B | Mistral 🇫🇷 | ⚡ direct | 5.0 (ties phi4) |
-| **Narration** | **mistral-small3.2** * | 24B | Mistral 🇫🇷 | ⚡ direct | 4.5 |
-| **RAG** | **mistral-small3.2** * | 24B | Mistral 🇫🇷 | ⚡ direct | 4.4 |
+| **Validator** | **phi4** | 14B | Microsoft 🇺🇸 | ⚡ direct | 5.0 — eval winner |
+| **Narration** | **phi4** | 14B | Microsoft 🇺🇸 | ⚡ direct | 4.5–5.0 — eval winner |
+| **RAG** | **phi4** | 14B | Microsoft 🇺🇸 | ⚡ direct | 4.4–5.0 — eval winner |
 | **Embeddings** | **nomic-embed-text** | 0.1B | Nomic 🇺🇸 | — | ties best, smallest |
 | **Vision** | **llama3.2-vision** | 11B | Meta 🇺🇸 | — | non-Chinese vision |
 
-**\* phi4 (14B) is the eval *winner* for Validator/Narration/RAG (5.0/5.0/5.0) but the Ollama
-0.30.6 runner CRASHES on it (0xc0000409); 0.30.6 is required for gemma4, so they can't share a
-version. mistral-small3.2 is the runtime substitute (near-identical scores, runs fine). Revisit
-phi4 when Ollama fixes the crash.**
+**✅ 2026-06-10: phi4 (14B) is the eval *winner* for Validator/Narration/RAG (5.0/5.0/5.0). It crashed the
+Ollama 0.30.6 runner (0xc0000409), but 0.30.7 fixes it — phi4 now runs cleanly alongside gemma4 and is
+deployed for those 3 roles. mistral-small3.2 is the fallback.**
 
 *Planner alternatives if 25s is too slow: gpt-oss:20b (3.0, ~13s) or mistral-small3.2 (2.0, ~14s).*
 

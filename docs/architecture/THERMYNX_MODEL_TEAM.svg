@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="940" viewBox="0 0 1220 940" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a0f1e"/>
+      <stop offset="1" stop-color="#070b16"/>
+    </linearGradient>
+    <style>
+      .card    { fill:#101a30; stroke:#26334f; stroke-width:1.5; }
+      .cardNew { fill:#0c1712; stroke:#2f9d5b; stroke-width:2; }
+      .cardFb  { fill:#13182a; stroke:#3a4a66; }
+      .role    { fill:#8b97ad; font-size:12px; font-weight:700; letter-spacing:0.08em; }
+      .model   { fill:#7dd3fc; font-size:23px; font-weight:700; }
+      .modelN  { fill:#6ee7a8; font-size:23px; font-weight:700; }
+      .spec    { fill:#aeb8c9; font-size:12.5px; }
+      .purpose { fill:#8b97ad; font-size:12px; }
+      .status  { font-size:12px; font-weight:600; }
+      .hot     { fill:#38bdf8; }
+      .demand  { fill:#8b97ad; }
+      .white   { fill:#e9f0fb; }
+      .muted   { fill:#8b97ad; }
+      .green   { fill:#6ee7a8; }
+      .amber   { fill:#fbbf24; }
+      .red     { fill:#fca5a5; }
+    </style>
+  </defs>
+  <rect width="1220" height="940" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="610" y="42" text-anchor="middle" font-size="25" class="white" font-weight="700">THERMYNX — Model Team</text>
+  <text x="610" y="66" text-anchor="middle" font-size="13" class="muted">on-prem · non-Chinese · Ollama 0.30.7 · eval-selected (Claude Opus 4.8 judge, real Unicharm data)</text>
+
+  <!-- ============ ROW 1 ============ -->
+  <!-- Planner -->
+  <g>
+    <rect class="card" x="30" y="100" width="370" height="196" rx="12"/>
+    <text x="52" y="132" class="role">PLANNER</text>
+    <rect x="300" y="116" width="78" height="22" rx="11" fill="#13243a" stroke="#2a4a66"/>
+    <text x="339" y="131" text-anchor="middle" font-size="11" class="amber">3.3–4.0</text>
+    <text x="52" y="166" class="model">gemma4:12b</text>
+    <text x="52" y="192" class="spec">Google · US · 12B · ~8 GB · thinking/JSON</text>
+    <text x="52" y="214" class="purpose">Decides the action — multi-agent JSON plan</text>
+    <line x1="52" y1="234" x2="378" y2="234" stroke="#26334f"/>
+    <circle cx="58" cy="266" r="4" class="hot"/>
+    <text x="70" y="270" class="status hot">HOT — pre-warmed</text>
+  </g>
+  <!-- Executor -->
+  <g>
+    <rect class="card" x="425" y="100" width="370" height="196" rx="12"/>
+    <text x="447" y="132" class="role">EXECUTOR</text>
+    <rect x="695" y="116" width="78" height="22" rx="11" fill="#10241a" stroke="#2f7d4f"/>
+    <text x="734" y="131" text-anchor="middle" font-size="11" class="green">4.5 ★</text>
+    <text x="447" y="166" class="model">devstral</text>
+    <text x="447" y="192" class="spec">Mistral · FR · 24B · ~14 GB · tool/agent</text>
+    <text x="447" y="214" class="purpose">Calls tools — ReAct loop (best tool-caller)</text>
+    <line x1="447" y1="234" x2="773" y2="234" stroke="#26334f"/>
+    <circle cx="453" cy="266" r="4" class="demand"/>
+    <text x="465" y="270" class="status demand">on demand (~14 GB load)</text>
+  </g>
+  <!-- NL->SQL -->
+  <g>
+    <rect class="card" x="820" y="100" width="370" height="196" rx="12"/>
+    <text x="842" y="132" class="role">NL → SQL</text>
+    <rect x="1090" y="116" width="78" height="22" rx="11" fill="#241a10" stroke="#a8741f"/>
+    <text x="1129" y="131" text-anchor="middle" font-size="11" class="amber">3.2 +guard</text>
+    <text x="842" y="166" class="model">codestral</text>
+    <text x="842" y="192" class="spec">Mistral · FR · 22B · ~13 GB · code</text>
+    <text x="842" y="214" class="purpose">Question → SQL · deny-list + validator guard</text>
+    <line x1="842" y1="234" x2="1168" y2="234" stroke="#26334f"/>
+    <circle cx="848" cy="266" r="4" class="demand"/>
+    <text x="860" y="270" class="status demand">on demand (~13 GB load)</text>
+  </g>
+
+  <!-- ============ ROW 2 — the phi4 trio (changed this session) ============ -->
+  <!-- Narration / Text -->
+  <g>
+    <rect class="cardNew" x="30" y="324" width="370" height="196" rx="12"/>
+    <text x="52" y="356" class="role">NARRATION / TEXT</text>
+    <rect x="262" y="340" width="116" height="22" rx="11" fill="#10241a" stroke="#2f7d4f"/>
+    <text x="320" y="355" text-anchor="middle" font-size="11" class="green">5.0 · ⬆ NEW</text>
+    <text x="52" y="390" class="modelN">phi4</text>
+    <text x="52" y="416" class="spec">Microsoft · US · 14B · ~9 GB · direct</text>
+    <text x="52" y="438" class="purpose">Streams the analyzer answer (eval winner)</text>
+    <line x1="52" y1="458" x2="378" y2="458" stroke="#1f5e3a"/>
+    <circle cx="58" cy="490" r="4" class="hot"/>
+    <text x="70" y="494" class="status hot">HOT — pre-warmed</text>
+  </g>
+  <!-- Validator -->
+  <g>
+    <rect class="cardNew" x="425" y="324" width="370" height="196" rx="12"/>
+    <text x="447" y="356" class="role">VALIDATOR / AUDITOR</text>
+    <rect x="657" y="340" width="116" height="22" rx="11" fill="#10241a" stroke="#2f7d4f"/>
+    <text x="715" y="355" text-anchor="middle" font-size="11" class="green">5.0 · ⬆ NEW</text>
+    <text x="447" y="390" class="modelN">phi4</text>
+    <text x="447" y="416" class="spec">Microsoft · US · 14B · ~9 GB · direct</text>
+    <text x="447" y="438" class="purpose">Approves / fact-checks the answer</text>
+    <line x1="447" y1="458" x2="773" y2="458" stroke="#1f5e3a"/>
+    <circle cx="453" cy="490" r="4" class="hot"/>
+    <text x="465" y="494" class="status hot">HOT — pre-warmed</text>
+  </g>
+  <!-- RAG -->
+  <g>
+    <rect class="cardNew" x="820" y="324" width="370" height="196" rx="12"/>
+    <text x="842" y="356" class="role">RAG ANSWER</text>
+    <rect x="1052" y="340" width="116" height="22" rx="11" fill="#10241a" stroke="#2f7d4f"/>
+    <text x="1110" y="355" text-anchor="middle" font-size="11" class="green">5.0 · ⬆ NEW</text>
+    <text x="842" y="390" class="modelN">phi4</text>
+    <text x="842" y="416" class="spec">Microsoft · US · 14B · ~9 GB · direct</text>
+    <text x="842" y="438" class="purpose">Grounded answer from manuals (not gpt-oss)</text>
+    <line x1="842" y1="458" x2="1168" y2="458" stroke="#1f5e3a"/>
+    <circle cx="848" cy="490" r="4" class="hot"/>
+    <text x="860" y="494" class="status hot">HOT — pre-warmed</text>
+  </g>
+
+  <!-- ============ ROW 3 ============ -->
+  <!-- Default / fallback -->
+  <g>
+    <rect class="card" x="30" y="548" width="370" height="196" rx="12"/>
+    <text x="52" y="580" class="role">DEFAULT / FALLBACK</text>
+    <rect x="300" y="564" width="78" height="22" rx="11" fill="#1c2435" stroke="#3a4a66"/>
+    <text x="339" y="579" text-anchor="middle" font-size="11" class="muted">fallback</text>
+    <text x="52" y="614" class="model">mistral-small3.2</text>
+    <text x="52" y="640" class="spec">Mistral · FR · 24B · ~15 GB · general</text>
+    <text x="52" y="662" class="purpose">Safe fallback (was the phi4 substitute)</text>
+    <line x1="52" y1="682" x2="378" y2="682" stroke="#26334f"/>
+    <circle cx="58" cy="714" r="4" class="demand"/>
+    <text x="70" y="718" class="status demand">on demand (~15 GB load)</text>
+  </g>
+  <!-- Vision -->
+  <g>
+    <rect class="card" x="425" y="548" width="370" height="196" rx="12"/>
+    <text x="447" y="580" class="role">VISION</text>
+    <rect x="667" y="564" width="106" height="22" rx="11" fill="#241014" stroke="#7d2f3a"/>
+    <text x="720" y="579" text-anchor="middle" font-size="11" class="red">untested</text>
+    <text x="447" y="614" class="model">llama3.2-vision</text>
+    <text x="447" y="640" class="spec">Meta · US · 11B · ~8 GB · vision</text>
+    <text x="447" y="662" class="purpose">Plant photo audits / compare (live feature)</text>
+    <line x1="447" y1="682" x2="773" y2="682" stroke="#26334f"/>
+    <circle cx="453" cy="714" r="4" class="demand"/>
+    <text x="465" y="718" class="status red">on demand · bake-off pending</text>
+  </g>
+  <!-- Embeddings -->
+  <g>
+    <rect class="card" x="820" y="548" width="370" height="196" rx="12"/>
+    <text x="842" y="580" class="role">EMBEDDINGS</text>
+    <rect x="1090" y="564" width="78" height="22" rx="11" fill="#13243a" stroke="#2a4a66"/>
+    <text x="1129" y="579" text-anchor="middle" font-size="11" class="hot">fixed</text>
+    <text x="842" y="614" class="model">nomic-embed-text</text>
+    <text x="842" y="640" class="spec">Nomic · US · 0.1B · ~0.6 GB · 768d</text>
+    <text x="842" y="662" class="purpose">RAG index + query embedding</text>
+    <line x1="842" y1="682" x2="1168" y2="682" stroke="#26334f"/>
+    <circle cx="848" cy="714" r="4" class="hot"/>
+    <text x="860" y="718" class="status hot">HOT — pre-warmed</text>
+  </g>
+
+  <!-- ============ FOOTER ============ -->
+  <rect class="card" x="30" y="772" width="1160" height="138" rx="12"/>
+  <text x="52" y="800" font-size="13" class="white" font-weight="700">Notes</text>
+  <text x="52" y="824" font-size="12.5" class="muted">⬆ NEW (2026-06-10): Validator / Narration / RAG swapped mistral-small3.2 → <tspan class="green">phi4</tspan> — the eval winner (5.0), unblocked by Ollama 0.30.7 (the 0.30.6 0xc0000409 crash is fixed).</text>
+  <text x="52" y="847" font-size="12.5" class="muted"><tspan class="hot">● HOT</tspan> = pre-warmed and kept resident. On the 20 GB box only <tspan class="green">phi4 + nomic</tspan> (~9.5 GB) stay hot; any 13–15 GB model evicts on use. All models fit hot on the 48 GB box.</text>
+  <text x="52" y="870" font-size="12.5" class="muted">gpt-oss:20b is NOT the RAG model — it tied on raw score (4.4) but went blank under the token cap (thinking-model trap) and failed the golden eval. Revisit only with thinking-aware streaming.</text>
+  <text x="52" y="893" font-size="12.5" class="muted">Embeddings are pinned to nomic-embed-text (768d) — do not let mxbai-embed-large (1024d) re-index or retrieval breaks. Policy: non-Chinese only (no Qwen / DeepSeek / QwQ).</text>
+</svg>
