@@ -1016,3 +1016,37 @@ The platform relies on several services communicating over specific ports.
 
 > [!TIP]
 > If a port is already in use, you can change it in `backend/.env` for the API, or in `docker-compose.yml` for infrastructure services. Remember to update the frontend's `proxy` settings in `vite.config.js` if the backend port changes.
+
+---
+
+## 19. Grafana Administration (CLI)
+
+The Grafana CLI (`grafana cli`) is bundled directly inside our Docker image. We use a combination of declarative Docker variables and a wrapper script to manage it.
+
+### Using the CLI Interactively
+We provide a wrapper script to avoid typing out the full Docker exec command every time. From the project root, run:
+```bash
+scripts\grafana_cli.bat <commands>
+```
+
+**Examples:**
+```bash
+# List installed plugins
+scripts\grafana_cli.bat plugins ls
+
+# Reset the admin password
+scripts\grafana_cli.bat admin reset-admin-password newpassword123
+```
+
+### Installing Plugins (Persistent Method)
+> ⚠️ **Do not use the CLI** to install plugins (`grafana_cli.bat plugins install ...`). If the container restarts, the plugin will be erased!
+
+To install plugins permanently, uncomment and edit the `GF_INSTALL_PLUGINS` variable in the `grafana` service block of your `docker-compose.yml` file:
+```yaml
+    environment:
+      GF_INSTALL_PLUGINS: "grafana-piechart-panel,grafana-clock-panel"
+```
+After saving the file, recreate the container so Grafana auto-installs them on boot:
+```bash
+docker compose --profile obs up -d grafana
+```

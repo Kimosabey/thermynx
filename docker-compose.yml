@@ -106,6 +106,8 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      # To install plugins persistently, uncomment and list them separated by commas:
+      # GF_INSTALL_PLUGINS: "grafana-piechart-panel,grafana-clock-panel"
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
