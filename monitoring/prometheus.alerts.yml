@@ -52,6 +52,27 @@ groups:
           summary: "Ollama-dependent endpoints failing"
           description: "Analyze / agent endpoints have 5xx > 0.05/s for 5 minutes. Likely Ollama box offline or model not loaded — verify `ollama list` on the GPU host."
 
+      # ── AI groundedness / agent health (F6.9) ───────────────────────────────
+      # Covers both the live endpoints and the new /agentic/* graphs — both emit
+      # these counters via the shared postcheck / agent-run paths.
+      - alert: HallucinationFlagsHigh
+        expr: sum(rate(graylinx_hallucination_flags_total[15m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Post-gen audit flagging ungrounded output"
+          description: "graylinx_hallucination_flags_total > 0.05/s (15m avg) — answers contain numbers / equipment / citations not in the source data. Suspect a prompt or model-routing change; run `make eval` and review recent diffs."
+
+      - alert: AgentErrorRate
+        expr: sum(rate(graylinx_agent_runs_total{status="error"}[10m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Agent runs erroring"
+          description: "graylinx_agent_runs_total{status=error} > 0.05/s (10m) — ReAct loop failing: Ollama tool-calling errors, tool timeouts, or model-swap stalls on the 20 GB box. Check `/api/v1/health` and the Ollama host."
+
       # ── Anomaly volume (Loki-based — requires Loki ruler, optional) ─────────
       # Documented here for reference; uncomment and move to a Loki ruler config
       # once the Loki ruler is wired up.

@@ -1,4 +1,4 @@
-.PHONY: dev deps stop reset logs obs obs-stop obs-status obs-logs obs-reload obs-test-alert obs-curl-metrics worker migrate migrate-create migrate-stamp
+.PHONY: dev deps stop reset logs obs obs-stop obs-status obs-logs obs-reload obs-test-alert obs-curl-metrics worker migrate migrate-create migrate-stamp eval eval-strict
 
 # Start stateful deps (Postgres + Redis + Redis Commander UI)
 deps:
@@ -92,6 +92,17 @@ obs-test-alert:
 	  -d '[{"labels":{"alertname":"TestAlert","severity":"warning","job":"thermynx-api"},"annotations":{"summary":"Test alert from `make obs-test-alert`","description":"If you see this in Alertmanager UI, the pipeline works."}}]'
 	@echo ""
 	@echo "  → Open http://localhost:9093 to verify it appears"
+
+# ── AI eval gate (F6) ─────────────────────────────────────────────────────────
+
+# Run the AI golden suite against the running backend (start it first: make backend).
+# Skips gracefully if :8000 is down — so it never false-blocks a push.
+eval:
+	cd backend && ../.venv/Scripts/python -m pytest tests/eval/test_golden.py -v
+
+# CI/strict variant — FAILS (not skips) if the backend is unreachable.
+eval-strict:
+	cd backend && EVAL_REQUIRE_BACKEND=1 ../.venv/Scripts/python -m pytest tests/eval/test_golden.py -v
 
 # ── arq job worker ────────────────────────────────────────────────────────────
 

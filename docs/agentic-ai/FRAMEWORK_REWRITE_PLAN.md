@@ -42,7 +42,9 @@
 
 **F5 — tools as LangChain tools** ✅ `tools_lc.py` — the 8 HVAC tools as typed `StructuredTool`s (Pydantic arg schemas), bound in the ReAct graph; execution still routes through the guarded `execute_tool` + DATA-wrapping `tools_node` (security unchanged). Validated e2e, no regression.
 
-Next: F2 LlamaIndex RAG · F6 eval/tracing gate.
+**F6 — eval gate + AI alerting** ✅ `make eval` / `make eval-strict` (golden-suite gate vs the running backend) + `.githooks/pre-push` (runs the gate; skips gracefully if backend down; `--no-verify` to override) + Prometheus rules `HallucinationFlagsHigh` / `AgentErrorRate` (reuse existing counters; cover `/agentic/*` too). ⏳ deferred to a deps session: RAGAS/DeepEval metrics, S2-judge wiring, agentic golden cases, per-node Langfuse spans (langfuse 4.7.1 LangChain-handler import path TBD).
+
+Next: **F7 flip** (shadow-diff `/agentic/*` vs live → point live endpoints at the graphs → decommission). **F2 RAG deferred** (reranking is ~no-op at the 12-chunk corpus; full LlamaIndex re-platform over the custom schema isn't worth the risk yet).
 
 **Env:** consolidated to the single `.venv` (langchain installed there; shared deps unchanged; `.venv-agentic` removed).
 
