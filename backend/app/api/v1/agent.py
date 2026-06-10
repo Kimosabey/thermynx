@@ -1,5 +1,7 @@
 import json
+import re
 import uuid
+from datetime import datetime
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -8,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.db.session import get_pg
-from app.db.models import AgentRun, Message
+from app.db.models import AgentRun, Message, Thread
 from app.ai.agent import run_agent
 from app.ai.multi_agent import run_multi_agent
 from app.limiter import limiter
@@ -22,12 +24,141 @@ log = get_logger("api.agent")
 VALID_MODES = {"investigator", "optimizer", "brief", "root_cause", "maintenance"}
 
 
+async def _persist_turn(pg: AsyncSession, thread_id: str | None, prompt: str, answer: str, status: str):
+    """Write a user+assistant message pair into a thread after a clean run.
+    Skips empty/cancelled turns so history stays clean. Mirrors analyzer.py:343-361."""
+    if not (thread_id and answer.strip() and status != "cancelled"):
+        return
+    try:
+        pg.add(Message(id=str(uuid.uuid4()), thread_id=thread_id, role="user", content=prompt))
+        pg.add(Message(id=str(uuid.uuid4()), thread_id=thread_id, role="assistant", content=answer))
+        thr = await pg.get(Thread, thread_id)
+        if thr:
+            thr.updated_at = datetime.utcnow()
+            if thr.title in (None, "", "Conversation"):
+                thr.title = re.sub(r"\s+", " ", prompt.strip())[:200]
+        await pg.commit()
+    except Exception:
+        log.warning("agent_turn_persist_failed thread_id=%s", thread_id)
+
+
 class AgentRequest(BaseModel):
     mode:        str = Field(default="investigator")
     goal:        str = Field(..., min_length=3, max_length=2000)
     context:     dict | None = None    # {equipment_id, hours, anomaly_id, ...}
     model:       str | None = None
     thread_id:   str | None = Field(default=None, max_length=36)  # load prior conversation history
+
+
+# ── F7 cutover: serve the agent / orchestrator from the LangGraph rewrite ─────
+_react_graph = None
+_multi_graph = None
+
+
+def _get_react_graph():
+    global _react_graph
+    if _react_graph is None:
+        from app.ai.graph.react_agent import build_react_agent_graph
+        _react_graph = build_react_agent_graph()
+    return _react_graph
+
+
+def _get_multi_graph():
+    global _multi_graph
+    if _multi_graph is None:
+        from app.ai.graph.multi_agent_graph import build_multi_agent_graph
+        _multi_graph = build_multi_agent_graph()
+    return _multi_graph
+
+
+async def _graph_agent_stream(request: Request, req, pg: AsyncSession):
+    """USE_GRAPH_AGENT path — ReAct graph; preserves the AgentRun row + thread persistence."""
+    from app.ai.graph.sse import astream_sse
+    run_id = str(uuid.uuid4())
+    model = req.model or settings.OLLAMA_DEFAULT_MODEL
+    run = AgentRun(id=run_id, mode=req.mode, goal=req.goal,
+                   context_json=json.dumps(req.context) if req.context else None,
+                   model=model, status="running",
+                   request_id=getattr(request.state, "request_id", None))
+    pg.add(run)
+    await pg.commit()
+    inputs = {"question": req.goal, "mode": req.mode, "context": req.context}
+    cfg = {"configurable": {"thread_id": req.thread_id or run_id}, "recursion_limit": 30}
+    tokens: list[str] = []
+    tool_calls = 0
+    status = "error"
+    try:
+        async for frame in astream_sse(_get_react_graph(), inputs, cfg, done_extra={"run_id": run_id}):
+            if await request.is_disconnected():
+                status = "cancelled"
+                break
+            yield frame
+            try:
+                d = json.loads(frame[6:])
+                t = d.get("type")
+                if t == "token":
+                    tokens.append(d.get("content", ""))
+                elif t == "tool_call":
+                    tool_calls += 1
+                elif t == "done":
+                    status = "ok"
+                elif t == "error":
+                    status = "error"
+            except Exception:
+                pass
+    except Exception:
+        log.exception("agent_graph_failed run_id=%s", run_id)
+        yield f"data: {json.dumps({'type':'error','detail':'Agent graph failed.'})}\n\n"
+        status = "error"
+    answer = "".join(tokens)
+    run.final_output = answer or None
+    run.steps_taken = tool_calls
+    run.status = status
+    await pg.merge(run)
+    await pg.commit()
+    await _persist_turn(pg, req.thread_id, req.goal, answer, status)
+
+
+async def _graph_orchestrate_stream(request: Request, req, pg: AsyncSession):
+    """USE_GRAPH_ORCHESTRATE path — multi-agent graph; preserves the AgentRun row."""
+    from app.ai.graph.sse import astream_sse
+    run_id = str(uuid.uuid4())
+    model = req.model or settings.OLLAMA_DEFAULT_MODEL
+    run = AgentRun(id=run_id, mode="orchestrator", goal=req.goal,
+                   context_json=json.dumps(req.context) if req.context else None,
+                   model=model, status="running",
+                   request_id=getattr(request.state, "request_id", None))
+    pg.add(run)
+    await pg.commit()
+    inputs = {"question": req.goal, "context": req.context}
+    cfg = {"configurable": {"thread_id": run_id}, "recursion_limit": 50}
+    tokens: list[str] = []
+    status = "error"
+    try:
+        async for frame in astream_sse(_get_multi_graph(), inputs, cfg, done_extra={"run_id": run_id}):
+            if await request.is_disconnected():
+                status = "cancelled"
+                break
+            yield frame
+            try:
+                d = json.loads(frame[6:])
+                t = d.get("type")
+                if t == "token":
+                    tokens.append(d.get("content", ""))
+                elif t == "done":
+                    status = "ok"
+                elif t == "error":
+                    status = "error"
+            except Exception:
+                pass
+    except Exception:
+        log.exception("orchestrate_graph_failed run_id=%s", run_id)
+        yield f"data: {json.dumps({'type':'error','detail':'Orchestrator graph failed.'})}\n\n"
+        status = "error"
+    run.final_output = "".join(tokens) or None
+    run.status = status
+    await pg.merge(run)
+    await pg.commit()
 
 
 async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
@@ -44,6 +175,12 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
         log.info("agent_preflight_refused mode=%s reason=%s", req.mode, refusal[:120])
         yield f"data: {json.dumps({'type':'token','content': refusal})}\n\n"
         yield f"data: {json.dumps({'type':'done','steps':0,'preflight_refused':True})}\n\n"
+        return
+
+    # F7 cutover — serve from the ReAct LangGraph when enabled (default OFF = path below).
+    if settings.USE_GRAPH_AGENT:
+        async for frame in _graph_agent_stream(request, req, pg):
+            yield frame
         return
 
     # Load conversation history from thread so agents have multi-turn context
@@ -165,6 +302,10 @@ async def _stream(request: Request, req: AgentRequest, pg: AsyncSession):
     await pg.merge(run)
     await pg.commit()
 
+    # Persist the turn into the thread so agent answers show in conversation
+    # history + inform Nyx's routing carry-over (mirrors analyzer.py:343-361).
+    await _persist_turn(pg, req.thread_id, req.goal, "".join(final_tokens), status)
+
     log.info(
         "agent_run_done run_id=%s mode=%s status=%s steps=%s request_id=%s",
         run_id,
@@ -190,9 +331,10 @@ async def agent_run(
 
 
 class OrchestrateRequest(BaseModel):
-    goal:    str = Field(..., min_length=3, max_length=2000)
-    context: dict | None = None
-    model:   str | None = None
+    goal:      str = Field(..., min_length=3, max_length=2000)
+    context:   dict | None = None
+    model:     str | None = None
+    thread_id: str | None = Field(default=None, max_length=36)  # persist turn into conversation
 
 
 async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: AsyncSession):
@@ -205,6 +347,12 @@ async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: Asy
         log.info("orchestrate_preflight_refused reason=%s", refusal[:120])
         yield f"data: {json.dumps({'type':'token','content': refusal})}\n\n"
         yield f"data: {json.dumps({'type':'done','subtasks':0,'preflight_refused':True})}\n\n"
+        return
+
+    # F7 cutover — serve from the multi-agent LangGraph when enabled (default OFF = path below).
+    if settings.USE_GRAPH_ORCHESTRATE:
+        async for frame in _graph_orchestrate_stream(request, req, pg):
+            yield frame
         return
 
     run_id = str(uuid.uuid4())
@@ -267,6 +415,9 @@ async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: Asy
     run.status       = status
     await pg.merge(run)
     await pg.commit()
+
+    # Persist the synthesised answer into the thread (mirrors _stream).
+    await _persist_turn(pg, req.thread_id, req.goal, "".join(synth_tokens), status)
 
     log.info(
         "orchestrator_run_done run_id=%s status=%s subtasks=%s request_id=%s",
