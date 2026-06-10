@@ -61,6 +61,12 @@ async def astream_sse(graph: Any, inputs: dict, config: dict, done_extra: dict |
     `done_extra` is merged into the final `done` frame (e.g. audit_id/model/run_id)
     so a flipped live endpoint keeps the exact `done` payload the UI expects.
     """
+    # Attach Langfuse callbacks for per-node/per-LLM spans (no-op when unconfigured).
+    from app.ai.graph.tracing import graph_callbacks
+    cbs = graph_callbacks()
+    if cbs:
+        config = {**config, "callbacks": [*(config.get("callbacks") or []), *cbs]}
+
     try:
         async for update in graph.astream(inputs, config, stream_mode="updates"):
             for _node, delta in (update or {}).items():
