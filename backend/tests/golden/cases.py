@@ -241,6 +241,29 @@ ANALYZER_CASES = [
         },
         "tags": ["happy_path", "T3"],
     },
+    {
+        # S2 LLM-as-judge (local llama3.1:8b) — EXERCISES the semantic grounding layer
+        # (closes the "judge built but never run" gap). `s2_judge` runs the judge and
+        # RECORDS its verdict; we deliberately do NOT set `s2_grounded` (hard gate):
+        # with the self-context proxy + a small judge it over-flags interpretive phrases
+        # ("more consistent", "lower end of Good range"), so S2 is a recorded SIGNAL,
+        # not a binary gate — matching critique.py's "second opinion, never a gate".
+        # A true grounded-gate needs the telemetry summary as context (future: thread
+        # the summary into the runner) + a stronger judge.
+        "id":       "an_happy_efficiency_s2",
+        "endpoint": "/api/v1/analyze",
+        "category": "happy_path",
+        "body":     {"question": "Is chiller 1 running efficiently?", "hours": 6,
+                     "equipment_id": "chiller_1", "verify": False},
+        "expect": {
+            "status":         200,
+            "contains_any":   ["kW/TR", "chiller", "efficien"],
+            "max_latency_ms": 90000,
+            "audit_flag_count_max": 5,
+            "s2_judge":    True,   # judge runs + verdict recorded (signal, not gate)
+        },
+        "tags": ["happy_path", "T3", "S2"],
+    },
 
     # ─── Lock-in: non-chiller equipment selections must work ─────────────
     # Pre-`59cd4b7` these returned 500 "Telemetry database is unreachable"

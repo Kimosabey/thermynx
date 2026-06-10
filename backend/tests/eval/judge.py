@@ -48,6 +48,10 @@ Rules:
 - "grounded" = true if zero issues found.
 - Be lenient on rounding (0.613 vs 0.61 is fine).
 - Ignore non-numeric claims (adjectives like "efficient", "normal").
+- IGNORE the fixed kW/TR efficiency benchmark thresholds (0.55, 0.65, 0.75, 0.85) and
+  standard bands ("excellent/good/fair/poor/critical") — these are documented design
+  constants the system always knows, NOT data claims to verify.
+- Ignore generic time-of-day / window references and units without a value.
 - No prose outside the JSON.
 """
 
