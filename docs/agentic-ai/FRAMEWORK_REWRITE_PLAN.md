@@ -157,7 +157,7 @@ two, F2–F6 parallelize to ~3 weeks. Every phase ends green on `pytest tests/ev
 ### F1 — Model · structured output · memory · prompt registry · **3.5d**
 - F1.1 `ChatOllama` factory keyed by task — 0.4d
 - F1.2 Map `config.py` routing → instances (text/tool/sql/planner/auditor) — values + rationale come from the Model routing & hardware table (eval-backed); keep the phi4→mistral-small3.2 substitution — 0.25d
-- F1.3 Pydantic schema: planner plan — **typed steps `{action, tool, expected_output, fallback}`** + rationale/tier (per `PLANNER_IMPROVEMENT_PLAYBOOK.md` — forces complete plans); **no explicit CoT block** (gemma4 thinks internally) — 0.2d
+- F1.3 Pydantic schema: planner plan — `{rationale, subtasks:[{specialist∈(investigator/optimizer/root_cause/maintenance), goal}]}` (mirrors current `multi_agent.py`, ≤4 subtasks); **no explicit CoT block** (gemma4 thinks internally). *Typed remediation steps `{action,tool,expected_output,fallback}` are a future planner-quality idea (`PLANNER_IMPROVEMENT_PLAYBOOK.md`), not this decomposition schema.* — 0.2d
 - F1.4 Pydantic schema: critique verdict — 0.2d
 - F1.5 Pydantic schemas: tool-call args — 0.25d
 - F1.6 `with_structured_output` for planner — 0.2d
