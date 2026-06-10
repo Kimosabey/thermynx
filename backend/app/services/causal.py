@@ -25,7 +25,8 @@ from app.log import get_logger
 
 log = get_logger("services.causal")
 
-_TIMEOUT_S       = 20.0
+_TIMEOUT_S       = 45.0   # must clear a cold model load (~13-22s on the 20GB box) + generation;
+                          # 20s tripped on every cold swap → "skipped: LLM timeout" on the cards
 _TEMPERATURE     = 0.0
 
 
@@ -86,6 +87,7 @@ async def _ollama_call(model: str, prompt: str) -> str:
         "prompt":  prompt,
         "stream":  False,
         "format":  "json",
+        "keep_alive": "30m",  # keep the model resident across a page's anomaly cards → no re-cold-load per card
         "options": {"temperature": _TEMPERATURE},
     }
     async with httpx.AsyncClient(timeout=_TIMEOUT_S) as client:
@@ -101,7 +103,9 @@ async def explain_anomaly(
     model: str | None = None,
 ) -> CausalExplanation:
     """Always returns a CausalExplanation. On failure, status='skipped' with reason."""
-    used = model or settings.OLLAMA_DEFAULT_MODEL
+    # Share the warm narration model (phi4 via OLLAMA_MODEL_TEXT) instead of cold-loading
+    # a separate mistral-small3.2 — fewer distinct models resident = fewer VRAM evictions.
+    used = model or settings.OLLAMA_MODEL_TEXT or settings.OLLAMA_DEFAULT_MODEL
     try:
         ctx_json = json.dumps({"anomaly": anomaly, "context": context}, default=str)[:6000]
     except Exception:
