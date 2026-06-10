@@ -13,6 +13,7 @@ import EmptyState from "../../shared/ui/EmptyState";
 import ErrorAlert from "../../shared/ui/ErrorAlert";
 import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
 import useApi from "../../shared/hooks/useApi";
+import { useModelToast } from "../../shared/ai/useModels";
 import { apiFetch } from "../../shared/api/client";
 
 const MotionBox = motion.create(Box);
@@ -52,8 +53,11 @@ function SignalRow({ s }) {
 }
 
 export default function PredictivePage() {
-  const { data, isLoading, error, refetch } = useApi("/api/v1/predictive/degradation?days=14");
   const toast = useToast();
+  const notifyModel = useModelToast();
+  const { data, isLoading, error, refetch } = useApi("/api/v1/predictive/degradation?days=14", {
+    onSuccess: (d) => { if ((d?.assets || []).some((a) => a.narrative)) notifyModel("text", { prefix: "Predictive" }); },
+  });
   const [running, setRunning] = useState(false);
 
   const assets = data?.assets || [];

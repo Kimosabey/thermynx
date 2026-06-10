@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import { useModelToast } from "../../shared/ai/useModels";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import GlassCard from "../../shared/ui/GlassCard";
 import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
@@ -289,6 +290,7 @@ export default function RAGPage() {
   const [results,   setResults]   = useState([]);
   const [searching, setSearching] = useState(false);
   const [searched,  setSearched]  = useState(false);
+  const notifyModel = useModelToast();
 
   function fetchStatus() {
     fetch("/api/v1/rag/status").then(r => r.json()).then(setStatus).catch(() => {});
@@ -307,6 +309,7 @@ export default function RAGPage() {
 
   async function handleSearch() {
     if (!query.trim()) return;
+    notifyModel("embed", { prefix: "Search" });
     setSearching(true);
     setResults([]);
     try {

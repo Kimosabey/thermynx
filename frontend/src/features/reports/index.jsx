@@ -11,6 +11,7 @@ import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import PeriodSelect, { HOURS_OPTIONS_STANDARD } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
+import { useModelToast } from "../../shared/ai/useModels";
 
 export default function ReportsPage() {
   const [hours, setHours] = useState(24);
@@ -18,8 +19,10 @@ export default function ReportsPage() {
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const notifyModel = useModelToast();
 
   async function generate() {
+    notifyModel("text", { prefix: "Report" });
     setLoading(true);
     setError(null);
     setMarkdown("");

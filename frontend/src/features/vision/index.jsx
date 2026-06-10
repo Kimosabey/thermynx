@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PageShell from "../../shared/ui/PageShell";
 import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
+import { useModelToast } from "../../shared/ai/useModels";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
 import { AIHealthBanner } from "../../shared/ui/AIHealthBanner";
@@ -119,6 +120,7 @@ function DropZone({ label, image, onPick, disabled }) {
 
 export default function VisionPage() {
   const toast = useToast();
+  const notifyModel = useModelToast();
   const [ref, setRef]       = useState(null);
   const [cur, setCur]       = useState(null);
   const [loading, setLoading] = useState(false);
@@ -129,6 +131,7 @@ export default function VisionPage() {
   async function run() {
     setError(null); setResult(null);
     if (mode === "describe" && !cur) { setError("Add a current photo first."); return; }
+    notifyModel("vision", { prefix: "Vision" });
     if (mode === "compare" && (!ref || !cur)) { setError("Add both reference and current photos."); return; }
     setLoading(true);
     try {

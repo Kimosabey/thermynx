@@ -12,6 +12,7 @@ import ZScorePill from "../../shared/ui/ZScorePill";
 import PeriodSelect, { HOURS_OPTIONS_ANOMALY } from "../../shared/ui/PeriodSelect";
 import GlassCard from "../../shared/ui/GlassCard";
 import { SkeletonEquipCard } from "../../shared/ui/SkeletonCard";
+import { useModelToast } from "../../shared/ai/useModels";
 
 const MotionBox = motion.create(Box);
 const MotionGrid = motion.create(Grid);
@@ -39,6 +40,7 @@ function AnomalyCard({ anomaly }) {
   const [exErr, setExErr]       = useState(null);
   const [woLoading, setWoLoading] = useState(false);
   const toast                   = useToast();
+  const notifyModel             = useModelToast();
   const navigate                = useNavigate();
 
   async function createWorkOrder() {
@@ -89,6 +91,7 @@ function AnomalyCard({ anomaly }) {
   async function loadExplanation() {
     setOpen(true);
     if (explain || exLoad) return;
+    notifyModel("text", { prefix: "Explain" });
     setExLoad(true); setExErr(null);
     try {
       const r = await fetch("/api/v1/causal/explain", {
