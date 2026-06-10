@@ -115,7 +115,10 @@ def _num_ctx_for(model_name: str) -> int:
     name = (model_name or "").lower()
     # Small (≤3B) tier — 4096 native window. NB: match "phi3"/"phi2" explicitly,
     # NOT the substring "phi", so phi4 (14B-class, 16k window) is not mis-tiered.
-    if any(x in name for x in ("3b", "3.2:latest", "phi3", "phi2", "phi:", "llama3.2:latest")):
+    # NB: match "llama3.2:latest" explicitly, NOT bare "3.2:latest" — the latter
+    # over-matches "mistral-small3.2:latest" (a 24B model) and wrongly caps it at
+    # 4096, truncating long analyzer prompts → empty output.
+    if any(x in name for x in ("3b", "phi3", "phi2", "phi:", "llama3.2:latest")):
         return 4096
     if any(x in name for x in ("7b", "8b", "llama3.1")):
         return 8192

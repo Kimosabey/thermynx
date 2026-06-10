@@ -33,16 +33,6 @@ def preflight_node(state: AgentState) -> dict[str, Any]:
     return {"refusal": refusal, "answer": refusal or ""}
 
 
-def respond_node(state: AgentState) -> dict[str, Any]:
-    """Placeholder for the grounded answer path.
-
-    TODO F3.3–F3.9: replace with context → rag → prompt → llm(+tools) →
-    postcheck → critique. Kept minimal so the graph compiles and the preflight
-    path is end-to-end testable today.
-    """
-    return {"answer": state.get("answer", "")}
-
-
 # ── Edges ────────────────────────────────────────────────────────────────────
 def route_after_preflight(state: AgentState) -> Literal["refused", "continue"]:
     return "refused" if state.get("refusal") else "continue"
@@ -50,21 +40,42 @@ def route_after_preflight(state: AgentState) -> Literal["refused", "continue"]:
 
 # ── Builder ──────────────────────────────────────────────────────────────────
 def build_single_agent_graph(checkpointer: Any | None = None) -> Any:
-    """Compile the single-agent graph. Pass a checkpointer (Postgres/Redis in
-    production, F1.10); defaults to in-memory for tests/dev."""
+    """Compile the single-agent grounded graph (analyzer surface port).
+
+    START → preflight → (refused → END | continue → context → rag → prompt →
+    llm → postcheck → critique → END). Pass a checkpointer (Postgres/Redis in
+    production, F1.10); defaults to in-memory for tests/dev.
+
+    Next (F3.7): bind tools to the llm node + a conditional ReAct loop for the
+    agent surface.
+    """
     from langgraph.graph import StateGraph, START, END
 
-    g = StateGraph(AgentState)
+    from app.ai.graph.nodes import (
+        context_node, rag_node, prompt_node, llm_node, postcheck_node, critique_node,
+    )
+
+    g = StateGraph(AgentState)  # type: ignore[arg-type]  # pyright<->langgraph TypedDict generic bound; runtime-validated
     g.add_node("preflight", preflight_node)
-    g.add_node("respond", respond_node)
+    g.add_node("context", context_node)
+    g.add_node("rag", rag_node)
+    g.add_node("prompt", prompt_node)
+    g.add_node("llm", llm_node)
+    g.add_node("postcheck", postcheck_node)
+    g.add_node("critique", critique_node)
 
     g.add_edge(START, "preflight")
     g.add_conditional_edges(
         "preflight",
         route_after_preflight,
-        {"refused": END, "continue": "respond"},
+        {"refused": END, "continue": "context"},
     )
-    g.add_edge("respond", END)
+    g.add_edge("context", "rag")
+    g.add_edge("rag", "prompt")
+    g.add_edge("prompt", "llm")
+    g.add_edge("llm", "postcheck")
+    g.add_edge("postcheck", "critique")
+    g.add_edge("critique", END)
 
     if checkpointer is None:
         from langgraph.checkpoint.memory import MemorySaver

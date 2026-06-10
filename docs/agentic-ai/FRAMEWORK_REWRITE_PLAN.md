@@ -26,8 +26,10 @@
 - ⏳ F1.10/F1.11 checkpointer + resume (folds into F3) · F1.12 prompt registry · F1.13 cache continuity · F1.14 retire `json_utils` (at cutover)
 
 **F3 — Single-agent StateGraph** (in progress)
-- ✅ F3.1 `AgentState` schema · F3.2 preflight node · F3.10 conditional edge · F1.10 MemorySaver checkpointer — graph compiles + preflight path runs/validated offline
-- ⏳ F3.3–F3.9 node chain (context → rag → prompt → llm → tools → postcheck → critique) · F3.11 SSE adapter · F3.12 loop robustness — wrap existing code, runtime-tested on the box
+- ✅ F3.1/F3.2/F3.10/F1.10 — graph compiles + preflight path validated offline (refusals fire, allowed routes through)
+- ✅ F3.3–F3.9 grounded node chain built (context → rag → prompt → llm → postcheck → critique); **grounded LLM answer validated against the live box** (real kW/TR 0.545–0.613, "good" band, RAG citation)
+- 🐛 Fixed latent `_num_ctx_for` bug in `ollama.py` — `mistral-small3.2:latest` was mis-matched by the `"3.2:latest"` pattern → capped at 4096 → long analyzer prompts truncated → empty output. Now 8192 (also fixes the existing analyzer).
+- ⏳ Full-graph e2e re-confirm pending Ollama recovery (box overloaded during back-to-back test calls) · F3.7 ReAct tool loop · F3.11 SSE adapter · F3.12 loop robustness
 
 **Env:** consolidated to the single `.venv` (langchain installed there; shared deps unchanged; `.venv-agentic` removed).
 

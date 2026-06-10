@@ -52,12 +52,17 @@ def chat_model(role: Role, *, temperature: float = 0.0, num_predict: int | None 
     Exact ``ChatOllama`` kwargs are verified on the box once deps are installed.
     """
     from langchain_ollama import ChatOllama  # lazy — dep lands at F0.4
+    from app.llm.ollama import _num_ctx_for  # reuse the canonical per-tier sizing
 
+    name = model_name_for(role)
     return ChatOllama(
-        model=model_name_for(role),
+        model=name,
         base_url=settings.OLLAMA_HOST,
         temperature=temperature,
         num_predict=num_predict,
+        # CRITICAL: langchain defaults num_ctx=2048 → a ~3.5k-token analyzer prompt
+        # gets truncated → empty/garbage output. Mirror ollama.py's per-tier sizing.
+        num_ctx=_num_ctx_for(name),
     )
 
 
