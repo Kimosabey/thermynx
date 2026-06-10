@@ -1,109 +1,137 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Graylinx AI Operations Intelligence Platform — Unicharm Facility HVAC Analytics" />
-    <meta name="theme-color" content="#1F3FFE" />
-    <link rel="icon" type="image/png" href="/src/assets/logo.png" />
-    <title>Graylinx — HVAC AI Operations Intelligence</title>
 
-    <!-- Inter · Plus Jakarta Sans · JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Graylinx AI Operations Intelligence Platform — Unicharm Facility HVAC Analytics" />
+  <meta name="theme-color" content="#1F3FFE" />
+  <link rel="icon" type="image/png" href="/src/assets/logo.png" />
+  <title>Graylinx — THERMYNX | Operations Intelligence</title>
 
-    <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <!-- Inter · Plus Jakarta Sans · JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet" />
 
-      :root {
-        /* Canonical brand palette v2 */
-        --brand-50:   #EFF0FF;
-        --brand-100:  #C7C9FF;
-        --brand-200:  #989DFF;
-        --brand-300:  #6671FF;
-        --brand-500:  #1F3FFE;
-        --brand-600:  #0123B4;
-        --brand-700:  #000F64;
-        /* Neutral */
-        --neutral-50:  #F1F1F1;
-        --neutral-900: #1D1D21;
-        color-scheme: light dark;
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* Canonical brand palette v2 */
+      --brand-50: #EFF0FF;
+      --brand-100: #C7C9FF;
+      --brand-200: #989DFF;
+      --brand-300: #6671FF;
+      --brand-500: #1F3FFE;
+      --brand-600: #0123B4;
+      --brand-700: #000F64;
+      /* Neutral */
+      --neutral-50: #F1F1F1;
+      --neutral-900: #1D1D21;
+      color-scheme: light dark;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #EFF0FF;
+      color: #1D1D21;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-feature-settings: "tnum" 1, "kern" 1;
+    }
+
+    /* WCAG 2.2 — visible focus rings */
+    :focus-visible {
+      outline: 2px solid #1F3FFE;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* WCAG 2.4.1 — skip-to-content link */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 1rem;
+      z-index: 9999;
+      padding: 0.5rem 1rem;
+      background: #1F3FFE;
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      text-decoration: none;
+      border-radius: 0 0 8px 8px;
+      transition: top 0.12s ease;
+    }
+
+    .skip-link:focus {
+      top: 0;
+    }
+
+    /* WCAG 2.3.3 — respect prefers-reduced-motion (vestibular safety) */
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
       }
 
-      html { scroll-behavior: smooth; }
-
-      body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: #EFF0FF;
-        color: #1D1D21;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        text-rendering: optimizeLegibility;
-        font-feature-settings: "tnum" 1, "kern" 1;
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
       }
+    }
 
-      /* WCAG 2.2 — visible focus rings */
-      :focus-visible {
-        outline: 2px solid #1F3FFE;
-        outline-offset: 2px;
-        border-radius: 4px;
-      }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
 
-      /* WCAG 2.4.1 — skip-to-content link */
-      .skip-link {
-        position: absolute;
-        top: -100%;
-        left: 1rem;
-        z-index: 9999;
-        padding: 0.5rem 1rem;
-        background: #1F3FFE;
-        color: #fff;
-        font-weight: 600;
-        font-size: 13px;
-        text-decoration: none;
-        border-radius: 0 0 8px 8px;
-        transition: top 0.12s ease;
-      }
-      .skip-link:focus { top: 0; }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
 
-      /* WCAG 2.3.3 — respect prefers-reduced-motion (vestibular safety) */
-      @media (prefers-reduced-motion: reduce) {
-        html { scroll-behavior: auto; }
-        *, *::before, *::after {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-          scroll-behavior: auto !important;
-        }
-      }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(31, 63, 254, 0.20);
+      border-radius: 10px;
+    }
 
-      /* Custom scrollbar */
-      ::-webkit-scrollbar { width: 5px; height: 5px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(31,63,254,0.20);
-        border-radius: 10px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: rgba(31,63,254,0.40);
-      }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(31, 63, 254, 0.40);
+    }
 
-      /* Selection */
-      ::selection {
-        background: rgba(31,63,254,0.15);
-        color: #000F64;
-      }
+    /* Selection */
+    ::selection {
+      background: rgba(31, 63, 254, 0.15);
+      color: #000F64;
+    }
 
-      #root { min-height: 100vh; }
-    </style>
-  </head>
-  <body>
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+    #root {
+      min-height: 100vh;
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>
