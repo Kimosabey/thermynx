@@ -242,14 +242,14 @@ ANALYZER_CASES = [
         "tags": ["happy_path", "T3"],
     },
     {
-        # S2 LLM-as-judge (local llama3.1:8b) — EXERCISES the semantic grounding layer
-        # (closes the "judge built but never run" gap). `s2_judge` runs the judge and
-        # RECORDS its verdict; we deliberately do NOT set `s2_grounded` (hard gate):
-        # with the self-context proxy + a small judge it over-flags interpretive phrases
-        # ("more consistent", "lower end of Good range"), so S2 is a recorded SIGNAL,
-        # not a binary gate — matching critique.py's "second opinion, never a gate".
-        # A true grounded-gate needs the telemetry summary as context (future: thread
-        # the summary into the runner) + a stronger judge.
+        # S2 LLM-as-judge + DeepEval (both local llama3.1:8b) — semantic grounding.
+        # The runner sends X-Eval-Context, so the analyzer emits the telemetry SUMMARY
+        # it grounded on and BOTH judges score the answer against REAL data (no longer
+        # the answer-as-its-own-context proxy). `s2_judge` + `deepeval_faithfulness` RUN
+        # and RECORD their verdicts as SIGNALS. `s2_grounded` is NOT set: even with real
+        # context a small judge over-flags interpretive phrasing, so per critique.py's
+        # "second opinion, never a gate" these stay observability, not pass/fail.
+        # (Flip `s2_grounded: True` once the judge proves stable on this case.)
         "id":       "an_happy_efficiency_s2",
         "endpoint": "/api/v1/analyze",
         "category": "happy_path",
@@ -260,7 +260,8 @@ ANALYZER_CASES = [
             "contains_any":   ["kW/TR", "chiller", "efficien"],
             "max_latency_ms": 90000,
             "audit_flag_count_max": 5,
-            "s2_judge":    True,   # judge runs + verdict recorded (signal, not gate)
+            "s2_judge":              True,   # S2 judge runs + verdict recorded (signal)
+            "deepeval_faithfulness": True,   # DeepEval faithfulness recorded (signal)
         },
         "tags": ["happy_path", "T3", "S2"],
     },

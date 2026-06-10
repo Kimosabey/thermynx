@@ -246,6 +246,17 @@ async def _sse_stream(
         ]
         yield f"data: {json.dumps({'type': 'citations', 'chunks': citation_payload})}\n\n"
 
+    # ── Eval-only context frame ──────────────────────────────────────────────
+    # Surface the telemetry summary the answer is grounded in so the eval harness
+    # can judge faithfulness against the REAL data (S2 gate / DeepEval), not the
+    # answer-as-its-own-context proxy. Header-gated → emitted ONLY for eval runs;
+    # zero change to normal traffic. The UI ignores unknown frame types.
+    if request.headers.get("x-eval-context") == "1":
+        try:
+            yield f"data: {json.dumps({'type': 'context_summary', 'summary': summary}, default=str)}\n\n"
+        except Exception:
+            pass
+
     # ── Response cache check (Redis, 60s TTL) ────────────────────────────────
     # Key includes the telemetry window_end so stale answers are never served
     # after new data arrives. Disabled when TTL=0 or Redis is unavailable.

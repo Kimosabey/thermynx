@@ -30,6 +30,7 @@ class CaseResult:
     skipped:        bool = False
     skip_reason:    str = ""
     s2_verdict:     dict[str, Any] | None = None
+    deepeval:       dict[str, Any] | None = None
 
 
 def _collect_sse(url: str, body: dict, timeout: float) -> dict[str, Any]:
@@ -38,10 +39,15 @@ def _collect_sse(url: str, body: dict, timeout: float) -> dict[str, Any]:
     """
     tokens: list[str] = []
     audit: dict[str, Any] | None = None
+    context_summary: dict[str, Any] | None = None
     status_code: int | None = None
 
+    # X-Eval-Context asks the analyzer to emit the telemetry summary it grounded
+    # the answer in, so S2/DeepEval judge faithfulness against REAL data (not the
+    # answer-as-its-own-context proxy). Header-gated → no effect on prod traffic.
     with httpx.Client(timeout=timeout) as client:
-        with client.stream("POST", url, json=body, headers={"Accept": "text/event-stream"}) as r:
+        with client.stream("POST", url, json=body,
+                           headers={"Accept": "text/event-stream", "X-Eval-Context": "1"}) as r:
             status_code = r.status_code
             if r.status_code != 200:
                 return {"status": status_code, "text": r.read().decode("utf-8", errors="replace"), "audit": None}
@@ -57,8 +63,11 @@ def _collect_sse(url: str, body: dict, timeout: float) -> dict[str, Any]:
                     tokens.append(frame.get("content", ""))
                 elif t == "audit":
                     audit = frame.get("audit")
+                elif t == "context_summary":
+                    context_summary = frame.get("summary")
 
-    return {"status": status_code, "text": "".join(tokens), "audit": audit}
+    return {"status": status_code, "text": "".join(tokens), "audit": audit,
+            "context_summary": context_summary}
 
 
 def _collect_json(url: str, body: dict, timeout: float) -> dict[str, Any]:
@@ -156,18 +165,35 @@ def run_case(case: dict, base_url: str = "http://localhost:8000") -> CaseResult:
                 f"audit_flag_count: {flag_count} not in [{lo}, {hi}]"
             )
 
-    # ── S2 LLM-as-judge (optional, only when s2_judge=True in expect) ────────
+    # ── S2 LLM-as-judge + DeepEval (optional; judged against REAL context) ───
+    # The analyzer (sent X-Eval-Context) emits the telemetry summary it grounded
+    # on; judge faithfulness against THAT, not the answer-as-its-own-context
+    # proxy. Falls back to the proxy when the frame is absent (non-analyze
+    # endpoints, or a backend without the eval frame).
+    ctx_obj = resp.get("context_summary")
+    judge_context = json.dumps(ctx_obj, default=str)[:3000] if ctx_obj else text[:1000]
+
     s2_verdict: dict[str, Any] | None = None
     if expect.get("s2_judge") and text and not failures:
         try:
             from tests.eval.judge import judge_answer
-            s2_verdict = judge_answer(text, text[:1000])  # use answer itself as context proxy
+            s2_verdict = judge_answer(text, judge_context)
             if expect.get("s2_grounded") and s2_verdict.get("grounded") is False:
                 failures.append(
-                    f"s2_judge: answer not grounded — issues: {s2_verdict.get('issues', [])[:3]}"
+                    f"s2_judge: answer not grounded in telemetry — issues: {s2_verdict.get('issues', [])[:3]}"
                 )
         except Exception as exc:
             s2_verdict = {"grounded": None, "issues": [f"judge error: {exc}"]}
+
+    # DeepEval faithfulness — a SECOND grounding signal, never a gate. Only when
+    # opted-in (expect.deepeval_faithfulness) and real context was captured.
+    deepeval_res: dict[str, Any] | None = None
+    if expect.get("deepeval_faithfulness") and text and ctx_obj:
+        try:
+            from tests.eval.deepeval_metric import faithfulness_score
+            deepeval_res = faithfulness_score(body.get("question", ""), text, [judge_context])
+        except Exception as exc:
+            deepeval_res = {"score": None, "reason": f"deepeval error: {exc}"}
 
     return CaseResult(
         case_id=case_id,
@@ -178,6 +204,7 @@ def run_case(case: dict, base_url: str = "http://localhost:8000") -> CaseResult:
         audit=audit,
         failures=failures,
         s2_verdict=s2_verdict,
+        deepeval=deepeval_res,
     )
 
 
