@@ -12,7 +12,7 @@ import {
 import GlassCard from "@/shared/ui/GlassCard";
 import Eyebrow from "@/shared/ui/Eyebrow";
 import GlassSelect from "@/shared/ui/GlassSelect";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -298,6 +298,7 @@ export default function WorkOrderDrawer({
     <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent side="right" className="w-full gap-0 overflow-y-auto bg-surface sm:max-w-md">
         <SheetHeader>
+          <SheetDescription className="sr-only">Work order details.</SheetDescription>
           {loading || !wo ? (
             <SheetTitle className="sr-only">Work order</SheetTitle>
           ) : (

@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -182,6 +183,9 @@ function CreateModal({ isOpen, onClose, equipment, onCreated }: CreateModalProps
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New work order</DialogTitle>
+          <DialogDescription className="sr-only">
+            Create a new maintenance work order for a piece of equipment.
+          </DialogDescription>
         </DialogHeader>
         <div>
           <div className="mb-3">

@@ -20,6 +20,22 @@
     })();
   </script>
 
+  <!-- First-paint styles: applied synchronously BEFORE the bundled CSS loads
+       (in dev, index.css is injected by the JS module). Without this the page
+       briefly shows an unstyled, visible "Skip to main content" link on a
+       white/black flash until React mounts. Mirrors index.css canvas + skip-link. -->
+  <style>
+    html { background: #EFF0FF; color-scheme: light; }
+    html.dark { background: #0A0E1F; color-scheme: dark; }
+    .skip-link {
+      position: absolute; top: -100%; left: 1rem; z-index: 9999;
+      padding: .5rem 1rem; background: #1F3FFE; color: #fff;
+      font-weight: 600; font-size: 13px; text-decoration: none;
+      border-radius: 0 0 8px 8px;
+    }
+    .skip-link:focus { top: 0; }
+  </style>
+
   <!-- Inter · Plus Jakarta Sans · JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

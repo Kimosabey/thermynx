@@ -8,7 +8,7 @@ import NyxComposer from "./NyxComposer";
 import UserTurn from "./UserTurn";
 import AssistantTurn from "./AssistantTurn";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { CitationDrawer } from "@/features/analyzer/CitationFootnotes";
 
 export default function NyxPage() {
@@ -119,6 +119,8 @@ export default function NyxPage() {
 
       <Sheet open={navOpen} onOpenChange={setNavOpen}>
         <SheetContent side="left" className="w-[280px] max-w-[280px] p-0" showCloseButton={false}>
+          <SheetTitle className="sr-only">Conversations</SheetTitle>
+          <SheetDescription className="sr-only">Your Nyx conversation threads.</SheetDescription>
           <NyxThreadSidebar
             threads={threads}
             activeThreadId={activeThreadId}
