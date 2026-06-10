@@ -40,7 +40,9 @@
 
 **F7 — cutover (parallel surface)** ✅ new `POST /api/v1/agentic/{analyze,agent,orchestrate}` endpoints serve the graphs via the existing SSE contract (`api/v1/agentic.py`). **Live endpoints untouched**; router include is guarded so the app still boots without the rewrite deps. Routes registered + all three graphs build clean. Remaining F7: shadow-diff vs current pipeline → flip the live endpoints behind a flag → decommission.
 
-Next: F2 LlamaIndex RAG · F5 tools-as-@tool · F6 eval/tracing gate.
+**F5 — tools as LangChain tools** ✅ `tools_lc.py` — the 8 HVAC tools as typed `StructuredTool`s (Pydantic arg schemas), bound in the ReAct graph; execution still routes through the guarded `execute_tool` + DATA-wrapping `tools_node` (security unchanged). Validated e2e, no regression.
+
+Next: F2 LlamaIndex RAG · F6 eval/tracing gate.
 
 **Env:** consolidated to the single `.venv` (langchain installed there; shared deps unchanged; `.venv-agentic` removed).
 

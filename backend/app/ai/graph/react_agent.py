@@ -21,7 +21,7 @@ import asyncio
 import json
 from typing import Any, Literal
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 
 from app.config import settings
 from app.log import get_logger
@@ -29,7 +29,8 @@ from app.ai.graph.state import AgentState
 from app.ai.graph.models import chat_model
 from app.ai.graph.validation import validate_tool_args
 from app.ai.preflight import check_action_request, check_equipment_mentions
-from app.ai.tools import TOOL_SCHEMAS, execute_tool, ToolContext
+from app.ai.tools import execute_tool, ToolContext
+from app.ai.graph.tools_lc import LC_TOOLS
 from app.ai.prompts.agent_prompts import SYSTEM_PROMPTS
 
 log = get_logger("ai.graph.react")
@@ -61,7 +62,7 @@ def init_node(state: AgentState) -> dict[str, Any]:
 
 async def agent_llm_node(state: AgentState) -> dict[str, Any]:
     """Tool-calling step on the tool model (devstral), tools bound."""
-    model = chat_model("tool", temperature=0.0).bind_tools(TOOL_SCHEMAS)
+    model = chat_model("tool", temperature=0.0).bind_tools(LC_TOOLS)
     resp = await model.ainvoke(state["messages"])
     return {"messages": [resp], "step": state.get("step", 0) + 1}
 
@@ -86,7 +87,7 @@ async def tools_node(state: AgentState) -> dict[str, Any]:
             content = correction or f"Invalid arguments for '{name}'."
         else:
             try:
-                result = await asyncio.wait_for(execute_tool(name, clean, ctx=ctx), timeout=_TOOL_TIMEOUT_S)
+                result = await asyncio.wait_for(execute_tool(name, clean or {}, ctx=ctx), timeout=_TOOL_TIMEOUT_S)
             except asyncio.TimeoutError:
                 result = {"error": f"Tool '{name}' timed out after {_TOOL_TIMEOUT_S:.0f}s."}
             content = (
