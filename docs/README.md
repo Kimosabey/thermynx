@@ -1,7 +1,7 @@
 # Graylinx — Documentation
 
 All documentation for the Graylinx HVAC AI Operations Intelligence Platform.
-The product roadmap lives one level up: [`../BUILD_PLAN.md`](../BUILD_PLAN.md).
+The product roadmap is in [`planning/BUILD_PLAN.md`](planning/BUILD_PLAN.md).
 
 ---
 
@@ -83,14 +83,14 @@ The product roadmap lives one level up: [`../BUILD_PLAN.md`](../BUILD_PLAN.md).
 | [UI_UX_IMPROVEMENT_PLAN.md](./planning/UI_UX_IMPROVEMENT_PLAN.md) | WCAG 2.2 gaps, animation polish, responsiveness fixes, UI/UX patterns — 4-sprint execution plan |
 | [TECH_STACK_ASSESSMENT.md](./architecture/TECH_STACK_ASSESSMENT.md) | Honest layer-by-layer review of every framework and architecture decision |
 | [FLAWS_AND_IMPROVEMENT_PLAN.md](./planning/FLAWS_AND_IMPROVEMENT_PLAN.md) | All known gaps: P0–P3 severity, root cause, fix description, sprint plan |
-| [../BUILD_PLAN.md](../BUILD_PLAN.md) | Product vision, phases 0–6, architecture decisions, deployment, security roadmap |
+| [planning/BUILD_PLAN.md](./planning/BUILD_PLAN.md) | Product vision, phases 0–6, architecture decisions, deployment, security roadmap |
 
 ### Source Data (Unicharm)
 
 | Document | What it covers |
 |----------|----------------|
-| [../unicharm_db_analysis.md](../unicharm_db_analysis.md) | Analysis of the raw Unicharm database — table inventory, data quality, normalization notes |
-| [../unicharm_db_ddl.md](../unicharm_db_ddl.md) | DDL statements for the normalized Unicharm tables |
+| [reference/unicharm_db_analysis.md](./reference/unicharm_db_analysis.md) | Analysis of the raw Unicharm database — table inventory, data quality, normalization notes |
+| [reference/unicharm_db_ddl.md](./reference/unicharm_db_ddl.md) | DDL statements for the normalized Unicharm tables |
 
 ---
 

@@ -134,7 +134,7 @@ repo-root/
 │   └── DATA_DICTIONARY.md
 ├── docker-compose.yml      # Postgres + Redis only
 ├── Makefile
-└── BUILD_PLAN.md           # full product roadmap
+└── docs/planning/BUILD_PLAN.md   # full product roadmap (docs are under docs/)
 ```
 
 ---
@@ -172,7 +172,7 @@ All checks must pass before tagging a release.
 | Phase 4 — RAG | pgvector, PDF ingestion, citations | ⬜ Not started |
 | Phase 5 — Hardening | Auth, monitoring, TLS, backups | ⏸ Post-POC |
 
-See [`BUILD_PLAN.md`](BUILD_PLAN.md) for full detail.
+See [`docs/planning/BUILD_PLAN.md`](docs/planning/BUILD_PLAN.md) for full detail.
 
 ---
 

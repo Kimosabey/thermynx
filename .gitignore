@@ -11,6 +11,8 @@ build/
 .pytest_cache/
 *.log
 backend/logs.txt
+# Local background-run artifacts (uvicorn/vite detached logs)
+.run_*
 
 # Archives / stray exports (use THERMYNX Design System folder, not zipped dupes)
 THERMYNX Design System.zip
