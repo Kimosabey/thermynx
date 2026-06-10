@@ -44,10 +44,16 @@ F4 multi-agent (115s e2e, audit+critique) · F5 typed tools · F6 eval gate (`ma
 + **per-node Langfuse tracing** · F7 parallel `/agentic/*` (HTTP-smoke 200) + **flip all 3 live surfaces** (TestClient-validated) ·
 **F2 reranking** (FlashRank) · bug fix `_num_ctx_for`.
 
+## SESSION UPDATE (2026-06-10, continued) — what changed since the handoff above
+- ✅ **V2 frontend cutover SHIPPED** (`865af5c`): `frontend/` is now the Tailwind/TS/Vite8 app; old Chakra app deleted (src backup tgz outside the repo). FE + agentic backend now share branch `rewrite/agentic-framework`.
+- ✅ **Nyx assistant backend** (`fa5e5dc`): `POST /api/v1/assistant/route` intent router (`app/ai/router_classify.py`) classifies a chat message → dispatches to the existing engines. Read-only; 14 unit tests.
+- ✅ **FE bug fixes**: runaway `/health` request storm — unstable `useAppToast` + `useApi` onSuccess dep (`ae11f0c`); load-time FOUC + Radix dialog a11y warnings (`b333053`).
+- ✅ pre-push hook activated (`9d88348`), shadcn→devDeps (`beaef55`), `pre-tailwind-cutover` git tag at the last Chakra commit.
+
 ## WHAT'S LEFT (exact next steps)
-1. **DeepEval metric (F6.4)** — imports OK (4.0.6). Wire ONE metric (e.g. `FaithfulnessMetric`) with a **local Ollama judge model** (DeepEval supports custom models via a `DeepEvalBaseLLM` wrapper). **Set `DEEPEVAL_TELEMETRY_OPT_OUT=YES`** (it bundles posthog/sentry — zero-egress rule). Validate on one golden answer.
-2. **RAGAS (F6.3) — BLOCKED/incompatible:** `import ragas` fails (`langchain_community.chat_models.vertexai.ChatVertexAI` removed in langchain 1.x; RAGAS 0.4.3 hard-imports it). Fixing needs downgrading langchain-community below what langgraph 1.x needs → breaks the stack. **Recommendation: do NOT use RAGAS; the local S2 judge already provides a faithfulness/grounding metric framework-free.** Consider `pip uninstall ragas` to keep the env clean. (This is the ADR-0001 framework-churn risk, realized.)
-3. **S2 hard-gate** — currently the judge uses a self-context proxy (`judge_answer(text, text[:1000])` in `tests/eval/runner.py`) so it's a recorded SIGNAL, not a gate. To make `s2_grounded` a real gate: thread the telemetry **summary** into the runner as the judge context (the SSE stream doesn't carry it today — would need the analyzer to emit a summary frame, or the case to embed expected context).
+1. ✅ **DeepEval metric (F6.4) — DONE** (`2d76dd8`). `tests/eval/deepeval_metric.py` runs `FaithfulnessMetric` on a **local Ollama judge** (llama3.1:8b) via a `DeepEvalBaseLLM` wrapper, `DEEPEVAL_TELEMETRY_OPT_OUT=YES`. Wired into the runner as a SIGNAL for cases with `expect.deepeval_faithfulness` (`an_happy_efficiency_s2` opts in).
+2. ✅ **RAGAS (F6.3) — DROPPED** (`ae9963c`). Uninstalled from `.venv` + removed from `requirements-dev.txt` (langchain 1.x incompatibility; the local S2 judge covers grounding framework-free). The ADR-0001 churn risk, realized + closed.
+3. ✅ **S2 real-context — DONE** (`2d76dd8`), gate-ready. The analyzer emits a header-gated (`X-Eval-Context: 1`) `context_summary` SSE frame carrying `compute_summary()`; the runner threads that REAL telemetry into BOTH judges (no more `text[:1000]` self-proxy). Validated in-process (frame emits; `chiller_1.avg_kw_per_tr=0.58` = the value the answer cites). **`s2_grounded` left OFF (still a signal)** — flip it to a hard gate once the small judge proves stable on real context across runs. NOTE: the live `:8000` backend must restart to pick up the analyzer frame; the runner falls back to the proxy meanwhile (no regression).
 4. **Docling ingestion (F2 tail)** — better manual/table parsing. Heavy (pulls torch). Optional; only matters as the KB grows past 12 chunks. `pip install docling`, swap `scripts/ingest_docs.py` PDF reader.
 5. **Decommission old pipeline** — **LAST, after prod soak.** Flip a surface on in prod, watch it, then delete the dead inline code in `analyzer.py`/`agent.py`/`multi_agent.py`. Do NOT delete before soak.
 
