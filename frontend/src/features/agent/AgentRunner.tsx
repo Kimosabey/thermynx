@@ -15,7 +15,6 @@ import remarkGfm from "remark-gfm";
 import GlassCard from "@/shared/ui/GlassCard";
 import Eyebrow from "@/shared/ui/Eyebrow";
 import TraceStepDS from "@/shared/ui/TraceStep";
-import TracingBeam from "@/shared/ui/TracingBeam";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -466,8 +465,20 @@ export default function AgentRunner({
             aria-relevant="additions"
             aria-label="Agent reasoning steps"
           >
-            <TracingBeam>
-              <div className="relative" ref={timelineRef}>
+            {/* Static timeline track. NOTE: previously wrapped in <TracingBeam>,
+                a scroll-tracked beam whose spring-followed head jittered as the
+                trace streamed in + the pane auto-scrolled. A static line gives
+                the same timeline look with zero animation glitch. */}
+            <div className="relative h-full w-full overflow-y-auto [&::-webkit-scrollbar]:w-[4px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(31,63,254,0.25)]">
+              <div className="relative py-[16px] pr-[4px] pl-[32px]" ref={timelineRef}>
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-[16px] bottom-[16px] left-[18px] w-px"
+                  style={{
+                    background:
+                      "linear-gradient(to bottom, var(--brand), color-mix(in srgb, var(--brand) 18%, transparent))",
+                  }}
+                />
                 {trace.map((f, i) => (
                   <TraceRow key={i} frame={f} />
                 ))}
@@ -489,7 +500,7 @@ export default function AgentRunner({
                   </div>
                 )}
               </div>
-            </TracingBeam>
+            </div>
           </GlassCard>
         </div>
 

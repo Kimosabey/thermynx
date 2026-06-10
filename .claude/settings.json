@@ -248,7 +248,16 @@
       "Bash(curl -s -m 4 -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/v1/health)",
       "Bash(curl -s -m 6 http://100.125.103.28:11434/api/tags)",
       "Bash(git --no-pager log --oneline -3)",
-      "Bash(git --no-pager log --oneline -12)"
+      "Bash(git --no-pager log --oneline -12)",
+      "Bash(curl -s -m 8 http://100.125.103.28:11434/api/version)",
+      "Bash(curl -s -m 8 http://100.125.103.28:11434/api/ps)",
+      "Bash(PYTHONIOENCODING=utf-8 \"../.venv/Scripts/python.exe\" -c \"import ast; ast.parse\\(open\\('app/services/causal.py',encoding='utf-8'\\).read\\(\\)\\); from app.config import settings; print\\('causal.py OK; OLLAMA_MODEL_TEXT =', settings.OLLAMA_MODEL_TEXT, '| DEFAULT =', settings.OLLAMA_DEFAULT_MODEL\\)\")",
+      "Bash(PYTHONIOENCODING=utf-8 \"../.venv/Scripts/python.exe\" -c \"from app.config import settings as s; [print\\(f'{k:22} = {getattr\\(s,k\\)}'\\) for k in ['OLLAMA_MODEL_TEXT','OLLAMA_MODEL_RAG','OLLAMA_MODEL_SQL','OLLAMA_MODEL_TOOL','OLLAMA_MODEL_PLANNER','OLLAMA_DEFAULT_MODEL'] if hasattr\\(s,k\\)]\")",
+      "Bash(time curl -s -m 90 http://100.125.103.28:11434/api/generate -d '{\"model\":\"phi4\",\"keep_alive\":-1,\"prompt\":\"ok\",\"options\":{\"num_predict\":3}}' -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "PowerShell($c = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; if \\($c\\) { $p = Get-Process -Id $c.OwningProcess; Write-Output \"PID $\\($p.Id\\)  $\\($p.ProcessName\\)\"; try { $cl = \\(Get-CimInstance Win32_Process -Filter \"ProcessId=$\\($p.Id\\)\"\\).CommandLine; Write-Output \"CMD: $cl\" } catch {} } else { Write-Output \"nothing listening on :8000\" })",
+      "Bash(PYTHONIOENCODING=utf-8 \"../.venv/Scripts/python.exe\" -m uvicorn main:app --host 127.0.0.1 --port 8000)",
+      "Bash(curl -s --retry 25 --retry-delay 1 --retry-connrefused -m 6 http://127.0.0.1:8000/api/v1/health -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "Bash(EVAL_REQUIRE_BACKEND=1 PYTHONIOENCODING=utf-8 \"../.venv/Scripts/python.exe\" -m pytest tests/eval/test_golden.py -q -rf --tb=line -o addopts=\"\")"
     ]
   }
 }
