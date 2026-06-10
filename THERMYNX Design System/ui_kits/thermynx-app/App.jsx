@@ -17,6 +17,23 @@ function App() {
   const [collapsed, setCollapsed] = React.useState(false);
   const [theme, setTheme]         = useTheme();
 
+  React.useEffect(() => {
+    const titles = {
+      dashboard: 'Dashboard',
+      analyzer: 'Analyzer',
+      anomalies: 'Anomalies',
+      agent: 'Agents',
+      efficiency: 'Efficiency',
+      forecast: 'Forecast',
+      compare: 'Compare',
+      maintenance: 'Maintenance',
+      cost: 'Cost Analytics',
+      reports: 'Reports',
+      rag: 'Knowledge',
+    };
+    document.title = `THERMYNX · ${titles[route] || 'App'}`;
+  }, [route]);
+
   let screen;
   switch (route) {
     case 'dashboard': screen = <DashboardScreen data={MOCK_SUMMARY} />; break;
