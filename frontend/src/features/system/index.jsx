@@ -11,6 +11,7 @@ import PageHeader from "../../shared/ui/PageHeader";
 import PageHeaderIcon from "../../shared/ui/PageHeaderIcon";
 import GlassCard from "../../shared/ui/GlassCard";
 import Eyebrow from "../../shared/ui/Eyebrow";
+import ModelConfigPanel from "./ModelConfigPanel";
 
 const MotionBox = motion.create(Box);
 
@@ -358,7 +359,7 @@ export default function SystemPage() {
         actions={<SummaryBar status={status} poll={poll} lastChecked={lastChecked} loading={loading} />}
       />
 
-      <ModelsCard />
+      <ModelConfigPanel />
 
       {SERVICES.map((group) => (
         <Box key={group.group} mb={5}>

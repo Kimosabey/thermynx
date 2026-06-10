@@ -11,11 +11,21 @@ capability, update this file in the same commit.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from app.config import settings
 
 router = APIRouter()
+
+
+def _roster_tasks() -> dict:
+    from app.ai.model_roster import resolve_roster
+    return {role: {**info, "label": info["purpose"]} for role, info in resolve_roster(settings).items()}
+
+
+class ModelOverrides(BaseModel):
+    overrides: dict[str, str]   # role → model (roles: text/tool/sql/planner/auditor/rag/vision)
 
 
 @router.get("/models")
@@ -36,6 +46,39 @@ async def models() -> dict:
         "default": settings.OLLAMA_DEFAULT_MODEL,
         "tasks": tasks,
     }
+
+
+@router.get("/models/available")
+async def models_available() -> dict:
+    """Models actually pulled on the Ollama server (for the Settings dropdowns)."""
+    from app.ai.model_config import available_models
+    return {"models": await available_models()}
+
+
+@router.put("/models")
+async def set_models(body: ModelOverrides) -> dict:
+    """Apply per-role model overrides LIVE (no restart). Validates each model is
+    installed on the server. Session-scoped — restart reverts to committed config."""
+    from app.ai.model_config import EDITABLE, apply_overrides, available_models
+
+    bad_roles = [r for r in body.overrides if r not in EDITABLE]
+    if bad_roles:
+        raise HTTPException(status_code=422, detail=f"Not editable: {bad_roles}")
+    avail = {m["name"] for m in await available_models()}
+    bad_models = [m for m in body.overrides.values() if m and m not in avail]
+    if bad_models:
+        raise HTTPException(status_code=422, detail=f"Not installed on the Ollama server: {bad_models}")
+
+    applied = apply_overrides(body.overrides)
+    return {"applied": applied, "tasks": _roster_tasks()}
+
+
+@router.post("/models/reset")
+async def reset_models() -> dict:
+    """Revert all role overrides to the committed/.env defaults."""
+    from app.ai.model_config import reset
+    reset()
+    return {"reset": True, "tasks": _roster_tasks()}
 
 
 @router.get("/capabilities")
