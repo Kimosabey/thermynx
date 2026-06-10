@@ -73,3 +73,12 @@ router.include_router(ibms_alarms.router,   tags=["IBMS Alarms"])
 router.include_router(vendors.router,         tags=["Vendors"])
 router.include_router(inventory.router,       tags=["Inventory"])
 router.include_router(purchase_orders.router, tags=["Procurement"])
+
+# Agentic (LangGraph) rewrite endpoints — guarded so the app still boots even if
+# the rewrite deps (requirements-agentic.txt) aren't installed. Live endpoints unaffected.
+try:
+    from app.api.v1 import agentic
+    router.include_router(agentic.router, tags=["Agentic (LangGraph)"])
+except Exception as _agentic_exc:  # pragma: no cover
+    from app.log import get_logger
+    get_logger("api.router").warning("agentic router not loaded (rewrite deps missing?): %s", _agentic_exc)

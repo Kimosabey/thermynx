@@ -38,7 +38,9 @@
 
 **F4 — Multi-agent supervisor** ✅ live-validated (`multi_agent_graph.py`): planner (gemma4 **structured output** — no prose-parse) → parallel ReAct specialists (reuse F3 graph, share devstral) → synthesis (phi4) → **postcheck + critique on the synthesis** (closes the A1 groundedness-parity gap `multi_agent.py` had). Full e2e 115.8s on 20 GB (3 cross-model cold-loads; fast on 48 GB). Deferred: F4.5 shared tool-cache · F4.9 HITL interrupt · F4.10 SSE per-specialist re-tag.
 
-Next major phases: F2 LlamaIndex RAG · F5 tools-as-@tool · F6 eval/tracing · F7 cutover.
+**F7 — cutover (parallel surface)** ✅ new `POST /api/v1/agentic/{analyze,agent,orchestrate}` endpoints serve the graphs via the existing SSE contract (`api/v1/agentic.py`). **Live endpoints untouched**; router include is guarded so the app still boots without the rewrite deps. Routes registered + all three graphs build clean. Remaining F7: shadow-diff vs current pipeline → flip the live endpoints behind a flag → decommission.
+
+Next: F2 LlamaIndex RAG · F5 tools-as-@tool · F6 eval/tracing gate.
 
 **Env:** consolidated to the single `.venv` (langchain installed there; shared deps unchanged; `.venv-agentic` removed).
 
