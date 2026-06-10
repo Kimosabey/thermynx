@@ -25,9 +25,13 @@
 - ✅ F1.9 `with_retries` helper (`b911883`)
 - ⏳ F1.10/F1.11 checkpointer + resume (folds into F3) · F1.12 prompt registry · F1.13 cache continuity · F1.14 retire `json_utils` (at cutover)
 
+**F3 — Single-agent StateGraph** (in progress)
+- ✅ F3.1 `AgentState` schema · F3.2 preflight node · F3.10 conditional edge · F1.10 MemorySaver checkpointer — graph compiles + preflight path runs/validated offline
+- ⏳ F3.3–F3.9 node chain (context → rag → prompt → llm → tools → postcheck → critique) · F3.11 SSE adapter · F3.12 loop robustness — wrap existing code, runtime-tested on the box
+
 **Env:** consolidated to the single `.venv` (langchain installed there; shared deps unchanged; `.venv-agentic` removed).
 
-**Next:** F3 — single-agent `StateGraph`.
+**Next:** flesh out the F3 node chain (context/rag/prompt/llm/tools/postcheck/critique) — needs the box for runtime.
 
 ---
 
