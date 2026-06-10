@@ -18,6 +18,7 @@ from app.api.v1 import (
     optimizer,
     predictive,
     threads,
+    assistant,
     rag,
     capabilities,
     alarms,
@@ -56,6 +57,7 @@ router.include_router(knowledge.router,      tags=["Past Fixes"])
 router.include_router(optimizer.router,      tags=["Energy Optimizer"])
 router.include_router(predictive.router,     tags=["Predictive Maintenance"])
 router.include_router(threads.router,       tags=["Threads"])
+router.include_router(assistant.router,      tags=["Nyx Assistant"])
 router.include_router(rag.router,           tags=["RAG"])
 router.include_router(capabilities.router,  tags=["Capabilities"])
 router.include_router(alarms.router,        tags=["Alarms"])
