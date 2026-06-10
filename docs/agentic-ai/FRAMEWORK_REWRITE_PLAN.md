@@ -34,7 +34,11 @@
 - ✅ F3.11 SSE adapter (`sse.py`) — validated: refusal → `[token, done]`; ReAct run → `tool_call×2, tool_result×2, token×64, audit, done` (matches the existing UI contract; key-driven so it serves both graphs)
 - ⏳ F3.12 repeat-call detection (step-budget→partial-answer already in) · endpoint wiring behind `pipeline.py` facade (F7)
 
-**F3 is functionally complete & live-validated** (grounded path on phi4 + ReAct loop on devstral + SSE adapter). Next major phases: F4 multi-agent · F2 LlamaIndex RAG · F5 tools-as-@tool · F6 eval/tracing · F7 cutover.
+**F3 is functionally complete & live-validated** (grounded path on phi4 + ReAct loop on devstral + SSE adapter).
+
+**F4 — Multi-agent supervisor** ✅ live-validated (`multi_agent_graph.py`): planner (gemma4 **structured output** — no prose-parse) → parallel ReAct specialists (reuse F3 graph, share devstral) → synthesis (phi4) → **postcheck + critique on the synthesis** (closes the A1 groundedness-parity gap `multi_agent.py` had). Full e2e 115.8s on 20 GB (3 cross-model cold-loads; fast on 48 GB). Deferred: F4.5 shared tool-cache · F4.9 HITL interrupt · F4.10 SSE per-specialist re-tag.
+
+Next major phases: F2 LlamaIndex RAG · F5 tools-as-@tool · F6 eval/tracing · F7 cutover.
 
 **Env:** consolidated to the single `.venv` (langchain installed there; shared deps unchanged; `.venv-agentic` removed).
 
