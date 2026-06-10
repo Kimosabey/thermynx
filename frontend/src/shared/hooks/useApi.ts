@@ -38,6 +38,13 @@ export default function useApi<T = unknown>(
   const abortRef = useRef<AbortController | null>(null);
   const fetchGenRef = useRef(0);
 
+  // Hold onSuccess in a ref. If it were a fetchData dependency, an inline
+  // callback (new identity every render — the common call site) would re-create
+  // fetchData → re-run the fetch effect → setState → re-render → re-fetch …
+  // i.e. an infinite request loop. With the ref, fetchData is stable per `url`.
+  const onSuccessRef = useRef(onSuccess);
+  onSuccessRef.current = onSuccess;
+
   const fetchData = useCallback(async () => {
     if (!url) return;
 
