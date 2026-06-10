@@ -70,18 +70,22 @@ framework strictly needs. F1 wires them as `ChatOllama` instances.
 | Planner | `gemma4:12b` | 4.0 | thinking model → **JSON path only** (blank in tight text); 12B beats 31B |
 | Tool executor | `devstral` (24B) | 4.5 | best native tool-caller |
 | NL→SQL | `codestral` (22B) | 3.2 | **guards/validator carry it**, not the model |
-| Narration / critique / RAG / default | `mistral-small3.2` | 4.5–5.0 | substitute for phi4 (crashes Ollama 0.30.6) |
+| Narration / critique / RAG | `phi4` | 5.0 | eval winner; **unblocked by Ollama 0.30.7** (was mistral-small3.2 on 0.30.6) |
+| Default / fallback | `mistral-small3.2` | 4.5 | used when a role's `.env` setting is empty |
 | Vision | `llama3.2-vision` (11B) | — | |
-| Embeddings | `nomic-embed-text` | — | 768-dim, pgvector |
+| Embeddings | `nomic-embed-text` | — | **768-dim — never swap to mxbai-embed-large (1024d): dimension mismatch breaks pgvector retrieval** |
 
 **Runtime constraints the framework must honor (F0/F1):**
-- Run on **Ollama 0.30.6** (gemma4 needs it); **keep phi4 off it** → `mistral-small3.2` substitute.
+- Run on **Ollama 0.30.7** — both gemma4 (Planner) and **phi4** (TEXT/critique/RAG) load cleanly (0.30.6's phi4 crash is fixed); `mistral-small3.2` is the default/fallback.
+- **VRAM co-residency (20 GB test box):** gemma4(~8) + devstral(~14) + phi4(~9) ≫ 20 GB → Ollama evicts + cold-loads (~10–20s) on each cross-model role switch. **Prefer sequential model use across roles; parallelize only specialists that share a model.** Models co-reside on the 48 GB prod box — design for that, don't assume warm models on 20 GB; budget timeouts for cold loads.
 - **gemma4 (planner) stays on the roomy JSON path only** — goes blank under tight word-limits (aligns with our Pydantic structured-output design).
 - **Non-Chinese only** — `qwen`/`deepseek`/`qwq` excluded.
 
 > **Not frozen:** the real-data run (`FOLLOWUP_NEW.md`) flags `command-r7b` (validator/narration) +
 > `gemma3:12b` (RAG) as candidates the shipped config didn't adopt; **final sign-off is the pending
 > Round-3 vLLM/FP8 run**. `ChatOllama` per-role makes any swap trivial — re-confirm before locking.
+>
+> **Update 2026-06-10:** Ollama 0.30.7 unblocked phi4 → it's now TEXT/critique/RAG (eval winner 5.0); the `.env`-driven router picked it up automatically (no code change).
 
 > **Out of agentic scope (referenced, not duplicated):** hardware/VRAM sizing, co-residency, and
 > per-model latency live in `model-eval/reports/ONPREM_HARDWARE_SIZING.md` + `REAL_DATA_MODEL_EVAL.md`
@@ -110,7 +114,7 @@ The rewrite's job: **preserve every existing optimization, add parallelism, neve
 **Must preserve (else it's a regression):** A1 per-task model right-sizing (the routing table) · A2 response token caps (`OLLAMA_MAX_TOKENS_*`) · A3 Redis answer cache (F1.13) · parallel DB fetches (`asyncio.gather`) + connection pools + tool-payload caps · preflight short-circuit (saves the 30–60s refusal tax).
 
 **Framework adds (genuine wins):**
-- **Parallel specialists** — LangGraph runs multi-agent specialists concurrently (vs today's sequential): the biggest latency win in the rewrite.
+- **Parallel specialists** — LangGraph runs specialists concurrently (vs sequential): a latency win **when they share a model, or on the co-resident 48 GB prod box**. ⚠️ On the 20 GB test box, fanning out across *different* models thrashes VRAM (evict/reload ~10–20s/swap) — run cross-model roles sequentially there. Make concurrency co-residency-aware.
 - **Parallel nodes** — context-fetch ∥ RAG-retrieve as concurrent edges.
 - **Stream-first / TTFT** — `astream_events`; expensive context at prompt end (B3).
 - **Cheap rerank** — reranker stays CPU-ms (FlashRank), never a new LLM hop.
@@ -183,7 +187,7 @@ two, F2–F6 parallelize to ~3 weeks. Every phase ends green on `pytest tests/ev
 - F0.5 Add Langfuse service to `docker-compose.yml` (obs profile) + env — 0.25d
 - F0.6 Boot + reach Langfuse; create project keys — 0.1d
 - F0.7 Baseline `pytest tests/eval` → record 27/27 — 0.25d
-- F0.8 Confirm per-task models load on the Ollama host — **Ollama 0.30.6** running (gemma4 needs it; phi4 kept off it → mistral-small3.2); VRAM/co-residency sizing is ops (`ONPREM_HARDWARE_SIZING.md`) — 0.4d
+- F0.8 Confirm per-task models load on the Ollama host — **Ollama 0.30.7** running (gemma4 + phi4 both load); on the 20 GB box expect evict/cold-load on cross-model switches (sequential > parallel across models); VRAM/co-residency sizing is ops (`ONPREM_HARDWARE_SIZING.md`) — 0.4d
 
 ### F1 — Model · structured output · memory · prompt registry · **3.5d**
 - F1.1 `ChatOllama` factory keyed by task — 0.4d
