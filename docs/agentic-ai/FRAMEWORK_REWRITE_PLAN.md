@@ -6,6 +6,31 @@
 > **Builds on:** [AI_FRAMEWORK_MIGRATION.md](../planning/ai/AI_FRAMEWORK_MIGRATION.md) (OSS-only, staged, eval-gated).
 > **Constraints kept:** open-source only · on-prem · non-Chinese-origin models · zero data egress.
 
+## Build status (live)
+
+> Updated on every task completion (same commit as the feature). Work is on branch
+> `rewrite/agentic-framework`; `master` is untouched. ✅ done · ⏳ needs the live box / later phase.
+
+**F0 — Foundations**
+- ✅ F0.1 branch (`c0820a3`)
+- ✅ F0.2/F0.3 dependency manifests (`a08b2cf`) · spine pinned (`a9d8822`)
+- ✅ F0.5 Langfuse — already in `docker-compose.yml`
+- ⏳ F0.4 offline bundle · F0.6 boot Langfuse · F0.7 baseline eval · F0.8 model-load check — **need the box**
+
+**F1 — Model · structured output · memory · prompt registry**
+- ✅ F1.1/F1.2 per-task `ChatOllama` router (`b911883`)
+- ✅ F1.3–F1.5 Pydantic schemas — Plan / CritiqueVerdict / 8 tool-args (`b911883`)
+- ✅ F1.6/F1.7 `structured_model` (`with_structured_output`) helper (`b911883`)
+- ✅ F1.8 tool-arg validation + one-shot repair (`a9d8822`)
+- ✅ F1.9 `with_retries` helper (`b911883`)
+- ⏳ F1.10/F1.11 checkpointer + resume (folds into F3) · F1.12 prompt registry · F1.13 cache continuity · F1.14 retire `json_utils` (at cutover)
+
+**Env:** consolidated to the single `.venv` (langchain installed there; shared deps unchanged; `.venv-agentic` removed).
+
+**Next:** F3 — single-agent `StateGraph`.
+
+---
+
 ## "Use all frameworks" — what that actually means
 
 You don't run four orchestrators at once. LangGraph, CrewAI, AutoGen and PydanticAI all *compete* for
