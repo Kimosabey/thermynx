@@ -59,6 +59,7 @@ F4 multi-agent (115s e2e, audit+critique) · F5 typed tools · F6 eval gate (`ma
 - **Embeddings:** locked to `nomic-embed-text` 768d. NEVER mxbai-embed-large (1024d) → pgvector dim mismatch.
 - **Validating a graph over HTTP:** the `:8000` backend must be restarted to expose `/agentic/*` + the flags. To test without that, build a minimal FastAPI app (set `app.state.limiter = limiter` + `RateLimitExceeded` handler) + `TestClient`, or invoke the graph directly via `build_*_graph().ainvoke(...)`.
 - **CWD / Windows:** run python from `backend/` so `.env` loads; set `PYTHONIOENCODING=utf-8` (the system prompt has a `⚠` that crashes cp1252 prints); the `aiomysql "Event loop is closed"` traceback at exit is a harmless GC warning. LF→CRLF git warnings are benign.
+- **Pre-push hook activation (per clone):** the F6.8 gate only fires after `git config core.hooksPath .githooks`. **Done in this clone (2026-06-10)** — but it's *local* config, so any fresh clone must re-run it or pushes won't be gated. Bypass once with `git push --no-verify`.
 
 ## How to run / validate
 ```bash
