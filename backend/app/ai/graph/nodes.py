@@ -48,13 +48,15 @@ async def context_node(state: AgentState) -> dict[str, Any]:
 
 
 async def rag_node(state: AgentState) -> dict[str, Any]:
-    """Embed the question + pgvector retrieve; graceful degradation to no-RAG."""
+    """Embed the question + pgvector retrieve (wide) → FlashRank rerank → top-k. Graceful no-RAG."""
     from app.db.session import PGSession
     from app.ai.rag import retrieve, format_rag_context
+    from app.ai.graph.rerank import rerank
 
+    q = state.get("question", "")
     async with PGSession() as pg:
-        chunks = await retrieve(pg, state.get("question", ""), top_k=5,
-                                equipment_id=state.get("equipment_id"))
+        chunks = await retrieve(pg, q, top_k=15, equipment_id=state.get("equipment_id"))
+    chunks = rerank(q, chunks, top_k=5)  # cross-encoder refine (F2)
     return {"rag_chunks": chunks, "rag_context": format_rag_context(chunks) if chunks else ""}
 
 

@@ -21,6 +21,6 @@ llama-index-vector-stores-postgres>=0.4  # MIT — PGVectorStore over `embedding
 docling>=2.0              # MIT (IBM) — PDF/table/scanned manual ingestion
 
 # ── Reranking (CPU, millisecond latency — never a new LLM hop) ───────────────
-flashrank>=0.2            # Apache-2.0 — cross-encoder rerank after vector top-k
+flashrank==0.2.10         # Apache-2.0 — cross-encoder rerank after pgvector top-k (F2)
 
 # langfuse SDK + pydantic are already pinned in requirements.txt
