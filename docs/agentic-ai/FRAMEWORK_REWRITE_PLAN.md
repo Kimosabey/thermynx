@@ -31,7 +31,10 @@
 - 🐛 Fixed latent `_num_ctx_for` bug in `ollama.py` — `mistral-small3.2:latest` was mis-matched by the `"3.2:latest"` pattern → capped at 4096 → long analyzer prompts truncated → empty output. Now 8192 (also fixes the existing analyzer).
 - ✅ Grounded e2e **confirmed on phi4** (Ollama 0.30.7): real kW/TR answer, postcheck + critique ran
 - ✅ F3.7 ReAct tool loop (`react_agent.py`) — **e2e validated on devstral**: 2-step loop, correct tool selection (compute_efficiency + detect_anomalies), tool-arg validation, DATA-wrapped results, grounded answer, clean audit; F3.12 step-budget→partial-answer in place
-- ⏳ F3.11 SSE adapter (stream graph events → existing token/tool_call/tool_result/audit/done frames) · F3.12 repeat-call detection
+- ✅ F3.11 SSE adapter (`sse.py`) — validated: refusal → `[token, done]`; ReAct run → `tool_call×2, tool_result×2, token×64, audit, done` (matches the existing UI contract; key-driven so it serves both graphs)
+- ⏳ F3.12 repeat-call detection (step-budget→partial-answer already in) · endpoint wiring behind `pipeline.py` facade (F7)
+
+**F3 is functionally complete & live-validated** (grounded path on phi4 + ReAct loop on devstral + SSE adapter). Next major phases: F4 multi-agent · F2 LlamaIndex RAG · F5 tools-as-@tool · F6 eval/tracing · F7 cutover.
 
 **Env:** consolidated to the single `.venv` (langchain installed there; shared deps unchanged; `.venv-agentic` removed).
 
