@@ -43,6 +43,69 @@ def _hash(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
+# ── F7 cutover: serve the analyzer from the LangGraph grounded graph ──────────
+_grounded_graph = None
+
+
+def _get_grounded_graph():
+    """Lazily build + cache the grounded graph (keeps langgraph off the import path when the flag is off)."""
+    global _grounded_graph
+    if _grounded_graph is None:
+        from app.ai.graph.single_agent import build_single_agent_graph
+        _grounded_graph = build_single_agent_graph()
+    return _grounded_graph
+
+
+async def _graph_analyze_stream(request, req, pg, audit_id, model, start_ms):
+    """USE_GRAPH_ANALYZER path — stream the grounded graph; preserve audit + thread persistence."""
+    from app.ai.graph.sse import astream_sse
+
+    audit = AnalysisAudit(
+        id=audit_id, equipment_id=req.equipment_id, time_range_hours=req.hours,
+        question=req.question, model=model, status="streaming",
+        request_id=getattr(request.state, "request_id", None),
+    )
+    pg.add(audit)
+    await pg.commit()
+
+    inputs = {"question": req.question, "equipment_id": req.equipment_id, "hours": req.hours}
+    cfg = {"configurable": {"thread_id": req.thread_id or audit_id}}
+    tokens: list[str] = []
+    status = "ok"
+    try:
+        async for frame in astream_sse(_get_grounded_graph(), inputs, cfg, done_extra={"audit_id": audit_id, "model": model}):
+            if await request.is_disconnected():
+                status = "cancelled"
+                break
+            yield frame
+            try:
+                d = json.loads(frame[6:])
+                if d.get("type") == "token":
+                    tokens.append(d.get("content", ""))
+                elif d.get("type") == "error":
+                    status = "error"
+            except Exception:
+                pass
+    except Exception:
+        log.exception("analyze_graph_failed audit_id=%s", audit_id)
+        yield f"data: {json.dumps({'type': 'error', 'detail': 'Graph analysis failed.'})}\n\n"
+        status = "error"
+
+    response_text = "".join(tokens)
+    audit.response_hash = _hash(response_text) if response_text else None
+    audit.tokens_estimated = len(response_text.split())
+    audit.total_ms = int(time.time() * 1000) - start_ms
+    audit.status = status
+    await pg.merge(audit)
+    await pg.commit()
+
+    if req.thread_id and response_text.strip() and status != "cancelled":
+        pg.add(Message(id=str(uuid.uuid4()), thread_id=req.thread_id, role="user", content=req.question))
+        pg.add(Message(id=str(uuid.uuid4()), thread_id=req.thread_id, role="assistant", content=response_text))
+        await pg.commit()
+    analyzer_requests_total.labels(status=status).inc()
+
+
 async def _sse_stream(
     request: Request,
     req: AnalyzeRequest,
@@ -51,6 +114,12 @@ async def _sse_stream(
     audit_id = str(uuid.uuid4())
     model = req.model or settings.OLLAMA_MODEL_TEXT or settings.OLLAMA_DEFAULT_MODEL
     start_ms = int(time.time() * 1000)
+
+    # F7 cutover — serve from the LangGraph grounded graph when enabled (default OFF = path below).
+    if settings.USE_GRAPH_ANALYZER:
+        async for frame in _graph_analyze_stream(request, req, pg, audit_id, model, start_ms):
+            yield frame
+        return
 
     # Layer 1 — pre-flight: reject obvious bad input before any LLM/DB work.
     # Saves 30-60s per refused request and is 100% deterministic.

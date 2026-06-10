@@ -121,6 +121,15 @@ class Settings(BaseSettings):
     OLLAMA_AUDITOR_MODEL:  str = "mistral-small3.2:latest"  # validator — 5.0 (ties phi4); phi4 crashes 0.30.6
     OLLAMA_MODEL_RAG:      str = ""                      # RAG-grounded answer → TEXT model (mistral-small3.2)
 
+    # ── Agentic graph cutover (F7) ──────────────────────────────────────────
+    # Flip a live endpoint onto the LangGraph rewrite (app/ai/graph/). Default
+    # OFF = the existing pipeline, byte-identical. Set true via env to serve that
+    # surface from the graph; flip back instantly. Persistence (audit/run rows,
+    # thread messages) is preserved in both modes.
+    USE_GRAPH_ANALYZER:    bool = False
+    USE_GRAPH_AGENT:       bool = False
+    USE_GRAPH_ORCHESTRATE: bool = False
+
     # ── Response length caps (Performance A2) ───────────────────────────────
     # Hard ceiling on tokens generated per response. The prompt also asks for
     # concise output but `num_predict` is the safety net. Cuts ~30% off
@@ -129,6 +138,11 @@ class Settings(BaseSettings):
     OLLAMA_MAX_TOKENS_AGENT:   int = 300   # agent final summary
     OLLAMA_MAX_TOKENS_SYNTH:   int = 400   # multi-agent synthesizer
     OLLAMA_MAX_TOKENS_REPORT:  int = 350   # daily report
+
+    # Nyx assistant intent router (app/ai/router_classify.py)
+    ASSISTANT_ROUTE_TIMEOUT_S:        float = 3.0   # LLM arbiter timeout; falls back to heuristics
+    ASSISTANT_ROUTE_SKIP_LLM_ON_KEYWORD: bool = True  # short + high-precision keyword match → skip LLM
+    ASSISTANT_ROUTE_HISTORY_TAIL:     int   = 6     # prior messages fed to the router
 
     # Langfuse self-hosted span tracing (optional, MIT license)
     # Leave LANGFUSE_HOST empty to disable tracing entirely (default).

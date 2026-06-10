@@ -42,7 +42,7 @@ def _word_tokens(text: str):
         yield (w + " ") if i < len(words) - 1 else w
 
 
-def _unwrap_tool_content(content: str) -> Any:
+def _unwrap_tool_content(content: Any) -> Any:
     """Pull the JSON payload out of a '<<< TOOL RESULT START … >>> {json} <<< END >>>' wrapper."""
     if not isinstance(content, str):
         return content
@@ -55,8 +55,12 @@ def _unwrap_tool_content(content: str) -> Any:
     return content
 
 
-async def astream_sse(graph: Any, inputs: dict, config: dict) -> AsyncIterator[str]:
-    """Run `graph` and yield SSE frames matching the existing contract."""
+async def astream_sse(graph: Any, inputs: dict, config: dict, done_extra: dict | None = None) -> AsyncIterator[str]:
+    """Run `graph` and yield SSE frames matching the existing contract.
+
+    `done_extra` is merged into the final `done` frame (e.g. audit_id/model/run_id)
+    so a flipped live endpoint keeps the exact `done` payload the UI expects.
+    """
     try:
         async for update in graph.astream(inputs, config, stream_mode="updates"):
             for _node, delta in (update or {}).items():
@@ -88,4 +92,4 @@ async def astream_sse(graph: Any, inputs: dict, config: dict) -> AsyncIterator[s
         yield _sse({"type": "error", "detail": f"graph stream failed: {exc}"})
         return
 
-    yield _sse({"type": "done"})
+    yield _sse({"type": "done", **(done_extra or {})})
