@@ -29,7 +29,9 @@
 - ✅ F3.1/F3.2/F3.10/F1.10 — graph compiles + preflight path validated offline (refusals fire, allowed routes through)
 - ✅ F3.3–F3.9 grounded node chain built (context → rag → prompt → llm → postcheck → critique); **grounded LLM answer validated against the live box** (real kW/TR 0.545–0.613, "good" band, RAG citation)
 - 🐛 Fixed latent `_num_ctx_for` bug in `ollama.py` — `mistral-small3.2:latest` was mis-matched by the `"3.2:latest"` pattern → capped at 4096 → long analyzer prompts truncated → empty output. Now 8192 (also fixes the existing analyzer).
-- ⏳ Full-graph e2e re-confirm pending Ollama recovery (box overloaded during back-to-back test calls) · F3.7 ReAct tool loop · F3.11 SSE adapter · F3.12 loop robustness
+- ✅ Grounded e2e **confirmed on phi4** (Ollama 0.30.7): real kW/TR answer, postcheck + critique ran
+- ✅ F3.7 ReAct tool loop (`react_agent.py`) — **e2e validated on devstral**: 2-step loop, correct tool selection (compute_efficiency + detect_anomalies), tool-arg validation, DATA-wrapped results, grounded answer, clean audit; F3.12 step-budget→partial-answer in place
+- ⏳ F3.11 SSE adapter (stream graph events → existing token/tool_call/tool_result/audit/done frames) · F3.12 repeat-call detection
 
 **Env:** consolidated to the single `.venv` (langchain installed there; shared deps unchanged; `.venv-agentic` removed).
 
