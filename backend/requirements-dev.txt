@@ -3,8 +3,12 @@
 # keeps the runtime lean. All OSI open-source. Version FLOORS; freeze after resolve (F0.4).
 
 # ── Agentic / RAG evaluation (local judge — no cloud) ────────────────────────
-ragas>=0.2            # Apache-2.0 — faithfulness / context-precision / answer-relevancy
-deepeval>=1.0         # Apache-2.0 — additional grounding/hallucination metrics
+# ragas — REMOVED 2026-06-10: incompatible with the langchain 1.x / langgraph stack.
+#   ragas 0.4.3 hard-imports langchain_community...ChatVertexAI (removed in langchain 1.x),
+#   and pinning langchain-community low enough to restore it breaks langgraph 1.x.
+#   The local S2 LLM-judge (tests/eval/judge.py) gives grounding/faithfulness framework-free.
+#   This is the ADR-0001 framework-churn risk, realized. Do not re-add without a stack bump.
+deepeval>=1.0         # Apache-2.0 — grounding/hallucination metrics (local Ollama judge; F6.4)
 giskard>=2.0          # Apache-2.0 — automated safety / red-team scanning
 
 # ── Load testing ─────────────────────────────────────────────────────────────
