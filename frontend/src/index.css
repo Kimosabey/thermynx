@@ -1,0 +1,342 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* ────────────────────────────────────────────────────────────────────────────
+   THERMYNX Design System — Graylinx Brand v2  (Tailwind v4 token bridge)
+   Source of truth: legacy Chakra theme `frontend/src/app/theme/index.js`.
+   Every Chakra semantic token `{ default, _dark }` is reproduced here as a CSS
+   custom property that flips on the `.dark` class, then exposed to Tailwind via
+   `@theme inline` so utilities (bg-surface, text-ink-muted, border-subtle,
+   text-brand, text-good, …) resolve the live var and auto-switch with the mode.
+   Brand-parameterized for two sibling products: THERMYNX (cyan accent, default)
+   and OMNYX (pure blue) — see [data-brand] block below.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================ LIGHT (default) ============================ */
+:root {
+  /* shadcn/ui contract vars — remapped to THERMYNX brand */
+  --background: #EFF0FF;          /* bg.canvas  */
+  --foreground: #1D1D21;          /* text.primary */
+  --card: #FFFFFF;                /* bg.surface */
+  --card-foreground: #1D1D21;
+  --popover: #FFFFFF;
+  --popover-foreground: #1D1D21;
+  --primary: #1F3FFE;             /* accent.primary */
+  --primary-foreground: #FFFFFF;
+  --secondary: #EFF0FF;           /* bg.elevated */
+  --secondary-foreground: #1D1D21;
+  --muted: #EFF0FF;
+  --muted-foreground: #6E6E76;    /* text.muted */
+  --accent: #EFF0FF;              /* shadcn "accent" = hover surface */
+  --accent-foreground: #1D1D21;
+  --destructive: #DC2626;         /* status.bad */
+  --border: #C7C9FF;              /* border.subtle */
+  --input: #C7C9FF;
+  --ring: #1F3FFE;
+  --chart-1: #1F3FFE;
+  --chart-2: #06B6D4;
+  --chart-3: #6671FF;
+  --chart-4: #0123B4;
+  --chart-5: #989DFF;
+  --radius: 0.625rem;             /* 10px */
+
+  /* Sidebar — ALWAYS dark in both modes (matches legacy sidebar.* tokens) */
+  --sidebar: #06091A;
+  --sidebar-foreground: rgba(255, 255, 255, 0.88);
+  --sidebar-primary: #1F3FFE;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(255, 255, 255, 0.07);
+  --sidebar-accent-foreground: rgba(255, 255, 255, 0.88);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #1F3FFE;
+  --sidebar-muted: rgba(255, 255, 255, 0.45);
+  --sidebar-active-bg: rgba(31, 63, 254, 0.22);
+  --sidebar-active-border: #1F3FFE;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.07);
+  --sidebar-divider: rgba(255, 255, 255, 0.08);
+
+  /* ── THERMYNX semantic tokens (light) ── */
+  /* Backgrounds */
+  --canvas: #EFF0FF;
+  --surface: #FFFFFF;
+  --elevated: #EFF0FF;
+  --overlay: rgba(0, 15, 100, 0.72);
+  --chip: rgba(31, 63, 254, 0.06);
+  --chip-hover: rgba(31, 63, 254, 0.10);
+  --glass: rgba(255, 255, 255, 0.70);
+  --glass-high: rgba(255, 255, 255, 0.55);
+  /* Borders */
+  --border-subtle: #C7C9FF;
+  --border-strong: #989DFF;
+  --border-brand: rgba(31, 63, 254, 0.3);
+  /* Text hierarchy */
+  --ink: #1D1D21;
+  --ink-secondary: #3B3B42;
+  --ink-muted: #6E6E76;
+  --ink-faint: #7A7A82;
+  --ink-inverse: #FFFFFF;
+  --ink-brand: #1F3FFE;
+  /* Brand accents */
+  --brand: #1F3FFE;
+  --brand-2: #0123B4;
+  --cyan: #06B6D4;
+  --glow: rgba(31, 63, 254, 0.1);
+  --glow-hover: rgba(31, 63, 254, 0.18);
+  --cyan-glow: rgba(6, 182, 212, 0.12);
+  /* Status (data-only — never UI chrome) */
+  --good: #059669;
+  --warn: #D97706;
+  --bad: #DC2626;
+  --info: #1F3FFE;
+
+  /* THERMYNX wordmark sheen (OMNYX overrides below) */
+  --brand-sheen: linear-gradient(90deg, #1F3FFE 0%, #06B6D4 50%, #1F3FFE 100%);
+}
+
+/* ============================ DARK ============================ */
+.dark {
+  --background: #0A0E1F;
+  --foreground: #F1F1F4;
+  --card: #131933;
+  --card-foreground: #F1F1F4;
+  --popover: #131933;
+  --popover-foreground: #F1F1F4;
+  --primary: #6671FF;
+  --primary-foreground: #0A0E1F;
+  --secondary: #1B2249;
+  --secondary-foreground: #F1F1F4;
+  --muted: #1B2249;
+  --muted-foreground: #9D9DAA;
+  --accent: #1B2249;
+  --accent-foreground: #F1F1F4;
+  --destructive: #f87171;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #6671FF;
+  --chart-1: #6671FF;
+  --chart-2: #22D3EE;
+  --chart-3: #989DFF;
+  --chart-4: #3D52FE;
+  --chart-5: #C7C9FF;
+  /* sidebar.* stay dark — unchanged from :root */
+
+  /* ── THERMYNX semantic tokens (dark) ── */
+  --canvas: #0A0E1F;
+  --surface: #131933;
+  --elevated: #1B2249;
+  --overlay: rgba(0, 0, 0, 0.72);
+  --chip: rgba(255, 255, 255, 0.05);
+  --chip-hover: rgba(255, 255, 255, 0.08);
+  --glass: rgba(19, 25, 51, 0.65);
+  --glass-high: rgba(19, 25, 51, 0.55);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --border-brand: rgba(31, 63, 254, 0.45);
+  --ink: #F1F1F4;
+  --ink-secondary: #CCCCD4;
+  --ink-muted: #9D9DAA;
+  --ink-faint: #8A8A95;
+  --ink-inverse: #1D1D21;
+  --ink-brand: #6671FF;
+  --brand: #6671FF;
+  --brand-2: #3D52FE;
+  --cyan: #22D3EE;
+  --glow: rgba(102, 113, 255, 0.12);
+  --glow-hover: rgba(102, 113, 255, 0.22);
+  --cyan-glow: rgba(34, 211, 238, 0.16);
+  --good: #34d399;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --info: #6671FF;
+}
+
+/* ============ Brand signature: THERMYNX (cyan) vs OMNYX (pure blue) ============
+   Only the cyan signature + wordmark sheen diverge. `--cyan` references `--brand`
+   for OMNYX so it tracks the brand blue across light/dark automatically. */
+[data-brand="omnyx"] {
+  --cyan: var(--brand);
+  --cyan-glow: var(--glow);
+  --chart-2: var(--brand);
+  --brand-sheen: linear-gradient(90deg, #1F3FFE 0%, #6671FF 50%, #1F3FFE 100%);
+}
+
+/* ============================ Tailwind token map ============================ */
+@theme inline {
+  /* shadcn/ui contract */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* THERMYNX semantic utilities */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-overlay: var(--overlay);
+  --color-chip: var(--chip);
+  --color-chip-hover: var(--chip-hover);
+  --color-glass: var(--glass);
+  --color-glass-high: var(--glass-high);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-border-brand: var(--border-brand);
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-inverse: var(--ink-inverse);
+  --color-ink-brand: var(--ink-brand);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --color-cyan: var(--cyan);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-info: var(--info);
+
+  /* Fonts (Google Fonts loaded in index.html) */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* Radii — fixed px scale (matches legacy theme.radii) */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 28px;
+
+  /* Shadows — brand-tinted (matches legacy theme.shadows) */
+  --shadow-xs: 0 1px 2px rgba(31, 63, 254, 0.04);
+  --shadow-sm: 0 1px 3px rgba(31, 63, 254, 0.06), 0 1px 2px rgba(31, 63, 254, 0.04);
+  --shadow-md: 0 4px 12px rgba(31, 63, 254, 0.08), 0 2px 4px rgba(31, 63, 254, 0.04);
+  --shadow-lg: 0 8px 24px rgba(31, 63, 254, 0.1), 0 4px 8px rgba(31, 63, 254, 0.06);
+  --shadow-xl: 0 16px 40px rgba(31, 63, 254, 0.12);
+  --shadow-brand: 0 4px 20px rgba(31, 63, 254, 0.32);
+  --shadow-card: 0 1px 3px rgba(29, 29, 33, 0.06), 0 4px 16px rgba(31, 63, 254, 0.04);
+
+  /* Animations (keyframes defined below) */
+  --animate-shimmer-text: shimmer-text 3s linear infinite;
+  --animate-pulse-halo: pulse-halo 2s ease-out infinite;
+  --animate-status-pulse: status-pulse 2s ease-in-out infinite;
+}
+
+/* ============================ Keyframes ============================ */
+@keyframes shimmer-text {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes pulse-halo {
+  0% { box-shadow: 0 0 0 0 rgba(31, 63, 254, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(31, 63, 254, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(31, 63, 254, 0); }
+}
+@keyframes status-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ============================ Base layer ============================ */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-canvas text-ink;
+    /* The app shell (Layout's <main>) is the ONLY scroller — lock the body so
+       no phantom page-level scrollbar appears behind the fixed shell. */
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "tnum" 1, "kern" 1;
+  }
+
+  /* WCAG 2.2 — visible focus ring */
+  *:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Selection */
+  ::selection {
+    background: rgba(31, 63, 254, 0.15);
+    color: #000F64;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(31, 63, 254, 0.20); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(31, 63, 254, 0.40); }
+
+  /* WCAG 2.4.1 — skip-to-content link */
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    z-index: 9999;
+    padding: 0.5rem 1rem;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    border-radius: 0 0 8px 8px;
+    transition: top 0.12s ease;
+  }
+  .skip-link:focus { top: 0; }
+}
+
+/* WCAG 2.3.3 — respect prefers-reduced-motion (vestibular safety) */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
