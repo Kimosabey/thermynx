@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="1320" viewBox="0 0 1360 1320" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a0f1e"/>
+      <stop offset="1" stop-color="#070b16"/>
+    </linearGradient>
+    <marker id="aSky" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#38bdf8"/>
+    </marker>
+    <marker id="aAmber" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#f59e0b"/>
+    </marker>
+    <marker id="aGreen" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#22c55e"/>
+    </marker>
+    <style>
+      .band   { fill:#101a30; stroke:#26334f; stroke-width:1.5; }
+      .stage  { fill:#0e1830; stroke:#1e88c7; stroke-width:1.5; }
+      .data   { fill:#16120a; stroke:#a8741f; stroke-width:1.5; }
+      .modelP { fill:#0c1712; stroke:#2f7d4f; stroke-width:1.5; }
+      .row    { fill:#0e1c14; stroke:#1f5e3a; stroke-width:1.2; }
+      .ttl    { fill:#e9f0fb; font-weight:700; }
+      .sub    { fill:#8b97ad; }
+      .muted  { fill:#8b97ad; }
+      .white  { fill:#e9f0fb; }
+      .sky    { fill:#7dd3fc; }
+      .amber  { fill:#fbbf24; }
+      .green  { fill:#6ee7a8; }
+      .red    { fill:#fca5a5; }
+      .flow   { stroke:#38bdf8; stroke-width:2.2; fill:none; }
+      .dflow  { stroke:#f59e0b; stroke-width:2; fill:none; }
+      .mflow  { stroke:#22c55e; stroke-width:2; fill:none; }
+      .vflow  { stroke:#22c55e; stroke-width:2; fill:none; stroke-dasharray:6 5; }
+    </style>
+  </defs>
+
+  <rect width="1360" height="1320" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="680" y="40" text-anchor="middle" font-size="24" class="ttl">THERMYNX — AI Operations Platform</text>
+  <text x="680" y="64" text-anchor="middle" font-size="14" class="muted">Layers &amp; per-request flow · on-prem · non-Chinese models · read-only</text>
+
+  <!-- ===================== LAYER 1 — CLIENT ===================== -->
+  <rect class="band" x="40" y="86" width="1280" height="92" rx="12"/>
+  <text x="60" y="112" font-size="13" class="sky" font-weight="700">1 · CLIENT — React SPA (Chakra · Vite)</text>
+  <g font-size="12" class="white">
+    <text x="60" y="140">Dashboard</text><text x="150" y="140">Analyzer</text><text x="232" y="140">Anomalies</text>
+    <text x="324" y="140">Forecast</text><text x="404" y="140">Compare</text><text x="486" y="140">Efficiency</text>
+    <text x="576" y="140">AI Agents</text><text x="664" y="140">Knowledge (RAG)</text><text x="800" y="140">Vision Compare</text>
+    <text x="924" y="140">Maintenance · Cost · Reports</text>
+  </g>
+  <text x="60" y="164" font-size="11" class="muted">Streaming answers (SSE) · model-in-use toasts · AI health banner</text>
+
+  <!-- ===================== LAYER 2 — API ===================== -->
+  <rect class="band" x="40" y="196" width="1280" height="92" rx="12"/>
+  <text x="60" y="222" font-size="13" class="sky" font-weight="700">2 · API — FastAPI v1  (rate-limited · slowapi)</text>
+  <g font-size="12" class="white">
+    <text x="60"  y="250">/analyze</text><text x="150" y="250">/agent/run</text><text x="252" y="250">/multi-agent</text>
+    <text x="372" y="250">/nl-query</text><text x="470" y="250">/vision/describe · /vision/compare</text>
+    <text x="744" y="250">/reports/daily</text><text x="864" y="250">/slack/commands</text><text x="1010" y="250">/rag/ingest · /models · /health</text>
+  </g>
+  <text x="60" y="274" font-size="11" class="muted">Each AI surface walks the pipeline below; /vision takes the direct path (right).</text>
+
+  <!-- flow arrows client->api->pipeline -->
+  <path class="flow" d="M680,178 L680,196" marker-end="url(#aSky)"/>
+  <path class="flow" d="M680,288 L680,316" marker-end="url(#aSky)"/>
+
+  <!-- Column headers -->
+  <text x="40"  y="332" font-size="13" class="amber" font-weight="700">DATA (on-prem)</text>
+  <text x="468" y="332" font-size="13" class="sky"   font-weight="700">3 · AI PIPELINE — runs in order, every request</text>
+  <text x="940" y="332" font-size="13" class="green" font-weight="700">4 · MODEL TEAM — Ollama (on-prem · Tailscale)</text>
+
+  <!-- ===================== CENTER — PIPELINE STAGES ===================== -->
+  <!-- S1 -->
+  <rect class="stage" x="460" y="348" width="440" height="76" rx="10"/>
+  <text x="480" y="374" font-size="14" class="white" font-weight="700">STAGE 1 — Pre-flight</text>
+  <text x="480" y="396" font-size="12" class="muted">regex topic / equipment / action gates</text>
+  <text x="480" y="414" font-size="12" class="muted">&lt;100ms · no LLM · short-circuits bad input</text>
+  <!-- S2 -->
+  <rect class="stage" x="460" y="444" width="440" height="76" rx="10"/>
+  <text x="480" y="470" font-size="14" class="white" font-weight="700">STAGE 2 — Context fetch</text>
+  <text x="480" y="492" font-size="12" class="muted">live plant telemetry + analytics</text>
+  <text x="480" y="510" font-size="12" class="muted">pre-computed bands / averages / summary</text>
+  <!-- S2b -->
+  <rect class="stage" x="460" y="540" width="440" height="76" rx="10"/>
+  <text x="480" y="566" font-size="14" class="white" font-weight="700">STAGE 2b — RAG retrieval  (optional)</text>
+  <text x="480" y="588" font-size="12" class="muted">embed query · vector search top-k</text>
+  <text x="480" y="606" font-size="12" class="muted">sim ≥ 0.55 · chunks wrapped in DATA markers</text>
+  <!-- S3 -->
+  <rect class="stage" x="460" y="636" width="440" height="76" rx="10"/>
+  <text x="480" y="662" font-size="14" class="white" font-weight="700">STAGE 3 — Prompt build</text>
+  <text x="480" y="684" font-size="12" class="muted">SYSTEM_CONTEXT + RAG + focus pin</text>
+  <text x="480" y="702" font-size="12" class="muted">+ DATA window (read-only · English-only rules)</text>
+  <!-- S4 -->
+  <rect class="stage" x="460" y="732" width="440" height="76" rx="10"/>
+  <text x="480" y="758" font-size="14" class="white" font-weight="700">STAGE 4 — LLM call</text>
+  <text x="480" y="780" font-size="12" class="muted">stream / non-stream · per-task model</text>
+  <text x="480" y="798" font-size="12" class="muted">circuit-breaker (3 fails/30s → open 60s)</text>
+  <!-- S4b -->
+  <rect class="stage" x="460" y="828" width="440" height="76" rx="10"/>
+  <text x="480" y="854" font-size="14" class="white" font-weight="700">STAGE 4b — Tool execution  (agent)</text>
+  <text x="480" y="876" font-size="12" class="muted">ReAct loop · arg allow-list</text>
+  <text x="480" y="894" font-size="12" class="muted">DB/analytics tools · payload cap 12k</text>
+  <!-- S5 -->
+  <rect class="stage" x="460" y="924" width="440" height="76" rx="10"/>
+  <text x="480" y="950" font-size="14" class="white" font-weight="700">STAGE 5 — Post-gen audit</text>
+  <text x="480" y="972" font-size="12" class="muted">numeric · equipment · citation · language</text>
+  <text x="480" y="990" font-size="12" class="muted">regex-only · Prometheus counters per flag</text>
+  <!-- S6 -->
+  <rect class="stage" x="460" y="1020" width="440" height="76" rx="10"/>
+  <text x="480" y="1046" font-size="14" class="white" font-weight="700">STAGE 6 — LLM critique  (analyzer)</text>
+  <text x="480" y="1068" font-size="12" class="muted">groundedness verdict vs SUMMARY</text>
+  <text x="480" y="1086" font-size="12" class="muted">25s hard cap · never blocks the answer</text>
+
+  <!-- down-flow arrows between stages -->
+  <g>
+    <path class="flow" d="M680,424 L680,444" marker-end="url(#aSky)"/>
+    <path class="flow" d="M680,520 L680,540" marker-end="url(#aSky)"/>
+    <path class="flow" d="M680,616 L680,636" marker-end="url(#aSky)"/>
+    <path class="flow" d="M680,712 L680,732" marker-end="url(#aSky)"/>
+    <path class="flow" d="M680,808 L680,828" marker-end="url(#aSky)"/>
+    <path class="flow" d="M680,904 L680,924" marker-end="url(#aSky)"/>
+    <path class="flow" d="M680,1000 L680,1020" marker-end="url(#aSky)"/>
+  </g>
+
+  <!-- ===================== LEFT — DATA ===================== -->
+  <rect class="data" x="40" y="348" width="380" height="76" rx="10"/>
+  <text x="58" y="374" font-size="13" class="white" font-weight="700">Redis</text>
+  <text x="58" y="396" font-size="11" class="muted">context + response cache</text>
+  <text x="58" y="414" font-size="11" class="muted">arq background jobs</text>
+
+  <rect class="data" x="40" y="444" width="380" height="116" rx="10"/>
+  <text x="58" y="470" font-size="13" class="white" font-weight="700">MySQL — telemetry source</text>
+  <text x="58" y="492" font-size="11" class="muted">unicharm:3307 · plant sensor data</text>
+  <text x="58" y="514" font-size="11" class="muted">chillers · AHUs · normalized tables</text>
+  <text x="58" y="540" font-size="11" class="amber">+ Analytics: efficiency bands / summaries</text>
+
+  <rect class="data" x="40" y="580" width="380" height="76" rx="10"/>
+  <text x="58" y="606" font-size="13" class="white" font-weight="700">Postgres + pgvector</text>
+  <text x="58" y="628" font-size="11" class="muted">RAG knowledge base</text>
+  <text x="58" y="646" font-size="11" class="muted">manual chunks + embeddings (ivfflat)</text>
+
+  <rect class="data" x="40" y="828" width="380" height="76" rx="10"/>
+  <text x="58" y="854" font-size="13" class="white" font-weight="700">Tool DB access</text>
+  <text x="58" y="876" font-size="11" class="muted">read-only queries via agent tools</text>
+  <text x="58" y="894" font-size="11" class="muted">equipment allow-list enforced</text>
+
+  <!-- data arrows into pipeline -->
+  <path class="dflow" d="M420,386 L460,386" marker-end="url(#aAmber)"/>
+  <path class="dflow" d="M420,500 L460,482" marker-end="url(#aAmber)"/>
+  <path class="dflow" d="M420,618 L460,578" marker-end="url(#aAmber)"/>
+  <path class="dflow" d="M460,866 L420,866" marker-end="url(#aAmber)"/>
+
+  <!-- ===================== RIGHT — MODEL TEAM ===================== -->
+  <rect class="modelP" x="940" y="348" width="380" height="768" rx="12"/>
+  <!-- M1 embeddings -->
+  <rect class="row" x="956" y="362" width="348" height="112" rx="9"/>
+  <text x="972" y="388" font-size="13" class="white" font-weight="700">Embeddings</text>
+  <text x="972" y="410" font-size="13" class="green" font-weight="700">nomic-embed-text</text>
+  <text x="972" y="430" font-size="11" class="muted">Nomic · US · 0.1B · vectors</text>
+  <text x="972" y="450" font-size="11" class="muted">RAG index + query embedding</text>
+  <!-- M2 planner -->
+  <rect class="row" x="956" y="486" width="348" height="112" rx="9"/>
+  <text x="972" y="512" font-size="13" class="white" font-weight="700">Planner</text>
+  <text x="972" y="534" font-size="13" class="green" font-weight="700">gemma4:12b</text>
+  <text x="972" y="554" font-size="11" class="muted">Google · US · 12B · thinking</text>
+  <text x="972" y="574" font-size="11" class="muted">multi-agent JSON plan (JSON path only)</text>
+  <!-- M3 sql -->
+  <rect class="row" x="956" y="610" width="348" height="112" rx="9"/>
+  <text x="972" y="636" font-size="13" class="white" font-weight="700">NL → SQL</text>
+  <text x="972" y="658" font-size="13" class="green" font-weight="700">codestral</text>
+  <text x="972" y="678" font-size="11" class="muted">Mistral · FR · 22B · code</text>
+  <text x="972" y="698" font-size="11" class="muted">+ validator / deny-list guardrails</text>
+  <!-- M4 mistral-small3.2 multi-role -->
+  <rect class="row" x="956" y="734" width="348" height="112" rx="9"/>
+  <text x="972" y="760" font-size="13" class="white" font-weight="700">Narration · RAG · Validator</text>
+  <text x="972" y="782" font-size="13" class="green" font-weight="700">mistral-small3.2</text>
+  <text x="972" y="802" font-size="11" class="muted">Mistral · FR · 24B · general (default)</text>
+  <text x="972" y="822" font-size="11" class="muted">runtime sub for phi4 (crashes Ollama 0.30.6)</text>
+  <!-- M5 executor -->
+  <rect class="row" x="956" y="858" width="348" height="112" rx="9"/>
+  <text x="972" y="884" font-size="13" class="white" font-weight="700">Executor</text>
+  <text x="972" y="906" font-size="13" class="green" font-weight="700">devstral</text>
+  <text x="972" y="926" font-size="11" class="muted">Mistral · FR · 24B · tool / agent</text>
+  <text x="972" y="946" font-size="11" class="muted">best tool-caller (eval 4.5)</text>
+  <!-- M6 vision -->
+  <rect class="row" x="956" y="982" width="348" height="112" rx="9"/>
+  <text x="972" y="1008" font-size="13" class="white" font-weight="700">Vision</text>
+  <text x="972" y="1030" font-size="13" class="green" font-weight="700">llama3.2-vision</text>
+  <text x="972" y="1050" font-size="11" class="muted">Meta · US · 11B · vision</text>
+  <text x="972" y="1070" font-size="11" class="red">UNTESTED — eval bake-off pending</text>
+
+  <!-- model-call arrows from stages into rows -->
+  <path class="mflow" d="M900,578 L956,418" marker-end="url(#aGreen)"/>   <!-- S2b -> embeddings -->
+  <path class="mflow" d="M900,766 L956,542" marker-end="url(#aGreen)"/>   <!-- S4 -> planner -->
+  <path class="mflow" d="M900,770 L956,666" marker-end="url(#aGreen)"/>   <!-- S4 -> sql -->
+  <path class="mflow" d="M900,774 L956,790" marker-end="url(#aGreen)"/>   <!-- S4 -> narration/rag -->
+  <path class="mflow" d="M900,866 L956,914" marker-end="url(#aGreen)"/>   <!-- S4b -> executor -->
+  <path class="mflow" d="M900,1058 L956,800" marker-end="url(#aGreen)"/>  <!-- S6 -> validator -->
+
+  <!-- Vision direct path: API -> vision model (far right, bypasses text pipeline) -->
+  <path class="vflow" d="M1320,250 L1344,250 L1344,1038 L1304,1038" marker-end="url(#aGreen)"/>
+  <text x="1334" y="640" font-size="11" class="green" transform="rotate(90 1334 640)">Vision Compare — direct (no text pipeline)</text>
+
+  <!-- ===================== FOOTER ===================== -->
+  <rect class="band" x="40" y="1140" width="1280" height="150" rx="12"/>
+  <text x="60" y="1168" font-size="13" class="white" font-weight="700">Defense in depth &amp; policy</text>
+  <text x="60" y="1192" font-size="12" class="muted">Guardrails:  regex gates (Stage 1 + 5)  ·  grounded prompts with DATA markers (Stage 3)  ·  circuit breaker (Stage 4)  ·  LLM groundedness critique (Stage 6)</text>
+  <text x="60" y="1214" font-size="12" class="muted">Policy:  on-prem only (Ollama over Tailscale)  ·  non-Chinese models (no Qwen / DeepSeek / QwQ)  ·  read-only DB access  ·  English-only output  ·  no auth (internal tool)</text>
+  <text x="60" y="1236" font-size="12" class="muted">Selection traceable to model-eval/reports/ (Claude-Opus-4.8 judge · real Unicharm data).  20 GB VRAM test box → 48 GB prod.</text>
+
+  <!-- legend -->
+  <g font-size="11">
+    <rect x="60" y="1252" width="14" height="10" fill="#38bdf8"/><text x="80" y="1261" class="muted">request flow</text>
+    <rect x="190" y="1252" width="14" height="10" fill="#f59e0b"/><text x="210" y="1261" class="muted">data read</text>
+    <rect x="300" y="1252" width="14" height="10" fill="#22c55e"/><text x="320" y="1261" class="muted">model call</text>
+    <rect x="420" y="1252" width="14" height="10" fill="#22c55e" opacity="0.5"/><text x="440" y="1261" class="muted">vision direct (dashed)</text>
+  </g>
+</svg>
