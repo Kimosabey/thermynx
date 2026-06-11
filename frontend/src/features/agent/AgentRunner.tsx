@@ -465,10 +465,9 @@ export default function AgentRunner({
             aria-relevant="additions"
             aria-label="Agent reasoning steps"
           >
-            {/* Static timeline track. NOTE: previously wrapped in <TracingBeam>,
-                a scroll-tracked beam whose spring-followed head jittered as the
-                trace streamed in + the pane auto-scrolled. A static line gives
-                the same timeline look with zero animation glitch. */}
+            {/* Static timeline track — a plain line, not a scroll-tracked animated
+                beam (whose spring-followed head jittered as the trace streamed in +
+                the pane auto-scrolled). Same timeline look, zero animation glitch. */}
             <div className="relative h-full w-full overflow-y-auto [&::-webkit-scrollbar]:w-[4px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(31,63,254,0.25)]">
               <div className="relative py-[16px] pr-[4px] pl-[32px]" ref={timelineRef}>
                 <div
