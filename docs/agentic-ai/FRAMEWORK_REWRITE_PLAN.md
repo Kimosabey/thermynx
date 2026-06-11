@@ -11,6 +11,14 @@
 > Updated on every task completion (same commit as the feature). Work is on branch
 > `rewrite/agentic-framework`; `master` is untouched. ✅ done · ⏳ needs the live box / later phase.
 
+> **GA readiness (2026-06-11):** F0–F6 are functionally complete and live-validated — golden suite
+> **49/50** (the lone orchestrate fail is a 20 GB VRAM cold-load transient; passes on retry, confirmed
+> 96.6 s). F7 docs are done: [OPERATOR_RUNBOOK.md](./OPERATOR_RUNBOOK.md) + [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md).
+> The **remaining GA gates are time/hardware, not code:** (1) production **soak** behind the default-OFF
+> `USE_GRAPH_*` flags; (2) a **48 GB GPU** for the orchestrate path (thrashes on the 20 GB box); (3)
+> **decommission** the old inline pipeline *after* the soak; (4) tag GA. The product is feature-complete;
+> these gates can't be compressed in code. See [../operations/GPU_VRAM_CONTENTION.md](../operations/GPU_VRAM_CONTENTION.md).
+
 **F0 — Foundations**
 - ✅ F0.1 branch (`c0820a3`)
 - ✅ F0.2/F0.3 dependency manifests (`a08b2cf`) · spine pinned (`a9d8822`)
