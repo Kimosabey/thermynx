@@ -44,7 +44,11 @@
 
 **F3 is functionally complete & live-validated** (grounded path on phi4 + ReAct loop on devstral + SSE adapter).
 
-**F4 — Multi-agent supervisor** ✅ live-validated (`multi_agent_graph.py`): planner (gemma4 **structured output** — no prose-parse) → parallel ReAct specialists (reuse F3 graph, share devstral) → synthesis (phi4) → **postcheck + critique on the synthesis** (closes the A1 groundedness-parity gap `multi_agent.py` had). Full e2e 115.8s on 20 GB (3 cross-model cold-loads; fast on 48 GB). Deferred: F4.5 shared tool-cache · F4.9 HITL interrupt · F4.10 SSE per-specialist re-tag.
+**F4 — Multi-agent supervisor** ✅ live-validated (`multi_agent_graph.py`): planner (gemma4 **structured output** — no prose-parse) → parallel ReAct specialists (reuse F3 graph, share devstral) → synthesis (phi4) → **postcheck + critique on the synthesis** (closes the A1 groundedness-parity gap `multi_agent.py` had). Full e2e 115.8s on 20 GB (3 cross-model cold-loads; fast on 48 GB). ✅ **F4.9 HITL interrupt — DONE**
+(`7501f72` backend + `fb6a131` FE): opt-in `require_approval` → `interrupt()` approval gate after the plan
+→ `/agent/resume` (approve/reject) + FE controls; runs on the in-process `MemorySaver`, fully active on the
+graph-orchestrate / 48 GB cutover. Deferred: F4.5 shared tool-cache · F4.10 SSE per-specialist re-tag ·
+F1.11 durable Postgres checkpointer (48/64 GB — `checkpointer=` already pluggable).
 
 **F7 — cutover (parallel surface)** ✅ new `POST /api/v1/agentic/{analyze,agent,orchestrate}` endpoints serve the graphs via the existing SSE contract (`api/v1/agentic.py`). **Live endpoints untouched**; router include is guarded so the app still boots without the rewrite deps. Routes registered + all three graphs build clean. **HTTP-smoke validated**: `POST /api/v1/agentic/analyze` → 200, streamed `token×115 + audit + verification + done` (full FastAPI stack: routing, limiter, SSE).
 

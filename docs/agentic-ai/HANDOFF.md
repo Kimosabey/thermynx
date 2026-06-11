@@ -41,8 +41,15 @@ the only fix is more GPU memory (48 GB).**
 2. **48 GB GPU** → then cut over `/orchestrate` (`USE_GRAPH_ORCHESTRATE`), real Locust load test.
 3. **Decommission** the old inline pipeline (OFF-path code in `analyzer.py`/`agent.py`/`multi_agent.py`) —
    ONLY after the soak — then **tag GA** (offered `v1.0.0-onprem`, not yet created).
-4. Smaller/optional: flip the **S2 hard-gate** (real-context works now); **durable resume** (F1.11);
-   **HITL interrupts** (F4.9). The **`langfuse` obs container is now DISABLED** — its floating versions
+4. Smaller/optional: flip the **S2 hard-gate** (real-context works now).
+   **HITL interrupts (F4.9) — DONE** (backend `7501f72` + FE `fb6a131`): opt-in `require_approval` pauses
+   the orchestrator after the plan via LangGraph `interrupt()`; operator approves/rejects in the UI
+   (`/agent/resume`). Opt-in forces the graph path, so it works on 20 GB; fully lights up on the 48 GB
+   orchestrate cutover. **Durable resume (F1.11) — DEFERRED to the 48/64 GB box**: the Postgres
+   checkpointer adds psycopg3 + puts an async saver on every run's critical path for multi-worker /
+   restart-survival gains that only matter there; the graph builders already accept `checkpointer=`, so it
+   drops in with no rework (HITL runs on the in-process `MemorySaver` until then).
+   The **`langfuse` obs container is now DISABLED** — its floating versions
    (`image: :latest` + `langfuse>=2.0.0`, copied from v2-era planning docs) drifted to the **v3 server**
    (needs ClickHouse/Redis/S3) + **v4 SDK**; never a deliberate v3 choice. Resolution: server deferred to
    the 48 GB box (commented out in `docker-compose.yml` with a restore note), SDK pinned `>=4,<5`, dead
