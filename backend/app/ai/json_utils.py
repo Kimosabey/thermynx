@@ -1,8 +1,19 @@
-"""Shared JSON extraction for LLM outputs.
+"""Shared JSON extraction for LLM outputs — FALLBACK / LEGACY parsing (F1.14).
 
-Both the multi-agent planner and the self-critique auditor need to pull a JSON
-object out of a model response that may be wrapped in ``` fences or padded with
-prose. They each carried a near-identical parser; this is the single copy.
+Prose-JSON extraction for model responses wrapped in ``` fences or padded with
+prose. The LangGraph rewrite replaced this with Pydantic structured output
+(``with_structured_output`` + the schemas in ``app/ai/graph/schemas.py``), so the
+graph's planner / tool-args no longer parse prose. This module is RETAINED ONLY
+as the fallback for the paths the rewrite doesn't cover:
+
+  - ``app/ai/router_classify.py`` — the lightweight Nyx intent arbiter (not a graph).
+  - ``app/ai/multi_agent.py``     — the OLD inline orchestrator (instant-revert
+    fallback when ``USE_GRAPH_AGENT=False``).
+  - ``app/ai/critique.py``        — the self-critique auditor (still prose-parsed;
+    reached by both the inline fallback and the graph's critique node via
+    ``verify_answer``).
+
+Do NOT add new callers — use Pydantic structured output instead.
 """
 from __future__ import annotations
 
