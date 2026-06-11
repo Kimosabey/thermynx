@@ -1,0 +1,6 @@
+# Generated golden-eval reports (run artifacts). Keep this folder in git,
+# ignore the per-run outputs. Commit a specific report manually if you want it
+# as a record:  git add -f tests/eval/reports/eval-<ts>.md
+eval-*.json
+eval-*.md
+latest.md
