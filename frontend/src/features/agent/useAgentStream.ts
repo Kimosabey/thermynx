@@ -6,6 +6,11 @@ import { makeModelToaster } from "@/shared/ai/modelStreamToast";
  * SSE streaming hook for the agent surface. Ported VERBATIM from the legacy
  * `frontend/src/features/agent/useAgentStream.js` — the 40ms token-buffer flush
  * and AbortController handling are load-bearing; only types were added.
+ *
+ * F4.9 — the orchestrator can pause for operator approval of the plan. When the
+ * backend emits `awaiting_approval`, the run halts with `awaitingApproval=true`;
+ * `resume("approve"|"reject")` continues it via POST /api/v1/agent/resume. The
+ * SSE frame loop is shared (`pump`) so the resume leg renders identically.
  */
 
 export interface TraceFrame {
@@ -55,53 +60,25 @@ export function useAgentStream() {
   const [plan, setPlan] = useState<AgentPlan | null>(null);
   const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [synthesis, setSynthesis] = useState("");
+  // F4.9 HITL — true while the orchestrator is paused awaiting plan approval.
+  const [awaitingApproval, setAwaitingApproval] = useState(false);
+  const approvalThreadId = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const tokenBuf = useRef("");
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Live model toasts driven by the SSE frames — kept in a ref so `start`'s
-  // empty-dep useCallback always reaches the current notify fn. The ref is
-  // synced in an effect (not during render) to satisfy react-hooks/refs.
+  // Live model toasts driven by the SSE frames — kept in a ref so the empty-dep
+  // useCallbacks always reach the current notify fn. The ref is synced in an
+  // effect (not during render) to satisfy react-hooks/refs.
   const notify = useModelToast();
   const notifyRef = useRef(notify);
   useEffect(() => {
     notifyRef.current = notify;
   });
 
-  const start = useCallback(async (mode: string, goal: string, context: unknown = null) => {
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-
-    const isOrchestrator = mode === "orchestrator";
-    // Cancel any pending token flush
-    if (flushTimer.current) {
-      clearTimeout(flushTimer.current);
-      flushTimer.current = null;
-    }
-    tokenBuf.current = "";
-    setTrace([]);
-    setOutput("");
-    setAgentAudit(null);
-    setPlan(null);
-    setDelegations([]);
-    setSynthesis("");
-    setRunning(true);
-    setDone(false);
-    setMeta(null);
-    setError(null);
-
-    const mt = makeModelToaster((task, o) => notifyRef.current(task, o), isOrchestrator ? "Orchestrator" : "Agent");
-
-    const url = isOrchestrator ? "/api/v1/agent/orchestrate" : "/api/v1/agent/run";
-    const body = isOrchestrator ? { goal, context } : { mode, goal, context };
-
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal: ctrl.signal,
-      });
+  // Drain an SSE response, dispatching frames to state. Shared by start() and
+  // resume() so the orchestrator's resume continuation renders identically.
+  const pump = useCallback(
+    async (res: Response, isOrchestrator: boolean, mt: ReturnType<typeof makeModelToaster>) => {
       if (!res.ok) {
         throw new Error(
           ((await res.json().catch(() => ({}))) as { detail?: string }).detail || `HTTP ${res.status}`,
@@ -168,6 +145,16 @@ export function useAgentStream() {
                   error: null,
                 })),
               );
+            } else if (t === "awaiting_approval") {
+              // F4.9 — orchestrator paused for sign-off. Stash the thread to resume;
+              // the plan was already set by the preceding `plan` frame (fallback here).
+              // Treat as a clean (non-error) terminal frame for this leg.
+              approvalThreadId.current = frame.thread_id ?? null;
+              if (frame.plan?.subtasks) {
+                setPlan((prev) => prev ?? { rationale: frame.plan.rationale, subtasks: frame.plan.subtasks });
+              }
+              setAwaitingApproval(true);
+              sawDone = true;
             } else if (t === "delegate_start") {
               setDelegations((prev) =>
                 prev.map((dg) => (dg.idx === frame.idx ? { ...dg, status: "running" } : dg)),
@@ -223,27 +210,120 @@ export function useAgentStream() {
       // Stream closed cleanly but the server never sent a terminal frame —
       // surface it so the UI doesn't sit on a half-finished answer forever.
       if (!sawDone && !sawError) setError("Connection closed before completion");
-    } catch (e) {
-      const err = e as { name?: string; message?: string };
-      if (err.name !== "AbortError") setError(err.message ?? "Stream failed");
-    } finally {
-      // Flush any tokens that didn't fire before the stream closed
+    },
+    [],
+  );
+
+  // Flush any buffered tokens that didn't fire before a stream closed.
+  const flushPending = useCallback(() => {
+    if (flushTimer.current) {
+      clearTimeout(flushTimer.current);
+      flushTimer.current = null;
+    }
+    if (tokenBuf.current) {
+      const remaining = tokenBuf.current;
+      tokenBuf.current = "";
+      setOutput((p) => p + remaining);
+    }
+  }, []);
+
+  const start = useCallback(
+    async (mode: string, goal: string, context: unknown = null, requireApproval = false) => {
+      abortRef.current?.abort();
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
+
+      const isOrchestrator = mode === "orchestrator";
+      // Cancel any pending token flush
       if (flushTimer.current) {
         clearTimeout(flushTimer.current);
         flushTimer.current = null;
       }
-      if (tokenBuf.current) {
-        const remaining = tokenBuf.current;
-        tokenBuf.current = "";
-        setOutput((p) => p + remaining);
+      tokenBuf.current = "";
+      setTrace([]);
+      setOutput("");
+      setAgentAudit(null);
+      setPlan(null);
+      setDelegations([]);
+      setSynthesis("");
+      setAwaitingApproval(false);
+      approvalThreadId.current = null;
+      setRunning(true);
+      setDone(false);
+      setMeta(null);
+      setError(null);
+
+      const mt = makeModelToaster((task, o) => notifyRef.current(task, o), isOrchestrator ? "Orchestrator" : "Agent");
+
+      const url = isOrchestrator ? "/api/v1/agent/orchestrate" : "/api/v1/agent/run";
+      const body = isOrchestrator
+        ? { goal, context, require_approval: requireApproval }
+        : { mode, goal, context };
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: ctrl.signal,
+        });
+        await pump(res, isOrchestrator, mt);
+      } catch (e) {
+        const err = e as { name?: string; message?: string };
+        if (err.name !== "AbortError") setError(err.message ?? "Stream failed");
+      } finally {
+        flushPending();
+        setRunning(false);
       }
-      setRunning(false);
-    }
-  }, []);
+    },
+    [pump, flushPending],
+  );
+
+  // F4.9 — resume a paused orchestration with the operator's decision. `approve`
+  // optionally carries an edited plan; `reject` cancels (backend returns a refusal).
+  const resume = useCallback(
+    async (action: "approve" | "reject", editedPlan: AgentPlan | null = null) => {
+      const threadId = approvalThreadId.current;
+      if (!threadId) return;
+      abortRef.current?.abort();
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
+      if (flushTimer.current) {
+        clearTimeout(flushTimer.current);
+        flushTimer.current = null;
+      }
+      setAwaitingApproval(false);
+      setRunning(true);
+      setError(null);
+
+      const mt = makeModelToaster((task, o) => notifyRef.current(task, o), "Orchestrator");
+      const body: { thread_id: string; action: string; plan?: AgentPlan } = { thread_id: threadId, action };
+      if (action === "approve" && editedPlan) body.plan = editedPlan;
+
+      try {
+        const res = await fetch("/api/v1/agent/resume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: ctrl.signal,
+        });
+        await pump(res, true, mt);
+      } catch (e) {
+        const err = e as { name?: string; message?: string };
+        if (err.name !== "AbortError") setError(err.message ?? "Resume failed");
+      } finally {
+        flushPending();
+        setRunning(false);
+        approvalThreadId.current = null;
+      }
+    },
+    [pump, flushPending],
+  );
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
     setRunning(false);
+    setAwaitingApproval(false);
     setDelegations((prev) => prev.map((dg) => (dg.status === "running" ? { ...dg, status: "stopped" } : dg)));
   }, []);
 
@@ -258,7 +338,9 @@ export function useAgentStream() {
     delegations,
     synthesis,
     agentAudit,
+    awaitingApproval,
     start,
+    resume,
     stop,
   };
 }

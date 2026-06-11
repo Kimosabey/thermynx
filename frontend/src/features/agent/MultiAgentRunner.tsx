@@ -20,6 +20,8 @@ import {
   AlertCircle,
   Sparkles,
   Loader2,
+  Check,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -204,6 +206,10 @@ export interface MultiAgentRunnerProps {
   done: boolean;
   meta: AgentMeta | null;
   error: string | null;
+  // F4.9 HITL — when set, the run is paused awaiting plan approval.
+  awaitingApproval?: boolean;
+  onApprove?: () => void;
+  onReject?: () => void;
 }
 
 export default function MultiAgentRunner({
@@ -214,7 +220,21 @@ export default function MultiAgentRunner({
   done,
   meta,
   error,
+  awaitingApproval = false,
+  onApprove,
+  onReject,
 }: MultiAgentRunnerProps) {
+  // Track the operator's decision so the card can confirm a rejection (an approve
+  // simply flows into the streaming synthesis). Reset when a fresh run clears the
+  // plan — start() nulls it, resume() does not, so a reject's confirmation survives
+  // until the next run. Render-time reset (not an effect) per react-hooks rules.
+  const [decision, setDecision] = useState<null | "approve" | "reject">(null);
+  const [seenPlan, setSeenPlan] = useState(plan);
+  if (plan !== seenPlan) {
+    setSeenPlan(plan);
+    if (!plan) setDecision(null);
+  }
+
   if (!plan && !running && !delegations.length && !error) return null;
 
   const metaTyped = meta as { model?: string; subtasks?: number; total_ms?: number } | null;
@@ -261,6 +281,40 @@ export default function MultiAgentRunner({
               );
             })}
           </div>
+
+          {/* F4.9 — human-in-the-loop approval gate */}
+          {awaitingApproval && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border-subtle pt-3">
+              <p className="mr-auto text-xs text-ink-muted">
+                Review the plan, then approve to dispatch the specialists.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setDecision("reject");
+                  onReject?.();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-md border border-[rgba(239,68,68,0.3)] bg-[rgba(239,68,68,0.08)] px-3 py-[7px] text-xs font-semibold text-[#f87171] transition-colors duration-150 hover:bg-[rgba(239,68,68,0.15)]"
+              >
+                <X size={13} strokeWidth={2.4} /> Reject
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDecision("approve");
+                  onApprove?.();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border-brand bg-[var(--glow)] px-3 py-[7px] text-xs font-bold text-brand transition-colors duration-150 hover:bg-[rgba(31,63,254,0.12)]"
+              >
+                <Check size={13} strokeWidth={2.6} /> Approve &amp; run
+              </button>
+            </div>
+          )}
+          {decision === "reject" && !awaitingApproval && (
+            <p className="mt-3 flex items-center gap-1.5 text-xs text-bad">
+              <X size={13} strokeWidth={2.4} /> Plan rejected — orchestration cancelled.
+            </p>
+          )}
         </GlassCard>
       )}
 

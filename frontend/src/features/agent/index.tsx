@@ -259,9 +259,10 @@ export default function AgentHub() {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [selectedEq, setSelectedEq] = useState("");
   const [hours, setHours] = useState(24);
+  const [requireApproval, setRequireApproval] = useState(false);   // F4.9 — orchestrator HITL gate
 
-  const { trace, output, running, done, meta, error, plan, delegations, synthesis, agentAudit, start, stop } =
-    useAgentStream();
+  const { trace, output, running, done, meta, error, plan, delegations, synthesis, agentAudit,
+    awaitingApproval, start, resume, stop } = useAgentStream();
   const mode = MODES.find((m) => m.id === activeMode);
   const isOrchestrator = activeMode === "orchestrator";
   const notifyModel = useModelToast();
@@ -305,7 +306,7 @@ export default function AgentHub() {
       activeMode === "brief"
         ? goal.trim() || "Generate a complete plant status briefing for shift handover"
         : goal;
-    start(activeMode, effectiveGoal, Object.keys(ctx).length ? ctx : null);
+    start(activeMode, effectiveGoal, Object.keys(ctx).length ? ctx : null, isOrchestrator && requireApproval);
   }
 
   return (
@@ -461,6 +462,22 @@ export default function AgentHub() {
               );
             })()}
 
+            {/* F4.9 — orchestrator human-in-the-loop approval toggle */}
+            {isOrchestrator && (
+              <label className="mb-3 flex cursor-pointer items-center gap-2 select-none">
+                <input
+                  type="checkbox"
+                  checked={requireApproval}
+                  onChange={(e) => setRequireApproval(e.target.checked)}
+                  className="h-4 w-4 cursor-pointer accent-[var(--brand)]"
+                />
+                <span className="text-xs text-ink-muted">
+                  Pause for my approval of the plan before dispatching specialists
+                  <span className="ml-1 text-ink-faint">(human-in-the-loop)</span>
+                </span>
+              </label>
+            )}
+
             {/* Goal input */}
             <div className="mb-3">
               <Label htmlFor="agent-goal" className="sr-only">
@@ -545,6 +562,9 @@ export default function AgentHub() {
           done={done}
           meta={meta}
           error={error}
+          awaitingApproval={awaitingApproval}
+          onApprove={() => resume("approve")}
+          onReject={() => resume("reject")}
         />
       ) : (
         <AgentRunner
