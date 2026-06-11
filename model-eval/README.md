@@ -12,6 +12,11 @@
 > per-task model choices already locked in this project's
 > [`docs/planning/ai/MODEL_SIZING_DECISION.md`](../docs/planning/ai/MODEL_SIZING_DECISION.md).
 
+> **Not the golden test suite.** This folder picks *which model* fits each task (a one-off
+> benchmark — "hire the cooks"). The app's **per-push regression gate** — *"does the pipeline
+> answer correctly?"* ("taste-test the food") — lives separately in
+> [`backend/tests/eval/`](../backend/tests/eval/). Different question, different cadence, different home.
+
 ## Why here (not in OMNYX)
 This project already holds what a realistic test needs:
 - **MySQL `unicharm`** (127.0.0.1:3307) — real chiller/tower/pump telemetry, 1-min.

@@ -1,5 +1,11 @@
 # AI eval harness
 
+> **This is the app's regression gate — NOT model selection.** It checks *"does the THERMYNX
+> pipeline give correct, safe answers?"* against the **live backend**, on **every push**. The
+> separate [`model-eval/`](../../../model-eval/) harness answers a different question — *"which
+> Ollama model is best for each task (phi4 vs mistral vs gemma…)?"* — as a one-off benchmark.
+> **Analogy:** this folder = *taste-test the food before serving*; `model-eval/` = *hire the cooks*.
+
 Pytest-based regression suite for the AI feature surface. Runs the cases
 defined in [`tests/golden/cases.py`](../golden/cases.py) against a live
 backend and verifies deterministic expectations (status code, contains/
