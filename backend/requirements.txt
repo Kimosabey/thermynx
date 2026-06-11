@@ -18,9 +18,11 @@ arq==0.25.0
 slack-sdk==3.33.0
 statsmodels==0.14.2
 
-# Optional: self-hosted LLM tracing (MIT). Install when LANGFUSE_HOST is configured.
-# v4 SDK (OTEL-based) — required for the langchain-1.x graph CallbackHandler
-# (app/ai/graph/tracing.py). v2/v3 are incompatible with langchain 1.x. The
-# matching server (Langfuse v3, ClickHouse+Redis+S3) is deferred — see the
-# disabled service note in docker-compose.yml. No-op until LANGFUSE_HOST is set.
-langfuse>=4,<5
+# FUTURE / OPTIONAL — self-hosted LLM tracing (MIT). NOT used by the product today;
+# DISABLED on purpose. The Langfuse server is commented out in docker-compose.yml and
+# graph_callbacks() is a no-op while LANGFUSE_HOST is empty (the default), so the SDK is
+# never imported. Left UNINSTALLED (line below commented) so it isn't pulled into builds.
+# Re-enable ONLY IF tracing is wanted later (48 GB box): uncomment + `pip install`, stand
+# up the v3 server (langfuse-web+worker+clickhouse+redis+minio), set LANGFUSE_HOST + keys.
+# Must stay v4 SDK (OTEL) — v2/v3 are incompatible with langchain 1.x.
+# langfuse>=4,<5

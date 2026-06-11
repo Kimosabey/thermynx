@@ -1,12 +1,18 @@
 """Langfuse callbacks for the agentic graph (F6.1) — per-node / per-LLM spans.
 
-Returns a LangChain ``CallbackHandler`` when Langfuse is configured (self-hosted:
-``LANGFUSE_HOST`` + keys), else ``[]``. Fully no-op + exception-safe: an
-unconfigured or unreachable Langfuse never affects graph execution. When the obs
-stack is up, every graph node and LLM call shows up as a span in the Langfuse UI.
+DISABLED / FUTURE-ONLY — not used by the product today. Tracing is intentionally
+off: the Langfuse server is commented out in ``docker-compose.yml`` and the SDK is
+commented out in ``requirements.txt``. ``graph_callbacks()`` returns ``[]`` while
+``LANGFUSE_HOST`` is empty (the default), so Langfuse is never imported and never
+touches graph execution. This thin shim is kept ON PURPOSE so re-enabling later is
+CONFIG-ONLY, not a re-implementation.
 
-Wired once in ``sse.astream_sse`` so all surfaces (agentic endpoints + flipped
-live endpoints) are traced automatically.
+Re-enable ONLY IF tracing is wanted (e.g. on the 48 GB box): uncomment + install the
+SDK, stand up the v3 server (web+worker+clickhouse+redis+minio), then set
+``LANGFUSE_HOST`` + keys. After that, every graph node / LLM call becomes a span.
+
+Returns a LangChain ``CallbackHandler`` when configured, else ``[]``. Exception-safe:
+an unconfigured / unreachable / uninstalled Langfuse is always a clean no-op.
 """
 from __future__ import annotations
 
