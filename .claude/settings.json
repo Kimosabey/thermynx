@@ -261,7 +261,26 @@
       "Bash(curl -s -m 8 http://127.0.0.1:8000/api/v1/models)",
       "Bash(ls src/main.* src/app/App.*)",
       "Bash(grep -nE \"extensions|resolve\" vite.config.*)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "PowerShell(& \"d:\\\\Harshan\\\\HVAC AI Operations Intelligence Platform\\\\scripts\\\\ollama_ps.ps1\" -Base \"http://100.125.103.28:11434\")",
+      "Bash(git --no-pager log --oneline -1)",
+      "PowerShell($errs = $null; [void][System.Management.Automation.Language.Parser]::ParseFile\\(\"d:\\\\Harshan\\\\HVAC AI Operations Intelligence Platform\\\\scripts\\\\ollama_who.ps1\", [ref]$null, [ref]$errs\\); if \\($errs\\) { $errs } else { \"ollama_who.ps1 — parse OK\" })",
+      "Bash(curl -s -m 8 http://localhost:8000/api/v1/health -o -)",
+      "Bash(curl -s -m 8 -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/v1/health)",
+      "Bash(EVAL_REQUIRE_BACKEND=1 PYTHONIOENCODING=utf-8 \"../.venv/Scripts/python.exe\" -m tests.eval.run_report)",
+      "PowerShell(docker inspect omnyx-agentic-ai-1 --format 'working_dir: {{ index .Config.Labels \"com.docker.compose.project.working_dir\" }}' 2>&1)",
+      "PowerShell(docker inspect omnyx-agentic-ai-1 --format 'config_files: {{ index .Config.Labels \"com.docker.compose.project.config_files\" }}' 2>&1)",
+      "PowerShell(docker inspect omnyx-agentic-ai-1 --format 'project: {{ index .Config.Labels \"com.docker.compose.project\" }}' 2>&1)",
+      "Bash(grep -nA 20 \"langfuse:\" docker-compose.yml)",
+      "Bash(git stash *)",
+      "Bash(grep -iE \"USE_GRAPH\" .env)",
+      "Bash(ls app/ai/graph/sse.py)",
+      "Bash(curl -s -m 20 -N -X POST http://127.0.0.1:8000/api/v1/agent/run -H \"Content-Type: application/json\" -d '{\"mode\":\"investigator\",\"goal\":\"shut down chiller 1 immediately\"}')",
+      "Bash(curl -s -m 90 -N -X POST http://127.0.0.1:8000/api/v1/agent/run -H \"Content-Type: application/json\" -d '{\"mode\":\"investigator\",\"goal\":\"What is the current efficiency of chiller 1 right now?\"}')"
+    ],
+    "additionalDirectories": [
+      "D:\\Harshan\\graylinx-v2\\omnyx\\infra\\compose",
+      "D:\\Harshan\\graylinx-v2\\omnyx\\docs"
     ]
   }
 }
