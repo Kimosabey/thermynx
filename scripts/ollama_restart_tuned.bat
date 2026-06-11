@@ -172,6 +172,10 @@ if !errorlevel!==0 (
     echo        %DIM%devstral / codestral / mistral-small3.2 / llama3.2-vision load on demand.%C0%
     echo        %DIM%THERMYNX per-task model map: backend/app/config.py (OLLAMA_MODEL_*) + backend/.env%C0%
     echo.
+
+    echo %CYA%--- Opening live VRAM monitor in a separate window ---%C0%
+    start "THERMYNX - Ollama VRAM Monitor" "%~dp0ollama_monitor.bat"
+    echo.
 ) else (
     echo.
     echo %RED%================================================================%C0%
