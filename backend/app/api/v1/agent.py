@@ -1,5 +1,6 @@
 import json
 import re
+import time
 import uuid
 from datetime import datetime
 from fastapi import APIRouter, Depends, Request
@@ -87,25 +88,37 @@ async def _graph_agent_stream(request: Request, req, pg: AsyncSession):
     tokens: list[str] = []
     tool_calls = 0
     status = "error"
+    t0 = time.monotonic()
     try:
         async for frame in astream_sse(_get_react_graph(), inputs, cfg, done_extra={"run_id": run_id}):
             if await request.is_disconnected():
                 status = "cancelled"
                 break
-            yield frame
+            # Parse first so we can enrich the terminal `done` frame. The graph SSE
+            # adapter emits a bare {type:done, run_id}; the UI header needs steps +
+            # total_ms + model (else it shows a blank step count / 0.0s).
             try:
                 d = json.loads(frame[6:])
                 t = d.get("type")
-                if t == "token":
-                    tokens.append(d.get("content", ""))
-                elif t == "tool_call":
-                    tool_calls += 1
-                elif t == "done":
-                    status = "ok"
-                elif t == "error":
-                    status = "error"
             except Exception:
-                pass
+                d, t = None, None
+            if t == "token":
+                tokens.append((d or {}).get("content", ""))
+            elif t == "tool_call":
+                tool_calls += 1
+            elif t == "error":
+                status = "error"
+            elif t == "done":
+                status = "ok"
+                total_ms = int((time.monotonic() - t0) * 1000)
+                yield (
+                    "data: "
+                    + json.dumps({"type": "done", "run_id": run_id, "steps": tool_calls,
+                                  "total_ms": total_ms, "model": model})
+                    + "\n\n"
+                )
+                continue
+            yield frame
     except Exception:
         log.exception("agent_graph_failed run_id=%s", run_id)
         yield f"data: {json.dumps({'type':'error','detail':'Agent graph failed.'})}\n\n"
@@ -130,7 +143,8 @@ async def _graph_orchestrate_stream(request: Request, req, pg: AsyncSession):
                    request_id=getattr(request.state, "request_id", None))
     pg.add(run)
     await pg.commit()
-    inputs = {"question": req.goal, "context": req.context}
+    inputs = {"question": req.goal, "context": req.context,
+              "require_approval": bool(getattr(req, "require_approval", False))}
     cfg = {"configurable": {"thread_id": run_id}, "recursion_limit": 50}
     tokens: list[str] = []
     status = "error"
@@ -147,6 +161,10 @@ async def _graph_orchestrate_stream(request: Request, req, pg: AsyncSession):
                     tokens.append(d.get("content", ""))
                 elif t == "done":
                     status = "ok"
+                elif t == "awaiting_approval":
+                    # F4.9 — paused for operator sign-off; run is NOT finished. The
+                    # /agent/resume call (same thread_id=run_id) finalizes the row.
+                    status = "awaiting_approval"
                 elif t == "error":
                     status = "error"
             except Exception:
@@ -335,6 +353,15 @@ class OrchestrateRequest(BaseModel):
     context:   dict | None = None
     model:     str | None = None
     thread_id: str | None = Field(default=None, max_length=36)  # persist turn into conversation
+    require_approval: bool = False   # F4.9 — pause after the plan for operator sign-off (forces the graph path)
+
+
+class ResumeRequest(BaseModel):
+    """Resume a HITL-paused orchestration (F4.9). thread_id == the run_id returned
+    in the awaiting_approval frame."""
+    thread_id: str = Field(..., min_length=8, max_length=64)
+    action:    str = Field(default="approve")   # "approve" | "reject"
+    plan:      dict | None = None               # optional operator-edited plan (on approve)
 
 
 async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: AsyncSession):
@@ -350,7 +377,9 @@ async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: Asy
         return
 
     # F7 cutover — serve from the multi-agent LangGraph when enabled (default OFF = path below).
-    if settings.USE_GRAPH_ORCHESTRATE:
+    # F4.9 — HITL approval needs the graph (interrupt/resume), so an explicit
+    # require_approval forces the graph path even when the flag is off.
+    if settings.USE_GRAPH_ORCHESTRATE or req.require_approval:
         async for frame in _graph_orchestrate_stream(request, req, pg):
             yield frame
         return
@@ -436,6 +465,73 @@ async def agent_orchestrate(
     sub-tasks, then synthesises one final answer. Returns SSE stream."""
     return StreamingResponse(
         _orchestrate_stream(request, req, pg),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+async def _resume_stream(request: Request, req: ResumeRequest, pg: AsyncSession):
+    """Resume a HITL-paused multi-agent graph (F4.9) with the operator's decision.
+
+    Reuses the SAME cached graph instance (_get_multi_graph) so its in-process
+    checkpointer holds the paused state for `thread_id`. Streams the continuation
+    (specialists → synthesis → audit → done) and finalizes the AgentRun row."""
+    from app.ai.graph.sse import astream_sse
+    from langgraph.types import Command
+
+    action = req.action if req.action in ("approve", "reject") else "approve"
+    resume_payload: dict = {"action": action}
+    if action == "approve" and isinstance(req.plan, dict) and req.plan.get("subtasks"):
+        resume_payload["plan"] = req.plan
+    cfg = {"configurable": {"thread_id": req.thread_id}, "recursion_limit": 50}
+    tokens: list[str] = []
+    status = "error"
+    try:
+        async for frame in astream_sse(_get_multi_graph(), Command(resume=resume_payload), cfg,
+                                       done_extra={"run_id": req.thread_id}):
+            if await request.is_disconnected():
+                status = "cancelled"
+                break
+            yield frame
+            try:
+                d = json.loads(frame[6:])
+                t = d.get("type")
+                if t == "token":
+                    tokens.append(d.get("content", ""))
+                elif t == "done":
+                    status = "ok"
+                elif t == "error":
+                    status = "error"
+            except Exception:
+                pass
+    except Exception:
+        log.exception("orchestrate_resume_failed thread_id=%s", req.thread_id)
+        yield f"data: {json.dumps({'type':'error','detail':'Resume failed.'})}\n\n"
+        status = "error"
+
+    # Finalize the run row created by the initial orchestrate (id == thread_id).
+    try:
+        run = await pg.get(AgentRun, req.thread_id)
+        if run:
+            run.final_output = "".join(tokens) or run.final_output
+            run.status = status
+            await pg.merge(run)
+            await pg.commit()
+    except Exception:
+        log.warning("resume_run_finalize_failed thread_id=%s", req.thread_id)
+
+
+@router.post("/agent/resume")
+@limiter.limit("12/minute")
+async def agent_resume(
+    request: Request,
+    req: ResumeRequest,
+    pg: AsyncSession = Depends(get_pg),
+):
+    """Resume a HITL-paused orchestration (F4.9) — approve (optionally with an
+    edited plan) or reject. Returns the continuation as an SSE stream."""
+    return StreamingResponse(
+        _resume_stream(request, req, pg),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

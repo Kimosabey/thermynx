@@ -276,7 +276,22 @@
       "Bash(grep -iE \"USE_GRAPH\" .env)",
       "Bash(ls app/ai/graph/sse.py)",
       "Bash(curl -s -m 20 -N -X POST http://127.0.0.1:8000/api/v1/agent/run -H \"Content-Type: application/json\" -d '{\"mode\":\"investigator\",\"goal\":\"shut down chiller 1 immediately\"}')",
-      "Bash(curl -s -m 90 -N -X POST http://127.0.0.1:8000/api/v1/agent/run -H \"Content-Type: application/json\" -d '{\"mode\":\"investigator\",\"goal\":\"What is the current efficiency of chiller 1 right now?\"}')"
+      "Bash(curl -s -m 90 -N -X POST http://127.0.0.1:8000/api/v1/agent/run -H \"Content-Type: application/json\" -d '{\"mode\":\"investigator\",\"goal\":\"What is the current efficiency of chiller 1 right now?\"}')",
+      "Bash(../.venv/Scripts/python.exe -c \"import ast; ast.parse\\(open\\('app/api/v1/agent.py',encoding='utf-8'\\).read\\(\\)\\); print\\('agent.py syntax OK'\\)\")",
+      "Bash(../.venv/Scripts/python.exe -c \"import importlib.metadata as m; print\\('langfuse', m.version\\('langfuse'\\)\\)\")",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(echo \"COMPOSE_EXIT: $?\")",
+      "Bash(rm -f compose_err.txt)",
+      "Bash(curl -s -m 6 -o /dev/null -w \"health http: %{http_code}\\\\n\" http://127.0.0.1:8000/api/v1/health)",
+      "Bash(curl -s -m 6 http://100.125.103.28:11434/api/ps)",
+      "Bash(EVAL_REQUIRE_BACKEND=1 PYTHONIOENCODING=utf-8 ../.venv/Scripts/python.exe -m tests.eval.run_report)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Harshan\\\\HVAC AI Operations Intelligence Platform\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(xargs grep -l \"asyncpg\\\\|psycopg\\\\|pool\\\\|postgres\")",
+      "Bash(xargs grep -l \"F1\\\\.\")",
+      "Bash(xargs grep -l \"F1\\\\.1[01]\\\\|durable.*resume\\\\|checkpoint\")",
+      "Bash(python -c \"import langgraph; print\\(langgraph.__version__\\); import langgraph.checkpoint; print\\(dir\\(langgraph.checkpoint\\)\\)\")",
+      "Bash(pip show *)"
     ],
     "additionalDirectories": [
       "D:\\Harshan\\graylinx-v2\\omnyx\\infra\\compose",

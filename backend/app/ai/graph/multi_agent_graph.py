@@ -39,6 +39,7 @@ _MAX_SUBTASKS = 4
 class MultiAgentState(TypedDict, total=False):
     question: str
     context: Optional[dict[str, Any]]
+    require_approval: bool          # F4.9 — pause after planner for operator sign-off
     plan: dict[str, Any]
     findings: list[dict[str, Any]]
     answer: str
@@ -89,6 +90,39 @@ async def planner_node(state: MultiAgentState) -> dict[str, Any]:
         subs = [{"specialist": "investigator", "goal": goal}]  # fallback
         rationale = rationale or "Planner returned no valid subtasks; routing to investigator."
     return {"plan": {"rationale": rationale, "subtasks": subs}}
+
+
+def route_after_planner(state: MultiAgentState) -> Literal["await_approval", "run"]:
+    """F4.9 — pause for operator approval when asked, else run specialists directly."""
+    return "await_approval" if state.get("require_approval") else "run"
+
+
+async def await_approval_node(state: MultiAgentState) -> dict[str, Any]:
+    """HITL gate (F4.9): pause after the plan, before specialists run.
+
+    Reached only when ``require_approval`` is set. ``interrupt()`` persists the
+    state to the checkpointer and surfaces the plan to the caller; the graph
+    resumes when the operator POSTs a decision to ``/agent/resume`` (which calls
+    ``graph.astream(Command(resume=...))``). Kept thin + idempotent so the resume
+    re-runs this node cheaply — the expensive planner is NOT re-executed.
+
+    Resume payload: ``{"action": "approve"|"reject", "plan": <edited plan?>}``.
+    """
+    from langgraph.types import interrupt
+
+    plan = state.get("plan") or {}
+    decision = interrupt({"plan": plan}) or {}
+    if decision.get("action") == "reject":
+        msg = "Operator rejected the plan; orchestration cancelled."
+        return {"refusal": msg, "answer": msg}
+    edited = decision.get("plan")
+    if isinstance(edited, dict) and edited.get("subtasks"):
+        return {"plan": edited}  # operator edited the plan before approving
+    return {}
+
+
+def route_after_approval(state: MultiAgentState) -> Literal["rejected", "approved"]:
+    return "rejected" if state.get("refusal") else "approved"
 
 
 async def specialists_node(state: MultiAgentState) -> dict[str, Any]:
@@ -163,6 +197,7 @@ def build_multi_agent_graph(checkpointer: Any | None = None) -> Any:
     g = StateGraph(MultiAgentState)  # type: ignore[arg-type]
     g.add_node("preflight", ma_preflight_node)
     g.add_node("planner", planner_node)
+    g.add_node("await_approval", await_approval_node)
     g.add_node("specialists", specialists_node)
     g.add_node("synthesis", synthesis_node)
     g.add_node("postcheck", postcheck_node)
@@ -170,7 +205,9 @@ def build_multi_agent_graph(checkpointer: Any | None = None) -> Any:
 
     g.add_edge(START, "preflight")
     g.add_conditional_edges("preflight", route_after_preflight, {"refused": END, "continue": "planner"})
-    g.add_edge("planner", "specialists")
+    # F4.9 — optional human-in-the-loop gate between the plan and the specialists.
+    g.add_conditional_edges("planner", route_after_planner, {"await_approval": "await_approval", "run": "specialists"})
+    g.add_conditional_edges("await_approval", route_after_approval, {"rejected": END, "approved": "specialists"})
     g.add_edge("specialists", "synthesis")
     g.add_edge("synthesis", "postcheck")
     g.add_edge("postcheck", "critique")

@@ -95,7 +95,7 @@ export default function DigestPage() {
     <PageShell>
       <PageHeader
         title="Morning Digest"
-        subtitle="Auto-generated daily plant-health summary · pushed to Slack each morning (06:00 UTC)"
+        subtitle="Auto-generated daily plant-health summary · refreshed each morning (06:00 UTC)"
         icon={<PageHeaderIcon icon={<Sun size={20} strokeWidth={1.85} />} />}
         actions={
           <Button size="sm" onClick={generateNow} disabled={generating}>

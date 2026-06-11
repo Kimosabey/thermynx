@@ -10,7 +10,7 @@ import {
   ScrollText,
   Activity,
   Settings as SettingsIcon,
-  ShieldCheck,
+  // ShieldCheck,  // re-add when the Slack health pill below is re-enabled
   BarChart2,
   Bell,
   FileText,
@@ -72,7 +72,10 @@ const SERVICES: ServiceGroup[] = [
       { Icon: ScrollText, label: "OpenAPI JSON", url: "http://localhost:8000/openapi.json", port: 8000, healthUrl: "http://localhost:8000/openapi.json", role: "Machine-readable schema" },
       { Icon: BarChart2, label: "Metrics", url: "http://localhost:8000/metrics", port: 8000, healthUrl: "http://localhost:8000/metrics", role: "Prometheus scrape endpoint" },
       { Icon: SettingsIcon, label: "Capabilities", url: "http://localhost:8000/api/v1/capabilities", port: 8000, healthUrl: "http://localhost:8000/api/v1/capabilities", role: "Self-describing feature catalogue" },
-      { Icon: ShieldCheck, label: "Slack health", url: "http://localhost:8000/api/v1/slack/health", port: 8000, healthUrl: "http://localhost:8000/api/v1/slack/health", role: "Slack integration status" },
+      // Slack disabled for now (no SLACK_BOT_TOKEN) — the probe only reports
+      // "disabled", so it's hidden to avoid a misleading red pill. Re-enable
+      // this entry (and the ShieldCheck import) once Slack is configured.
+      // { Icon: ShieldCheck, label: "Slack health", url: "http://localhost:8000/api/v1/slack/health", port: 8000, healthUrl: "http://localhost:8000/api/v1/slack/health", role: "Slack integration status" },
     ],
   },
   {

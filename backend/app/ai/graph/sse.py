@@ -67,11 +67,35 @@ async def astream_sse(graph: Any, inputs: dict, config: dict, done_extra: dict |
     if cbs:
         config = {**config, "callbacks": [*(config.get("callbacks") or []), *cbs]}
 
+    # thread_id labels an awaiting-approval pause so the client can resume it (F4.9).
+    thread_id = (config.get("configurable") or {}).get("thread_id")
+    interrupted = False
     try:
         async for update in graph.astream(inputs, config, stream_mode="updates"):
-            for _node, delta in (update or {}).items():
+            if not update:
+                continue
+
+            # F4.9 — HITL pause: a node called interrupt() and the graph is now
+            # waiting for a /agent/resume decision. Surface the plan + thread_id and
+            # suppress the `done` frame (the run isn't finished, just paused).
+            if "__interrupt__" in update:
+                interrupted = True
+                intr = update["__interrupt__"]
+                item = intr[0] if isinstance(intr, (list, tuple)) and intr else intr
+                val = getattr(item, "value", item)
+                plan = val.get("plan", {}) if isinstance(val, dict) else {}
+                yield _sse({"type": "awaiting_approval", "thread_id": thread_id, "plan": plan})
+                continue
+
+            for _node, delta in update.items():
                 if not isinstance(delta, dict):
                     continue
+
+                # plan (multi-agent planner) → render it + (optionally) gate it (F4.9)
+                if delta.get("plan"):
+                    p = delta["plan"]
+                    yield _sse({"type": "plan", "rationale": p.get("rationale", ""),
+                                "subtasks": p.get("subtasks", [])})
 
                 # tool_call / tool_result from messages emitted by this node
                 for m in (delta.get("messages") or []):
@@ -98,4 +122,5 @@ async def astream_sse(graph: Any, inputs: dict, config: dict, done_extra: dict |
         yield _sse({"type": "error", "detail": f"graph stream failed: {exc}"})
         return
 
-    yield _sse({"type": "done", **(done_extra or {})})
+    if not interrupted:
+        yield _sse({"type": "done", **(done_extra or {})})
