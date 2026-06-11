@@ -76,10 +76,27 @@ and OMNYX (its own roster: gpt-oss:20b, mistral-small3.2, mxbai, phi4, …). **T
 (hardware), not changing which models each platform uses.** Sharing model *files on disk* is harmless; the
 only problem was both platforms loading models into the **same 20 GB GPU's VRAM at the same time**.
 
+## Sharing ONE Ollama server across projects is fine — the constraint is GPU memory
+
+All projects (**THERMYNX, OMNYX, future**) **can and should share one Ollama server** — the server config
+and model library stay **common for everyone**; you do **not** need a separate server per project. The
+contention had **nothing to do with sharing the server** and everything to do with **GPU memory size**:
+
+- The shared GPU is **20 GB**. The combined models THERMYNX + OMNYX load **at the same time** far exceed
+  20 GB, so they **evict each other** (constant reloads → timeouts). More projects sharing = worse.
+
+**The fix for a shared server: give it a bigger GPU (48 GB+).** Then every project's models co-reside and
+sharing works with **zero eviction**. **Interim on 20 GB:** don't run two projects' heavy AI at the same
+time (stagger usage), or accept the ~10–20 s reload delays.
+
+> **For OMNYX and any future project:** this Ollama box is **shared**. Loading large models (gpt-oss:20b,
+> mxbai, mistral-small3.2, …) on the 20 GB GPU evicts other projects' models. The server setup stays common
+> for all — the only real fix is **more GPU memory**, not changing models or per-project servers.
+
 ## How to keep it solved
 
-- **Don't run OMNYX's AI against the shared Ollama box.** Repoint OMNYX `LLM_BASE_URL` off `100.125.103.28`
-  (e.g. the laptop's local Ollama or its own GPU), or run only one platform's AI at a time on this GPU.
+- **On the 20 GB box, don't run THERMYNX + OMNYX heavy AI simultaneously** — stagger usage, or repoint one
+  platform's `LLM_BASE_URL` to a different GPU. (The real fix is a bigger shared GPU — see above.)
 - `keep_alive=-1` pins phi4 **until the Ollama server restarts** — re-warm after any restart
   (`ollama_all.bat` does this automatically).
 - Watch VRAM with `scripts/ollama_dashboard.bat` (or `ollama_ps.ps1`); if gpt-oss/mxbai reappear, run
