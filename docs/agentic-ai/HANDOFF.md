@@ -1,5 +1,64 @@
 # Agentic Rewrite — Session Handoff (2026-06-10)
 
+---
+## ⟶ SESSION 2 (2026-06-11) — READ THIS FIRST
+
+**State in one paragraph:** The agentic rewrite is **cut over on-prem** — `/analyze` + `/agent/run` now
+default to the LangGraph pipeline (`USE_GRAPH_ANALYZER` / `USE_GRAPH_AGENT` = `True` in `config.py`, commit
+`84ec3ca`), **verified serving via the graph**. `/agent/orchestrate` stays OFF (multi-agent thrashes the
+20 GB GPU — needs the 48 GB box). The old inline pipeline is retained as the **instant-revert fallback**
+(set the flag `=false` in `backend/.env` + restart). Golden suite **49/50** (the lone orchestrate fail is a
+20 GB cold-load transient — passes on retry, 96.6 s). All work is committed **and pushed** to
+`Kimosabey/thermynx` `rewrite/agentic-framework`. `master` untouched.
+
+**What shipped this session:**
+- **F7 cutover** (`84ec3ca`): analyze + agent → graph by default; orchestrate off pending 48 GB.
+- **Eval F6.3/F6.4** (`2d76dd8`): real-context S2 judge + DeepEval faithfulness (local Ollama judge,
+  `DEEPEVAL_TELEMETRY_OPT_OUT=YES`); **RAGAS dropped** (`ae9963c`). `tests/eval/run_report.py` → folderised
+  reports in `backend/tests/eval/reports/`.
+- **Anomaly LLM-timeout fix** (`49a5239`): `services/causal.py` uses warm phi4 (not cold mistral) + 45 s
+  timeout + `keep_alive`.
+- **V2 frontend**: Chakra→Tailwind cutover shipped (`865af5c`); **Nyx assistant backend** (`fa5e5dc` —
+  `POST /api/v1/assistant/route` intent router); FE fixes — `/health` request storm (`ae11f0c`), load FOUC
+  + Radix dialog a11y (`b333053`).
+- **GA docs** (`3aa59dd`): [OPERATOR_RUNBOOK.md](./OPERATOR_RUNBOOK.md) + [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md).
+- **Ops scripts** (`scripts/`): `ollama_all.bat` (restart+warm+monitors), `ollama_kick.bat` (free
+  gpt-oss/mxbai + re-warm phi4), `ollama_ps.ps1`, `ollama_monitor.bat`, `ollama_who.ps1`, `ollama_dashboard.bat`.
+
+**The GPU saga (RESOLVED) — key context:** "LLM timeout" was **not a code bug**. THERMYNX shares **one
+20 GB Ollama box** (`100.125.103.28`, RTX 4000 Ada) with the **sibling platform OMNYX** (repo
+`D:\Harshan\graylinx-v2\omnyx`, `Kimosabey/omnyx`). OMNYX's `omnyx-agentic-ai` container (`LLM_BASE_URL`→same
+box, `PLANNER=gpt-oss:20b`, `EMBED=mxbai`) kept **evicting THERMYNX's phi4**. Resolved: **stopped OMNYX**
+(`docker stop omnyx-*`), **pinned phi4** (`keep_alive=-1`); a firewall rule we tried **blocked the laptop**
+(it's the backend host) and was removed. Full write-up:
+[../operations/GPU_VRAM_CONTENTION.md](../operations/GPU_VRAM_CONTENTION.md). OMNYX was notified (committed
+`c94523e` in its repo). **Decision: model selection UNCHANGED for both platforms; sharing one server is fine;
+the only fix is more GPU memory (48 GB).**
+
+**What's LEFT (exact):**
+1. **Soak** the on-prem cutover (analyze+agent on graph) — watch Prometheus alerts (`HallucinationFlagsHigh`,
+   `AgentErrorRate`) + audit flags for a few days. Activate on the prod box via `git pull` + restart.
+2. **48 GB GPU** → then cut over `/orchestrate` (`USE_GRAPH_ORCHESTRATE`), real Locust load test.
+3. **Decommission** the old inline pipeline (OFF-path code in `analyzer.py`/`agent.py`/`multi_agent.py`) —
+   ONLY after the soak — then **tag GA** (offered `v1.0.0-onprem`, not yet created).
+4. Smaller/optional: flip the **S2 hard-gate** (real-context works now); **Langfuse prompt registry**
+   (F1.12); **durable resume** (F1.11); **HITL interrupts** (F4.9); fix the **crash-looping `langfuse`**
+   obs container (port `3200`; the `:latest` image needs Clickhouse — wrong for the single-container setup).
+
+**Env / runtime now:** Ollama 0.30.7 @ `100.125.103.28:11434` (Tailscale, 20 GB) · MySQL `:3307` · PG
+`:5442` · single `.venv`. Routing: TEXT/RAG/AUDITOR/anomaly→**phi4**, TOOL→devstral, SQL→codestral,
+PLANNER→gemma4:12b, embed→nomic-768. phi4 pinned; OMNYX stopped. Laptop (backend/dev) = `100.88.22.7`.
+
+**New gotchas (this session):** don't firewall-block the backend host's IP (we did → broke THERMYNX).
+`/api/tags` = installed-on-disk ≠ `/api/ps` = loaded-in-VRAM (gpt-oss in tags is harmless). `make` isn't
+installed on the laptop → the pre-push eval hook **skips** (push is fast). A dev `:8000` dead-socket can
+linger after a kill (clears itself); when stuck, verify the graph **in-process** via `_sse_stream`
+(flag-driven). Re-warm phi4 after any Ollama restart (`keep_alive=-1` resets on restart; `ollama_all.bat` does it).
+
+**Start the next chat with:** *"continue THERMYNX per docs/agentic-ai/HANDOFF.md — Session 2 block."*
+
+---
+
 Continuation notes so a fresh chat can pick up without re-discovering anything.
 **Branch:** `rewrite/agentic-framework` (all work here; `master` untouched).
 **Authoritative plan + live status:** [FRAMEWORK_REWRITE_PLAN.md](./FRAMEWORK_REWRITE_PLAN.md)
