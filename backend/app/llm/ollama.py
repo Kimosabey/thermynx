@@ -1,7 +1,6 @@
 import json
 import threading
 import time
-from contextlib import suppress
 from typing import AsyncIterator, Any
 
 import httpx
@@ -10,37 +9,6 @@ from app.config import settings
 from app.errors import OllamaUnavailableError
 from app.log import get_logger
 from app.observability.context import current_request_id
-
-
-def _lf():
-    """Return a Langfuse client or None — lazy so missing package is non-fatal."""
-    try:
-        if not settings.LANGFUSE_HOST or not settings.LANGFUSE_PUBLIC_KEY:
-            return None
-        from langfuse import Langfuse  # optional dep
-        return Langfuse(
-            host=settings.LANGFUSE_HOST,
-            public_key=settings.LANGFUSE_PUBLIC_KEY,
-            secret_key=settings.LANGFUSE_SECRET_KEY,
-        )
-    except Exception:
-        return None
-
-
-def _lf_generation(lf, name: str, model: str, prompt_or_msgs, output: str = "", latency_ms: int = 0):
-    """Fire-and-forget: record one LLM generation span in Langfuse."""
-    if lf is None:
-        return
-    with suppress(Exception):
-        gen = lf.generation(
-            name=name,
-            model=model,
-            input=prompt_or_msgs if isinstance(prompt_or_msgs, list) else str(prompt_or_msgs)[:2000],
-            output=output[:2000],
-            metadata={"latency_ms": latency_ms, "request_id": current_request_id.get()},
-        )
-        gen.end()
-        lf.flush()
 
 log = get_logger("llm.ollama")
 

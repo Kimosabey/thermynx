@@ -151,7 +151,10 @@ class Settings(BaseSettings):
 
     # Langfuse self-hosted span tracing (optional, MIT license)
     # Leave LANGFUSE_HOST empty to disable tracing entirely (default).
-    # Start the Langfuse container: docker compose --profile obs up -d langfuse
+    # NOTE: the Langfuse server is currently DISABLED in docker-compose.yml — the
+    # v3 server needs ClickHouse+Redis+S3 (deferred to the 48 GB box). The v4 SDK
+    # + graph CallbackHandler trace automatically once a server is stood up and
+    # these are set; graph_callbacks() no-ops while LANGFUSE_HOST is empty.
     LANGFUSE_HOST:       str = ""   # e.g. "http://localhost:3200"
     LANGFUSE_PUBLIC_KEY: str = ""   # pk-lf-...
     LANGFUSE_SECRET_KEY: str = ""   # sk-lf-...

@@ -49,6 +49,11 @@ Promote to the next surface only when error/flag rate ≤ baseline and latency i
 
 ## 4. Reading a Langfuse trace
 
+> **Status (2026-06-11):** the Langfuse **server is currently DISABLED** in `docker-compose.yml`
+> (Langfuse v3 needs ClickHouse+Redis+S3 — deferred to the 48 GB box; see the restore note in the
+> compose file). Tracing is a safe no-op until it's restored. The rest of this section applies once a
+> server is stood up and `LANGFUSE_HOST` + keys are set.
+
 Langfuse runs self-hosted in `docker compose` (obs profile). With `LANGFUSE_HOST` + keys set,
 every graph run emits per-node / per-LLM spans (`graph_callbacks()` in `app/ai/graph/tracing.py`).
 - Open the Langfuse UI → find the run by `thread_id` / time.

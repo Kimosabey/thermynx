@@ -41,9 +41,14 @@ the only fix is more GPU memory (48 GB).**
 2. **48 GB GPU** → then cut over `/orchestrate` (`USE_GRAPH_ORCHESTRATE`), real Locust load test.
 3. **Decommission** the old inline pipeline (OFF-path code in `analyzer.py`/`agent.py`/`multi_agent.py`) —
    ONLY after the soak — then **tag GA** (offered `v1.0.0-onprem`, not yet created).
-4. Smaller/optional: flip the **S2 hard-gate** (real-context works now); **Langfuse prompt registry**
-   (F1.12); **durable resume** (F1.11); **HITL interrupts** (F4.9); fix the **crash-looping `langfuse`**
-   obs container (port `3200`; the `:latest` image needs Clickhouse — wrong for the single-container setup).
+4. Smaller/optional: flip the **S2 hard-gate** (real-context works now); **durable resume** (F1.11);
+   **HITL interrupts** (F4.9). The **`langfuse` obs container is now DISABLED** — its floating versions
+   (`image: :latest` + `langfuse>=2.0.0`, copied from v2-era planning docs) drifted to the **v3 server**
+   (needs ClickHouse/Redis/S3) + **v4 SDK**; never a deliberate v3 choice. Resolution: server deferred to
+   the 48 GB box (commented out in `docker-compose.yml` with a restore note), SDK pinned `>=4,<5`, dead
+   v2-era `app/llm/tracing.py` + `ollama.py` `_lf*` helpers removed (they used the gone `.trace()`/
+   `.generation()` API), graph tracing (`graph_callbacks()`) no-ops when off. **Langfuse prompt registry**
+   (F1.12) is therefore parked until a server returns.
 
 **Env / runtime now:** Ollama 0.30.7 @ `100.125.103.28:11434` (Tailscale, 20 GB) · MySQL `:3307` · PG
 `:5442` · single `.venv`. Routing: TEXT/RAG/AUDITOR/anomaly→**phi4**, TOOL→devstral, SQL→codestral,
