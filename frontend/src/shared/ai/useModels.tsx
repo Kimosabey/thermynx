@@ -111,11 +111,18 @@ function ModelToastCard({
   );
 }
 
+// All model toasts share ONE id so they occupy a single slot — a new model
+// (tool → text → auditor as a run progresses) REPLACES the previous one in
+// place rather than stacking. Guarantees model toasts never collide/overlap,
+// regardless of how many models a flow engages or how fast they fire.
+const MODEL_TOAST_ID = "model-inuse";
+
 /**
  * useModelToast() → notify(taskKey, { prefix })
- * Fires a modern bottom-right toast naming the model + maker handling a task.
- * Task keys: text | tool | sql | planner | auditor | rag | vision | embed.
- * Deduped per task via a stable id so rapid re-runs replace rather than stack.
+ * Fires a single, self-replacing bottom-right toast naming the model + maker
+ * handling a task. Task keys: text | tool | sql | planner | auditor | rag |
+ * vision | embed. Because every model toast uses MODEL_TOAST_ID, sequential
+ * model handoffs update one toast in place — they never stack or overlap.
  */
 export function useModelToast() {
   return async (taskKey: string, { prefix }: { prefix?: string } = {}) => {
@@ -123,7 +130,7 @@ export function useModelToast() {
     const task = roster?.tasks?.[taskKey];
     if (!task) return;
     toast.custom((id) => <ModelToastCard prefix={prefix} t={task} onClose={() => toast.dismiss(id)} />, {
-      id: `model-${taskKey}`,
+      id: MODEL_TOAST_ID,
       duration: 2800,
     });
   };

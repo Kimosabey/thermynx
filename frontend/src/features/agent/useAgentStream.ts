@@ -1,4 +1,6 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
+import { useModelToast } from "@/shared/ai/useModels";
+import { makeModelToaster } from "@/shared/ai/modelStreamToast";
 
 /**
  * SSE streaming hook for the agent surface. Ported VERBATIM from the legacy
@@ -56,6 +58,14 @@ export function useAgentStream() {
   const abortRef = useRef<AbortController | null>(null);
   const tokenBuf = useRef("");
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Live model toasts driven by the SSE frames — kept in a ref so `start`'s
+  // empty-dep useCallback always reaches the current notify fn. The ref is
+  // synced in an effect (not during render) to satisfy react-hooks/refs.
+  const notify = useModelToast();
+  const notifyRef = useRef(notify);
+  useEffect(() => {
+    notifyRef.current = notify;
+  });
 
   const start = useCallback(async (mode: string, goal: string, context: unknown = null) => {
     abortRef.current?.abort();
@@ -79,6 +89,8 @@ export function useAgentStream() {
     setDone(false);
     setMeta(null);
     setError(null);
+
+    const mt = makeModelToaster((task, o) => notifyRef.current(task, o), isOrchestrator ? "Orchestrator" : "Agent");
 
     const url = isOrchestrator ? "/api/v1/agent/orchestrate" : "/api/v1/agent/run";
     const body = isOrchestrator ? { goal, context } : { mode, goal, context };
@@ -117,6 +129,7 @@ export function useAgentStream() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const frame: any = JSON.parse(line.slice(6));
             const t = frame.type;
+            mt.frame(t); // toast each model the moment it's engaged (deduped)
 
             if (t === "tool_call" || t === "tool_result") {
               if (frame.idx != null && isOrchestrator) {

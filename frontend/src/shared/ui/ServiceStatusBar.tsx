@@ -7,8 +7,9 @@
  * lag). Toast notifications fire only when a service transitions
  * (ok → down or down → ok) so the operator is alerted without spam.
  *
- * Floats bottom-right, glassmorphic. Click any pill to expand into a
- * compact details popover. All Framer Motion + Tailwind — no extra deps.
+ * Floats bottom-LEFT, glassmorphic (the bottom-right corner is reserved for
+ * toasts, so the two never overlap). Click any pill to expand into a compact
+ * details popover. All Framer Motion + Tailwind — no extra deps.
  */
 
 import { useEffect, useRef, useState, type ComponentType } from "react";
@@ -171,7 +172,7 @@ export default function ServiceStatusBar() {
   if (!health) return null;
   if (health._err) {
     return (
-      <div className="fixed right-[20px] bottom-[20px] z-50">
+      <div className="fixed bottom-[20px] left-[20px] z-50">
         <Pill icon={Server} label="Backend" value="unreachable" kind="down" />
       </div>
     );
@@ -185,12 +186,12 @@ export default function ServiceStatusBar() {
 
   return (
     <motion.div
-      className="fixed right-[20px] bottom-[20px] z-50"
+      className="fixed bottom-[20px] left-[20px] z-50"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <div className="flex flex-col items-end gap-2 rounded-[14px] border border-[rgba(31,63,254,0.12)] bg-[rgba(255,255,255,0.55)] p-2 backdrop-blur-[18px] shadow-[0_14px_40px_rgba(15,23,42,0.10)]">
+      <div className="flex flex-col items-start gap-2 rounded-[14px] border border-[rgba(31,63,254,0.12)] bg-[rgba(255,255,255,0.55)] p-2 backdrop-blur-[18px] shadow-[0_14px_40px_rgba(15,23,42,0.10)]">
         <button
           type="button"
           className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-[2px] hover:bg-[rgba(31,63,254,0.06)]"

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/shared/api/client";
 import { useModelToast } from "@/shared/ai/useModels";
+import { makeModelToaster } from "@/shared/ai/modelStreamToast";
 import type { CitationChunk } from "@/features/analyzer/CitationFootnotes";
 import type { AuditResult, VerificationResult } from "@/features/analyzer/AuditPanel";
 import { modeToastTask } from "./nyxModes";
@@ -260,6 +261,7 @@ export function useNyxConversation() {
     const dec = new TextDecoder();
     let buf = "";
     let sawDone = false;
+    const mt = makeModelToaster(notifyModel, "Nyx"); // toast each model as the stream engages it
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -277,6 +279,7 @@ export function useNyxConversation() {
           continue;
         }
         const t = f.type;
+        mt.frame(t); // toast each model the moment it's engaged (deduped)
         if (t === "token" || t === "synthesis_token") bufferToken(id, f.content || "");
         else if (t === "citations") patch(id, { citations: f.chunks || [] });
         else if (t === "audit") patch(id, { audit: f.audit || null });

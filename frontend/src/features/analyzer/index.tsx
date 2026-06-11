@@ -33,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import useAppToast from "@/shared/hooks/useAppToast";
 import { useModelToast } from "@/shared/ai/useModels";
+import { makeModelToaster } from "@/shared/ai/modelStreamToast";
 import { buildAnalyzerPrompts } from "@/shared/ai/promptTemplates";
 import type { Equipment } from "@/shared/types";
 
@@ -267,6 +268,7 @@ export default function AIAnalyzer() {
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let buf = "";
+      const mt = makeModelToaster(notifyModel, "Analyzer"); // toast each model as the stream engages it
 
       while (true) {
         const { done, value } = await reader.read();
@@ -285,6 +287,7 @@ export default function AIAnalyzer() {
             if (import.meta.env.DEV) console.error("[analyzer] SSE parse error:", line.slice(0, 120), e);
             continue;
           }
+          mt.frame(evt.type); // toast each model the moment it's engaged (deduped)
           if (evt.type === "token") setStreamContent((p) => p + evt.content);
           if (evt.type === "citations") setCitations(evt.chunks || []);
           if (evt.type === "audit") setAuditResult(evt.audit || null);
