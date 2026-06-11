@@ -122,12 +122,17 @@ class Settings(BaseSettings):
     OLLAMA_MODEL_RAG:      str = ""                      # RAG-grounded answer → TEXT model (mistral-small3.2)
 
     # ── Agentic graph cutover (F7) ──────────────────────────────────────────
-    # Flip a live endpoint onto the LangGraph rewrite (app/ai/graph/). Default
-    # OFF = the existing pipeline, byte-identical. Set true via env to serve that
-    # surface from the graph; flip back instantly. Persistence (audit/run rows,
+    # Route a live endpoint onto the LangGraph rewrite (app/ai/graph/). The old
+    # inline pipeline stays as the instantly-reversible fallback — set the flag
+    # =false in backend/.env + restart to revert. Persistence (audit/run rows,
     # thread messages) is preserved in both modes.
-    USE_GRAPH_ANALYZER:    bool = False
-    USE_GRAPH_AGENT:       bool = False
+    #
+    # CUTOVER 2026-06-11 (on-prem, internal facility tool): analyze + agent now
+    # default ON. Soak via the Prometheus alerts + audit flags; decommission the
+    # old inline code only AFTER a clean soak. ORCHESTRATE stays OFF until the
+    # 48 GB box — multi-agent (gemma4→devstral→phi4) thrashes the 20 GB GPU.
+    USE_GRAPH_ANALYZER:    bool = True
+    USE_GRAPH_AGENT:       bool = True
     USE_GRAPH_ORCHESTRATE: bool = False
 
     # ── Response length caps (Performance A2) ───────────────────────────────
