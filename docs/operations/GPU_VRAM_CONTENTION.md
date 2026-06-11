@@ -69,6 +69,13 @@ The 20 GB GPU remains the standing constraint for THERMYNX's own heavy models (4
 - **Don't firewall-block an IP that is also your backend host.** We briefly blocked `100.88.22.7` and cut off
   THERMYNX itself; removing the rule restored it. The correct fix was stopping the OMNYX *app*, not the IP.
 
+## Model selection is unchanged
+
+The eval-backed model picks **stand for both platforms** — THERMYNX (phi4/codestral/devstral/gemma4/nomic)
+and OMNYX (its own roster: gpt-oss:20b, mistral-small3.2, mxbai, phi4, …). **The fix is GPU separation
+(hardware), not changing which models each platform uses.** Sharing model *files on disk* is harmless; the
+only problem was both platforms loading models into the **same 20 GB GPU's VRAM at the same time**.
+
 ## How to keep it solved
 
 - **Don't run OMNYX's AI against the shared Ollama box.** Repoint OMNYX `LLM_BASE_URL` off `100.125.103.28`
