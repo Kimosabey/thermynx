@@ -257,7 +257,11 @@
       "PowerShell($c = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; if \\($c\\) { $p = Get-Process -Id $c.OwningProcess; Write-Output \"PID $\\($p.Id\\)  $\\($p.ProcessName\\)\"; try { $cl = \\(Get-CimInstance Win32_Process -Filter \"ProcessId=$\\($p.Id\\)\"\\).CommandLine; Write-Output \"CMD: $cl\" } catch {} } else { Write-Output \"nothing listening on :8000\" })",
       "Bash(PYTHONIOENCODING=utf-8 \"../.venv/Scripts/python.exe\" -m uvicorn main:app --host 127.0.0.1 --port 8000)",
       "Bash(curl -s --retry 25 --retry-delay 1 --retry-connrefused -m 6 http://127.0.0.1:8000/api/v1/health -w \"\\\\nHTTP %{http_code}\\\\n\")",
-      "Bash(EVAL_REQUIRE_BACKEND=1 PYTHONIOENCODING=utf-8 \"../.venv/Scripts/python.exe\" -m pytest tests/eval/test_golden.py -q -rf --tb=line -o addopts=\"\")"
+      "Bash(EVAL_REQUIRE_BACKEND=1 PYTHONIOENCODING=utf-8 \"../.venv/Scripts/python.exe\" -m pytest tests/eval/test_golden.py -q -rf --tb=line -o addopts=\"\")",
+      "Bash(curl -s -m 8 http://127.0.0.1:8000/api/v1/models)",
+      "Bash(ls src/main.* src/app/App.*)",
+      "Bash(grep -nE \"extensions|resolve\" vite.config.*)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

@@ -97,7 +97,7 @@ const SERVICES: ServiceGroup[] = [
   {
     group: "AI Runtime",
     items: [
-      { Icon: Cpu, label: "Ollama API", url: "http://100.125.103.28:11434", port: 11434, healthUrl: "http://100.125.103.28:11434/api/tags", role: "On-prem LLM server (phi4 + mistral-small3.2)" },
+      { Icon: Cpu, label: "Ollama API", url: "http://100.125.103.28:11434", port: 11434, healthUrl: "http://100.125.103.28:11434/api/tags", role: "On-prem LLM server · per-task model routing" },
       { Icon: Cpu, label: "Ollama models", url: "http://100.125.103.28:11434/api/tags", port: 11434, healthUrl: "http://100.125.103.28:11434/api/tags", role: "List installed models" },
     ],
   },

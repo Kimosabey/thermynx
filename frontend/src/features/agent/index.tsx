@@ -1,4 +1,4 @@
-import { useState, useEffect, type CSSProperties } from "react";
+import { useState, useEffect, useMemo, type CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ScanSearch,
@@ -27,7 +27,7 @@ import AgentRunner from "./AgentRunner";
 import MultiAgentRunner from "./MultiAgentRunner";
 import { useAgentStream } from "./useAgentStream";
 import { buildAgentPrompts, type AgentMode } from "@/shared/ai/promptTemplates";
-import { useModelToast } from "@/shared/ai/useModels";
+import { useModelToast, useModelRoster } from "@/shared/ai/useModels";
 import { ENGINE_COLOR } from "@/shared/theme/engineColors";
 import type { Equipment } from "@/shared/types";
 
@@ -267,6 +267,21 @@ export default function AgentHub() {
   const notifyModel = useModelToast();
   const goalOk = activeMode === "brief" || goal.trim().length >= 3;
 
+  // The specialist agents run the ReAct executor (tool model) + narration (text
+  // model), and the orchestrator adds the planner. Show the ACTUAL configured
+  // models from the live roster — never a hardcoded list (which goes stale the
+  // moment the model config changes).
+  const roster = useModelRoster();
+  const agentModels = useMemo(() => {
+    const tasks = roster?.tasks;
+    if (!tasks) return [] as string[];
+    const names = (["tool", "text", "planner"] as const)
+      .map((k) => tasks[k]?.model)
+      .filter((m): m is string => Boolean(m))
+      .map((m) => m.replace(/:latest$/, ""));
+    return [...new Set(names)];
+  }, [roster]);
+
   useEffect(() => {
     fetch("/api/v1/equipment")
       .then((r) => r.json())
@@ -299,8 +314,13 @@ export default function AgentHub() {
         title="AI Agents"
         subtitle={
           <>
-            Autonomous HVAC intelligence — 5 specialist agents powered by{" "}
-            <span className="font-semibold text-brand">phi4 &amp; mistral</span>
+            Autonomous HVAC intelligence — 5 specialist agents
+            {agentModels.length > 0 && (
+              <>
+                {" "}powered by{" "}
+                <span className="font-semibold text-brand">{agentModels.join(" · ")}</span>
+              </>
+            )}
           </>
         }
         icon={
