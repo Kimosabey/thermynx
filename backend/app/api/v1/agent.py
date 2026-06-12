@@ -76,7 +76,10 @@ async def _graph_agent_stream(request: Request, req, pg: AsyncSession):
     """USE_GRAPH_AGENT path — ReAct graph; preserves the AgentRun row + thread persistence."""
     from app.ai.graph.sse import astream_sse
     run_id = str(uuid.uuid4())
-    model = req.model or settings.OLLAMA_DEFAULT_MODEL
+    # Stamp the NARRATION model (OLLAMA_MODEL_TEXT = phi4) for the done-frame label —
+    # that's the model that writes the final answer. devstral runs the tool loop; the
+    # DEFAULT model never runs here, so showing it (mistral-small3.2) was misleading.
+    model = req.model or settings.OLLAMA_MODEL_TEXT or settings.OLLAMA_DEFAULT_MODEL
     run = AgentRun(id=run_id, mode=req.mode, goal=req.goal,
                    context_json=json.dumps(req.context) if req.context else None,
                    model=model, status="running",
@@ -364,6 +367,12 @@ class ResumeRequest(BaseModel):
     plan:      dict | None = None               # optional operator-edited plan (on approve)
 
 
+class PlanRequest(BaseModel):
+    """Planner inspector — run ONLY the planner on a goal (no specialists)."""
+    goal:    str = Field(..., min_length=3, max_length=2000)
+    context: dict | None = None
+
+
 async def _orchestrate_stream(request: Request, req: OrchestrateRequest, pg: AsyncSession):
     """Multi-agent stream — same persistence model as `_stream`, mode='orchestrator'."""
     # Layer 1 — pre-flight: catch action requests + unknown equipment before
@@ -535,6 +544,26 @@ async def agent_resume(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.post("/agent/plan")
+@limiter.limit("12/minute")
+async def agent_plan(request: Request, req: PlanRequest):
+    """Planner inspector: run JUST the multi-agent planner (gemma4) and return the
+    structured plan it would dispatch — rationale + ordered specialist subtasks. No
+    specialists execute; lets an operator see how the planner decomposes a goal."""
+    from app.ai.preflight import check_action_request, check_equipment_mentions
+    refusal = check_action_request(req.goal) or check_equipment_mentions(req.goal)
+    if refusal:
+        return {"refusal": refusal, "plan": None, "model": settings.OLLAMA_MODEL_PLANNER}
+    try:
+        from app.ai.graph.multi_agent_graph import planner_node
+        out = await planner_node({"question": req.goal, "context": req.context})
+        return {"plan": out.get("plan"), "model": settings.OLLAMA_MODEL_PLANNER}
+    except Exception:
+        log.exception("planner_inspect_failed request_id=%s", getattr(request.state, "request_id", None))
+        return {"error": "Planner failed to produce a plan.", "plan": None,
+                "model": settings.OLLAMA_MODEL_PLANNER}
 
 
 @router.get("/agent/history")
