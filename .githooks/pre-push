@@ -1,38 +1,19 @@
 #!/bin/sh
-# Pre-push AI eval gate (F6.8).
+# Pre-push reminder (F6.8) — the golden eval is NOT run automatically on push.
 #
-# Runs the golden suite before every push so a prompt/agent/model regression
-# can't be pushed silently. Skips gracefully when the backend (:8000) is down
-# (no false blocks); blocks only on a real test failure.
+# WHY NOT: the golden suite makes ~50 live LLM calls. On the shared 20 GB GPU,
+# running it on every push floods/thrashes the box (50 model calls queue + the
+# models can't co-reside, so they evict/cold-load constantly) — it starved the
+# GPU and wedged the box. A pre-push LLM gate only belongs on a dedicated CI GPU
+# / the 48 GB box, not a shared 20 GB dev box.
 #
-#   Activate once per clone:      git config core.hooksPath .githooks
-#   Emergency bypass:             git push --no-verify
+# So this hook just reminds you to run the gate MANUALLY before a release:
+#   cd backend && PYTHONIOENCODING=utf-8 ../.venv/Scripts/python -m pytest tests/eval/test_golden.py -q
+#
+# (Fast deterministic guard cases — refusals/injection, no LLM — could be wired
+# here later as a quick non-flooding gate; the full LLM suite should be CI-only.)
 
-echo "[pre-push] AI eval gate -> golden suite"
-
-ROOT="$(git rev-parse --show-toplevel)"
-
-# Run the gate DIRECTLY via the venv python — no 'make' dependency. ('make' isn't
-# installed on the dev box, which previously made this hook skip silently and let
-# regressions through.)
-PY="$ROOT/.venv/Scripts/python"
-[ -e "$PY" ] || PY="$ROOT/.venv/Scripts/python.exe"   # Windows
-[ -e "$PY" ] || PY="$ROOT/.venv/bin/python"           # POSIX
-if [ ! -e "$PY" ]; then
-  echo "[pre-push] venv python not found; skipping eval gate."
-  exit 0
-fi
-
-# EVAL_REQUIRE_BACKEND is intentionally NOT set: test_golden.py's backend_check
-# fixture SKIPS (exit 0) when :8000 is down — no false block — and only a real
-# golden-case failure (pytest exit != 0) blocks the push.
-( cd "$ROOT/backend" && PYTHONIOENCODING=utf-8 "$PY" -m pytest tests/eval/test_golden.py -q )
-rc=$?
-
-if [ "$rc" -ne 0 ]; then
-  echo "[pre-push] eval gate FAILED -> push blocked. Run the golden suite to see which case regressed."
-  echo "[pre-push] (emergency override: git push --no-verify)"
-  exit 1
-fi
-echo "[pre-push] eval gate passed (or skipped — backend was down)."
+echo "[pre-push] golden eval is NOT auto-run (it floods the shared 20 GB GPU)."
+echo "[pre-push] run it manually before a release:"
+echo "[pre-push]   cd backend && PYTHONIOENCODING=utf-8 ../.venv/Scripts/python -m pytest tests/eval/test_golden.py -q"
 exit 0

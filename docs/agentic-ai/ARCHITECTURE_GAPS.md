@@ -10,7 +10,7 @@
 
 | # | Gap | Sev | Status | Action / owner |
 |---|-----|-----|--------|----------------|
-| 1 | **Eval gate bypassable** — pre-push hook skipped when `make` absent | High | 🔧 **fixed** | Hook now runs the golden suite directly via the venv python; skips only when the backend is down; `--no-verify` is the explicit override |
+| 1 | **Eval gate** — a pre-push LLM gate **floods the shared 20 GB GPU** (~50 live model calls per push → evict/cold-load thrash + queue backlog → wedged the box) | High | ↩️ **reverted to a reminder** | Auto-run **removed** (it caused a self-DoS on push). Hook now just reminds to run the golden suite manually before a release. A real automated gate belongs on a **CI / 48 GB GPU**; fast deterministic guard cases (refusals/injection, no LLM) could be a future non-flooding pre-push gate |
 | 2 | **Cold-load empties** — graph `ChatOllama` set no `keep_alive` | Med | 🔧 **fixed (partial)** | `OLLAMA_KEEP_ALIVE` (default `30m`) keeps single-model paths warm. Orchestrate's multi-model swap still reloads on 20 GB — see #4 |
 | 3 | **Grounding is a *signal*, not a *gate*** (`s2_grounded` off; DeepEval signal; RAGAS dropped) | Med-High | ⏳ **deferred (intentional)** | Flip `s2_grounded` to a hard gate **only after N consecutive green eval runs** prove the small judge is stable on real context (it over-flags interpretive phrasing). Don't flip blind |
 | 4 | **Orchestrate VRAM ceiling + no load test + SPOF** (one shared 20 GB Ollama box) | High | ⏳ **deferred → 48/64 GB** | 3 models (~31 GB) can't co-reside in 20 GB → evict/cold-load on each role switch. Real fix = 48 GB box; then Locust load test. No failover (single box) — accepted for now |
