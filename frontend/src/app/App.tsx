@@ -35,6 +35,7 @@ const Optimizer = lazy(() => import("@/features/optimizer"));
 const Nyx = lazy(() => import("@/features/assistant"));
 const AIAnalyzer = lazy(() => import("@/features/analyzer"));
 const AgentHub = lazy(() => import("@/features/agent"));
+const PlannerInspector = lazy(() => import("@/features/planner"));
 const AILegacy = lazy(() => import("@/features/ai"));
 const WorkOrders = lazy(() => import("@/features/work_orders"));
 
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="reports" element={lazyRoute(<Reports />)} />
         <Route path="digest" element={lazyRoute(<Digest />)} />
         <Route path="agent" element={lazyRoute(<AgentHub />)} />
+        <Route path="planner" element={lazyRoute(<PlannerInspector />)} />
         <Route path="rag" element={lazyRoute(<RAGKnowledge />)} />
         <Route path="know" element={lazyRoute(<RAGKnowledge />)} />
         <Route path="past-fixes" element={lazyRoute(<PastFixes />)} />

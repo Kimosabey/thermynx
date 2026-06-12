@@ -5,7 +5,7 @@ import {
   LayoutDashboard, BrainCircuit, TriangleAlert, TrendingUp, Columns2, Wrench,
   IndianRupee, FileText, BookOpen, Zap, Sparkles, BellRing, Network, Camera,
   ScrollText, Server, ClipboardList, ChevronDown, Menu as MenuIcon, X, Sun, Moon,
-  Sunrise, Library, Gauge, Activity, Boxes, Bot, type LucideIcon,
+  Sunrise, Library, Gauge, Activity, Boxes, Bot, Waypoints, type LucideIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Digest", to: "/digest", Icon: Sunrise },
       { label: "Nyx", to: "/ai", Icon: BrainCircuit },
       { label: "Agent", to: "/agent", Icon: Bot },
+      { label: "Planner", to: "/planner", Icon: Waypoints },
       { label: "NL Query", to: "/nl-query", Icon: Sparkles },
     ],
   },
