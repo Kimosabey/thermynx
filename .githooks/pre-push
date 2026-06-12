@@ -2,23 +2,37 @@
 # Pre-push AI eval gate (F6.8).
 #
 # Runs the golden suite before every push so a prompt/agent/model regression
-# can't be pushed silently. Skips gracefully when the backend isn't running
-# locally (no false blocks); blocks only on a real test failure.
+# can't be pushed silently. Skips gracefully when the backend (:8000) is down
+# (no false blocks); blocks only on a real test failure.
 #
-# Activate once per clone:   git config core.hooksPath .githooks
-# Bypass for an emergency push:  git push --no-verify
+#   Activate once per clone:      git config core.hooksPath .githooks
+#   Emergency bypass:             git push --no-verify
 
-echo "[pre-push] AI eval gate -> make eval"
-if ! command -v make >/dev/null 2>&1; then
-  echo "[pre-push] 'make' not found; skipping eval gate."
+echo "[pre-push] AI eval gate -> golden suite"
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+# Run the gate DIRECTLY via the venv python — no 'make' dependency. ('make' isn't
+# installed on the dev box, which previously made this hook skip silently and let
+# regressions through.)
+PY="$ROOT/.venv/Scripts/python"
+[ -e "$PY" ] || PY="$ROOT/.venv/Scripts/python.exe"   # Windows
+[ -e "$PY" ] || PY="$ROOT/.venv/bin/python"           # POSIX
+if [ ! -e "$PY" ]; then
+  echo "[pre-push] venv python not found; skipping eval gate."
   exit 0
 fi
 
-make eval
-if [ $? -ne 0 ]; then
-  echo "[pre-push] eval gate FAILED -> push blocked. Run 'make eval' to see which golden case regressed."
+# EVAL_REQUIRE_BACKEND is intentionally NOT set: test_golden.py's backend_check
+# fixture SKIPS (exit 0) when :8000 is down — no false block — and only a real
+# golden-case failure (pytest exit != 0) blocks the push.
+( cd "$ROOT/backend" && PYTHONIOENCODING=utf-8 "$PY" -m pytest tests/eval/test_golden.py -q )
+rc=$?
+
+if [ "$rc" -ne 0 ]; then
+  echo "[pre-push] eval gate FAILED -> push blocked. Run the golden suite to see which case regressed."
   echo "[pre-push] (emergency override: git push --no-verify)"
   exit 1
 fi
-echo "[pre-push] eval gate passed."
+echo "[pre-push] eval gate passed (or skipped — backend was down)."
 exit 0
