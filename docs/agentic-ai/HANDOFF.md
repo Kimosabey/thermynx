@@ -1,6 +1,70 @@
 # Agentic Rewrite — Session Handoff (2026-06-10)
 
 ---
+## ⟶ SESSION 3 (2026-06-12) — READ THIS FIRST
+
+**State in one paragraph:** All three live surfaces now run the LangGraph pipeline — `USE_GRAPH_ANALYZER`
++ `USE_GRAPH_AGENT` were already on; **`USE_GRAPH_ORCHESTRATE=true` was enabled this session** (in
+`backend/.env`, gitignored). The rewrite is feature-complete; what's left is hardware/soak-gated. Shipped
+this session: FE "model-in-use" toasts; **Langfuse fully disabled** (optional tracing — v3 needs
+ClickHouse, deferred; SDK commented in `requirements.txt`; dead v2 `app/llm/tracing.py` removed);
+**F1.14** (json_utils fallback-only + 12 tests); **F4.9 HITL** approval gate (graph `interrupt()` +
+`POST /api/v1/agent/resume` + FE approve/reject); **Planner Inspector** (new `/planner` page +
+`POST /api/v1/agent/plan`, planner-only); **per-node timing traces** (`node_timing` SSE frames →
+`useAgentStream.timings` → `TimingPanel.tsx`); an **agent model-label fix** (done-frame stamps phi4, not
+the default — per-role routing was always correct, only the label was wrong); **orphan cleanup** (8 dead
+migration components, 843 lines); and a **gap register** (`docs/agentic-ai/ARCHITECTURE_GAPS.md`). Eval
+re-validated **49/50** (lone orchestrate fail = known 20 GB cold-load transient).
+
+**THE 20 GB GPU IS THE WALL (today's incident + the main ask):** the orchestrator loads 3 models
+(gemma4 ~8 + devstral ~15 + phi4 ~9 ≈ **31 GB** through a **20 GB** GPU) → constant evict/cold-load
+thrash; under a burst it **wedges**. Today the **pre-push eval-gate hook fired the full 50-case LLM suite
+on `git push` → flooded the box → wedged** (needed an Ollama restart; killing `git push` doesn't cancel
+Ollama's server-side queue). FIXED: the hook (`0472aee`) is now a fast reminder (no auto-run);
+`keep_alive` cut **30m→10m** (`config.py` + `scripts/ollama_all.bat` — 30m pinned devstral and blocked
+phi4; also `OLLAMA_MAX_LOADED_MODELS` 3→2). **The real fix is a 48–80 GB GPU** — infra request drafted
+in-chat for **Vishnu sir** + **Tulsidas (infra)**: cloud A100 80 GB ideal / L40S 48 GB min, in-region +
+Private Link (zero-egress).
+
+**Commits this session — 8 UNPUSHED on `rewrite/agentic-framework`** (origin at `15cf9e4`). Pushing is
+**now SAFE** (the hook no longer floods):
+`f7632d5` eval-gate direct-run (superseded) · `3c7163f` keep_alive · `db34f28` gap register ·
+`3b24d57` (user) IDE settings + config 10m + ollama script · `787329e` planner endpoint + label fix ·
+`b7f3f2c` Planner page · `db46805` per-node timing · `0472aee` eval-gate flood fix.
+
+**What's LEFT / next steps:**
+1. **Push** the 8 commits (safe now).
+2. **Restart the backend** (kill the stale PID + `uvicorn main:app`) — the running process predates this
+   session's backend changes; restart loads `/agent/plan`, the model-label fix, `keep_alive=10m`, `node_timing`.
+3. **Wire TimingPanel** — 1 line in `agent/index.tsx` (`<TimingPanel timings={timings}/>` + add `timings`
+   to the `useAgentStream` destructure). Left un-wired to avoid colliding with in-flight agent-page edits.
+4. **48/64/80 GB GPU** → cut orchestrate over for real (fast/reliable) + Locust load test → soak →
+   decommission inline pipeline → tag GA.
+5. Optional/deferred: grounding hard-gate flip (after N stable eval runs); durable Postgres checkpointer
+   (F1.11); prompt registry (Langfuse-off); assign a KB-curation owner.
+
+**IN-FLIGHT WIP (uncommitted, owner = Harshan — leave intact):** an "**Agent Lab**" trace-persistence
+feature — `app/api/v1/agent.py` (`trace_json`/`audit_json` on `AgentRun`, `_TRACE_FRAME_TYPES` incl.
+`node_timing`, `run_meta`), a new `frontend/src/features/agent-lab/` page + `/agent-lab` route, plus
+`agent/index.tsx` (per-mode model-pipeline display), `AgentRunner`/`MultiAgentRunner`/`analyzer/index.tsx`
+edits. Not committed by the assistant.
+
+**Env / runtime (2026-06-12):** Ollama 0.30.7 @ `100.125.103.28:11434` (20 GB, Tailscale) · backend
+FastAPI :8000 (host `100.88.22.7`) · FE Vite :5173 · MySQL :3307 · PG+pgvector :5442 · Redis :6380.
+Flags `USE_GRAPH_{ANALYZER,AGENT,ORCHESTRATE}=true`; `OLLAMA_KEEP_ALIVE=10m`; `OLLAMA_MAX_LOADED_MODELS=2`;
+Langfuse OFF. Roles → models: text/RAG/auditor→**phi4**, tool→**devstral**, sql→**codestral**,
+planner→**gemma4:12b**, vision→**llama3.2-vision**, embed→**nomic-embed-text** (768d), default→**mistral-small3.2**.
+
+**Gotchas (new this session):**
+- **Never run the full golden eval (or any model burst) against the 20 GB box during use** — it floods/wedges. Eval is manual now (`cd backend && pytest tests/eval/test_golden.py`); a real auto-gate is CI/48 GB only.
+- **`keep_alive` must stay ≤ 10m** — 30m pins a big model and blocks phi4 (24 GB > 20 GB) → wedge. Recover with `scripts/ollama_all.bat` (kill + restart + warm).
+- Adding a hook to `useAgentStream` during a live dev session → HMR "hooks order" crash → **hard-refresh** fixes it (HMR artifact, not a bug).
+- Inline pipeline (`analyzer`/`agent`/`multi_agent` non-graph) is the **fallback + serves orchestrate when its flag is off** — DO NOT delete until after the soak.
+- The running backend may be **stale** vs working-tree backend changes — restart to apply.
+
+**Start the next chat with:** *"Continue THERMYNX per docs/agentic-ai/HANDOFF.md — read the SESSION 3 (2026-06-12) block first."*
+
+---
 ## ⟶ SESSION 2 (2026-06-11) — READ THIS FIRST
 
 **State in one paragraph:** The agentic rewrite is **cut over on-prem** — `/analyze` + `/agent/run` now
