@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import decimal
 import json
+import time
 from datetime import date, datetime
 from typing import Any, AsyncIterator
 
@@ -70,6 +71,7 @@ async def astream_sse(graph: Any, inputs: dict, config: dict, done_extra: dict |
     # thread_id labels an awaiting-approval pause so the client can resume it (F4.9).
     thread_id = (config.get("configurable") or {}).get("thread_id")
     interrupted = False
+    _t_last = time.monotonic()   # per-node timing anchor (F: in-app model traces)
     try:
         async for update in graph.astream(inputs, config, stream_mode="updates"):
             if not update:
@@ -88,6 +90,12 @@ async def astream_sse(graph: Any, inputs: dict, config: dict, done_extra: dict |
                 continue
 
             for _node, delta in update.items():
+                # Per-node timing → lightweight in-app model trace (no Langfuse/infra).
+                # On the orchestrator these map 1:1 to models: planner=gemma4,
+                # specialists=devstral, synthesis=phi4, critique=phi4.
+                _now = time.monotonic()
+                yield _sse({"type": "node_timing", "node": _node, "ms": int((_now - _t_last) * 1000)})
+                _t_last = _now
                 if not isinstance(delta, dict):
                     continue
 

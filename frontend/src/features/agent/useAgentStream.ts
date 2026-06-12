@@ -60,6 +60,8 @@ export function useAgentStream() {
   const [plan, setPlan] = useState<AgentPlan | null>(null);
   const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [synthesis, setSynthesis] = useState("");
+  // Per-node timing (node + ms) → lightweight in-app model trace (no Langfuse).
+  const [timings, setTimings] = useState<{ node: string; ms: number }[]>([]);
   // F4.9 HITL — true while the orchestrator is paused awaiting plan approval.
   const [awaitingApproval, setAwaitingApproval] = useState(false);
   const approvalThreadId = useRef<string | null>(null);
@@ -192,6 +194,8 @@ export function useAgentStream() {
               setMeta(frame);
               setDone(true);
               sawDone = true;
+            } else if (t === "node_timing") {
+              setTimings((prev) => [...prev, { node: frame.node, ms: frame.ms }]);
             } else if (t === "error") {
               setError(frame.detail);
               sawError = true;
@@ -246,6 +250,7 @@ export function useAgentStream() {
       setPlan(null);
       setDelegations([]);
       setSynthesis("");
+      setTimings([]);
       setAwaitingApproval(false);
       approvalThreadId.current = null;
       setRunning(true);
@@ -338,6 +343,7 @@ export function useAgentStream() {
     delegations,
     synthesis,
     agentAudit,
+    timings,
     awaitingApproval,
     start,
     resume,
