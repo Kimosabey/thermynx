@@ -84,10 +84,13 @@ class Settings(BaseSettings):
     OLLAMA_STREAM_TIMEOUT_S: float = 120.0  # streaming /api/chat and /api/generate
 
     # Keep graph models resident between calls so single-model paths (analyze/agent)
-    # don't pay a cold-load on each request. "30m" = stay warm 30 min after last use
-    # ("-1" pins forever). NOTE: this can't beat the VRAM ceiling — the orchestrator's
-    # gemma4->devstral->phi4 swaps still cold-load on the 20 GB box (48 GB fixes that).
-    OLLAMA_KEEP_ALIVE: str = "30m"
+    # don't pay a cold-load on each request. Kept SHORT ("10m") + in sync with
+    # scripts/ollama_all.bat: on the 20 GB box a long pin (e.g. 30m) keeps a big
+    # model (devstral ~15 GB) resident and BLOCKS phi4 from loading (24 GB > 20 GB),
+    # wedging the box after a burst. 10m stays warm through a session but releases
+    # VRAM fast. Can't beat the VRAM ceiling — orchestrate's cross-model swaps still
+    # cold-load on 20 GB (48 GB fixes that).
+    OLLAMA_KEEP_ALIVE: str = "10m"
 
     # Ollama vision model (separate from default text model)
     OLLAMA_VISION_MODEL: str = "llama3.2-vision"
