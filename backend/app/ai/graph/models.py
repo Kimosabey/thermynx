@@ -60,6 +60,11 @@ def chat_model(role: Role, *, temperature: float = 0.0, num_predict: int | None 
         base_url=settings.OLLAMA_HOST,
         temperature=temperature,
         num_predict=num_predict,
+        # Keep the model resident between calls so single-model paths (analyze/agent)
+        # don't cold-load each request — cuts the "empty answer on cold-load" case.
+        # (Doesn't beat the VRAM ceiling: orchestrate's cross-model swaps still reload
+        # on the 20 GB box; 48 GB fixes that.)
+        keep_alive=settings.OLLAMA_KEEP_ALIVE,
         # CRITICAL: langchain defaults num_ctx=2048 → a ~3.5k-token analyzer prompt
         # gets truncated → empty/garbage output. Mirror ollama.py's per-tier sizing.
         num_ctx=_num_ctx_for(name),

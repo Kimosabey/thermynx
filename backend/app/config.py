@@ -83,6 +83,12 @@ class Settings(BaseSettings):
     OLLAMA_CHAT_TIMEOUT_S:   float = 60.0   # non-streaming /api/chat (tool calls)
     OLLAMA_STREAM_TIMEOUT_S: float = 120.0  # streaming /api/chat and /api/generate
 
+    # Keep graph models resident between calls so single-model paths (analyze/agent)
+    # don't pay a cold-load on each request. "30m" = stay warm 30 min after last use
+    # ("-1" pins forever). NOTE: this can't beat the VRAM ceiling — the orchestrator's
+    # gemma4->devstral->phi4 swaps still cold-load on the 20 GB box (48 GB fixes that).
+    OLLAMA_KEEP_ALIVE: str = "30m"
+
     # Ollama vision model (separate from default text model)
     OLLAMA_VISION_MODEL: str = "llama3.2-vision"
 
